@@ -213,15 +213,17 @@ Railway:
 - Postgres agregado.
 - Variables cargadas en servicio web: `APP_PASSWORD`, `SECRET_KEY`, `DATABASE_URL`.
 - Clave de login Railway actualizada a la indicada por Franco el 2026-05-27.
-- Variables pendientes para refresh real: `STRIPE_SECRET_KEY`, `MONGO_URI`.
+- Variables cargadas para refresh real: `STRIPE_SECRET_KEY`, `MONGO_URI`.
+- `MONGO_URI` y Stripe se recuperaron desde el `.env` cifrado de `Traqeer cs` usando `.env.keys`/dotenvx; no guardar secretos en el repo.
 - Deploy Railway exitoso.
 - URL publica: `https://customers-production-8190.up.railway.app`
 - Verificado `/healthz` 200.
 - Verificado `/login` 200.
 - Verificado login y dashboard 200 con la clave configurada.
 - Verificado login publico con `Customers Dashboard`, logo PNG y dashboard 200.
+- Verificado `Actualizar datos` en produccion: completo en 101s, dashboard 200 con KPIs y datos cargados.
+- Gunicorn configurado con `--timeout 240` porque el refresh inicial supera el timeout default de 30s.
 
 ## Pendiente Recomendado
 
-- Cargar `STRIPE_SECRET_KEY` y `MONGO_URI` en Railway para poder usar `Actualizar datos`.
-- Presionar `Actualizar datos` en produccion cuando esten las variables reales.
+- Si el refresh crece mucho, mover `Actualizar datos` a job/background task para evitar requests largos.
