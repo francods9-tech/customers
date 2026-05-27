@@ -32,7 +32,7 @@ h2 { font-size: .82rem; margin: 0 0 .85rem; color: var(--muted); text-transform:
   backdrop-filter: blur(10px);
 }
 .brand { display: inline-flex; align-items: center; gap: .55rem; font-weight: 700; color: var(--text); }
-.brand img { width: 30px; height: 30px; display: block; }
+.brand img { width: auto; height: 30px; display: block; }
 .topbar nav { display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; }
 .topbar nav > a {
   color: var(--muted);
@@ -297,6 +297,7 @@ dd { margin: 0; min-width: 0; }
 .attention-meta { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: .45rem; text-align: right; }
 
 .login-box { max-width: 320px; margin: 12vh auto; text-align: center; }
+.login-logo { width: 150px; height: auto; margin-bottom: 1rem; }
 .login-box form { margin-top: 1rem; }
 .empty { text-align: center; padding: 3rem 1rem; }
 

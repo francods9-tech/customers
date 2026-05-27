@@ -2,7 +2,8 @@
 {% block title %}Ingresar{% endblock %}
 {% block content %}
 <div class="login-box">
-  <h1>Account Manager</h1>
+  <img class="login-logo" src="{{ url_for('static', filename='traqeer-logo.png') }}" alt="Traqeer">
+  <h1>Customers Dashboard</h1>
   <p class="muted">Ingresá la clave del equipo.</p>
   <form method="post">
     <input type="password" name="password" placeholder="Clave" autofocus required>
