@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Bajas{% endblock %}
+{% block content %}
+
+<a class="back" href="{{ url_for('index') }}">&larr; Inicio</a>
+<h1>Bajas</h1>
+<p class="muted">Cancelaciones reales del periodo, excluyendo clientes que hoy volvieron a estar activos.</p>
+
+<form method="get" class="periodo-bar">
+  <div class="presets">
+    {% for key, plabel in presets %}
+      <a class="chip {{ 'chip-on' if label == plabel }}" href="{{ url_for('bajas_list', preset=key, canal=canal) }}">{{ plabel }}</a>
+    {% endfor %}
+  </div>
+  <div class="periodo-custom">
+    <input type="date" name="desde" value="{{ desde }}">
+    <input type="date" name="hasta" value="{{ hasta }}">
+    <select name="canal">
+      <option value="">Todos los canales</option>
+      {% for k, plabel in origenes %}
+        <option value="{{ k }}" {{ "selected" if canal == k }}>{{ plabel }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Aplicar</button>
+  </div>
+</form>
+
+<div class="mini-kpis">
+  <div><strong>{{ filas|length }}</strong><span>Bajas en {{ label }}</span></div>
+  <div><strong>{{ con_motivo }}</strong><span>Con motivo</span></div>
+  <div><strong>{{ filas|length - con_motivo }}</strong><span>Sin motivo</span></div>
+</div>
+
+<section class="panel">
+  <h2>Motivos de baja</h2>
+  {% if filas %}
+  <div class="table-wrap">
+    <table class="grid churn-grid">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Fecha</th>
+          <th>Plan</th>
+          <th>Canal</th>
+          <th>Motivo y detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in filas %}
+        <tr>
+          <td>
+            {% if f.es_cliente %}
+              <a href="{{ url_for('cliente', email=f.email) }}">{{ f.nombre }}</a>
+            {% else %}
+              {{ f.nombre }}
+            {% endif %}
+            <div class="sub">{{ f.email }}</div>
+          </td>
+          <td>{{ f.fecha }}</td>
+          <td>{{ f.plan }}</td>
+          <td>{{ f.origen_label }}</td>
+          <td>
+            <form method="post" action="{{ url_for('guardar_motivo_baja') }}" class="churn-form">
+              <input type="hidden" name="email" value="{{ f.email }}">
+              <input type="hidden" name="fecha" value="{{ f.fecha }}">
+              <select name="motivo">
+                {% for key, texto in motivos %}
+                  <option value="{{ key }}" {{ "selected" if f.reason and f.reason.motivo == key }}>{{ texto }}</option>
+                {% endfor %}
+              </select>
+              <textarea name="detalle" placeholder="Detalle interno">{{ f.reason.detalle if f.reason else "" }}</textarea>
+              <button class="btn-sync" type="submit">Guardar</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p class="muted">No hay bajas para este periodo.</p>
+  {% endif %}
+</section>
+{% endblock %}

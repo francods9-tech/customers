@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Inicio{% endblock %}
+{% block content %}
+
+<h1>Dashboard</h1>
+
+{% if not snap or not snap.eventos %}
+  <div class="empty">
+    <p>Todavía no hay datos cargados.</p>
+    <form method="post" action="{{ url_for('sync') }}">
+      <button type="submit">Traer datos ahora</button>
+    </form>
+  </div>
+{% else %}
+
+  <form method="get" class="periodo-bar">
+    <div class="presets">
+      {% for key, plabel in presets %}
+        <a class="chip {{ 'chip-on' if label == plabel }}" href="{{ url_for('index', preset=key, canal=canal) }}">{{ plabel }}</a>
+      {% endfor %}
+    </div>
+    <div class="periodo-custom">
+      <input type="date" name="desde" value="{{ desde }}">
+      <input type="date" name="hasta" value="{{ hasta }}">
+      <select name="canal">
+        <option value="">Todos los canales</option>
+        {% for k, plabel in origenes %}
+          <option value="{{ k }}" {{ "selected" if canal == k }}>{{ plabel }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Aplicar</button>
+    </div>
+  </form>
+
+  <p class="muted">Período: {{ label }}{% if canal %} · canal: {{ origenes|selectattr('0','equalto',canal)|map(attribute=1)|first }}{% endif %} · comparado con el período anterior</p>
+
+  <div class="kpis">
+    {% for k in kpis %}
+    {% set tag = 'a' if k.href else 'div' %}
+    <{{ tag }} class="kpi {{ 'kpi-link' if k.href }}" {% if k.href %}href="{{ k.href }}"{% endif %}>
+      <span class="kpi-label">{{ k.label }}</span>
+      <span class="kpi-val">{{ k.valor }}</span>
+      {% if k.delta is not none %}
+        {% set bueno = (k.delta < 0) if k.invertir else (k.delta > 0) %}
+        {% set malo = (k.delta > 0) if k.invertir else (k.delta < 0) %}
+        <span class="kpi-delta {{ 'up' if bueno }}{{ 'down' if malo }}">
+          {{ "▲" if k.delta > 0 }}{{ "▼" if k.delta < 0 }} {{ k.delta|abs }}%
+        </span>
+      {% else %}
+        <span class="kpi-delta">—</span>
+      {% endif %}
+    </{{ tag }}>
+    {% endfor %}
+  </div>
+
+  <div class="charts">
+    <section class="panel">
+      <h2>Movimiento por {{ serie.agrupado }}</h2>
+      <canvas id="chartSerie" height="120"></canvas>
+    </section>
+    <section class="panel">
+      <h2>Altas por canal</h2>
+      {% if canales %}
+        <canvas id="chartCanal" height="160"></canvas>
+      {% else %}
+        <p class="muted">Sin altas con canal asignado en el período.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2>Estado actual de la base</h2>
+    <div class="cards">
+      <a class="card kpi-link" href="{{ url_for('clientes_list', recurrente=1) }}"><span>{{ estado.activos }}</span>Activos recurrentes</a>
+      <a class="card kpi-link" href="{{ url_for('clientes_list', estado='trial') }}"><span>{{ estado.trial }}</span>En trial</a>
+      <a class="card card-warn kpi-link" href="{{ url_for('clientes_list', estado='impago') }}"><span>{{ estado.impago }}</span>Impagos</a>
+      <a class="card kpi-link" href="{{ url_for('clientes_list', tipo='one_time') }}"><span>{{ estado.one_time }}</span>One time</a>
+      <a class="card kpi-link" href="{{ url_for('clientes_list', tipo='free_colab') }}"><span>{{ estado.free_colab }}</span>Free colab</a>
+      <a class="card kpi-link" href="{{ url_for('clientes_list', tipo='colab_descuento') }}"><span>{{ estado.colab_descuento }}</span>Colab descuento</a>
+    </div>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    const serie = {{ {"labels": serie.labels, "altas": serie.altas, "bajas": serie.bajas} | tojson }};
+    const canalData = {{ {"labels": canales|map(attribute=0)|list, "valores": canales|map(attribute=1)|list} | tojson }};
+    const grid = "#2a2f3a", txt = "#8b93a3", accent = "#5b8cff", warn = "#ff6b6b";
+
+    new Chart(document.getElementById("chartSerie"), {
+      type: "line",
+      data: { labels: serie.labels, datasets: [
+        { label: "Altas", data: serie.altas, borderColor: accent,
+          backgroundColor: "rgba(91,140,255,.15)", fill: true, tension: .3, pointRadius: 2 },
+        { label: "Bajas", data: serie.bajas, borderColor: warn,
+          backgroundColor: "rgba(255,107,107,.10)", fill: true, tension: .3, pointRadius: 2 } ] },
+      options: { plugins: { legend: { labels: { color: txt } } },
+        scales: { x: { ticks: { color: txt, maxTicksLimit: 8 }, grid: { color: grid } },
+                  y: { beginAtZero: true, ticks: { color: txt, precision: 0 }, grid: { color: grid } } } }
+    });
+
+    if (document.getElementById("chartCanal")) {
+      new Chart(document.getElementById("chartCanal"), {
+        type: "doughnut",
+        data: { labels: canalData.labels, datasets: [{ data: canalData.valores,
+          backgroundColor: ["#5b8cff","#2ecc71","#f5a623","#e056fd","#22d3ee","#ff6b6b","#a78bfa","#94a3b8"] }] },
+        options: { plugins: { legend: { position: "right", labels: { color: txt } } } }
+      });
+    }
+  </script>
+{% endif %}
+{% endblock %}

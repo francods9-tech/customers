@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo or "Clientes" }}{% endblock %}
+{% block content %}
+
+<h1>{{ titulo or "Clientes" }}</h1>
+
+{% if not snap %}
+  <div class="empty">
+    <p>Todavia no hay datos cargados.</p>
+    <form method="post" action="{{ url_for('sync') }}">
+      <button type="submit">Traer datos ahora</button>
+    </form>
+  </div>
+{% else %}
+  <div class="periodo-bar">
+    <div class="presets">
+      <a class="chip {{ 'chip-on' if not estado and not tipo and not recurrente }}" href="{{ url_for('clientes_list', origen=origen, q=q) }}">Todos</a>
+      <a class="chip {{ 'chip-on' if recurrente }}" href="{{ url_for('clientes_list', recurrente=1, origen=origen, q=q) }}">Activos recurrentes</a>
+      <a class="chip {{ 'chip-on' if estado == 'activo' and not recurrente }}" href="{{ url_for('clientes_list', estado='activo', origen=origen, tipo=tipo, q=q) }}">Activos</a>
+      <a class="chip {{ 'chip-on' if estado == 'trial' }}" href="{{ url_for('clientes_list', estado='trial', origen=origen, tipo=tipo, q=q) }}">En trial</a>
+      <a class="chip {{ 'chip-on' if estado == 'impago' }}" href="{{ url_for('clientes_list', estado='impago', origen=origen, tipo=tipo, q=q) }}">Impagos</a>
+      <a class="chip {{ 'chip-on' if estado == 'inactivo' }}" href="{{ url_for('clientes_list', estado='inactivo', origen=origen, tipo=tipo, q=q) }}">Inactivos</a>
+      <a class="chip {{ 'chip-on' if tipo == 'one_time' }}" href="{{ url_for('clientes_list', tipo='one_time', origen=origen, q=q) }}">One time</a>
+      <a class="chip {{ 'chip-on' if tipo == 'free_colab' }}" href="{{ url_for('clientes_list', tipo='free_colab', origen=origen, q=q) }}">Free colab</a>
+      <a class="chip {{ 'chip-on' if tipo == 'colab_descuento' }}" href="{{ url_for('clientes_list', tipo='colab_descuento', origen=origen, q=q) }}">Colab descuento</a>
+    </div>
+    <form method="get" class="periodo-custom">
+      {% if estado %}<input type="hidden" name="estado" value="{{ estado }}">{% endif %}
+      {% if recurrente %}<input type="hidden" name="recurrente" value="1">{% endif %}
+      <input type="search" name="q" placeholder="Buscar cliente o email" value="{{ q or '' }}">
+      <select name="origen" onchange="this.form.submit()">
+        <option value="">Todos los origenes</option>
+        {% for k, label in origenes %}
+          <option value="{{ k }}" {{ "selected" if origen == k }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="tipo" onchange="this.form.submit()">
+        <option value="">Todos los tipos</option>
+        {% for k, label in tipos if k %}
+          <option value="{{ k }}" {{ "selected" if tipo == k }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Buscar</button>
+    </form>
+  </div>
+
+  <div class="mini-kpis">
+    <div><strong>{{ resumen.activos_recurrentes }}</strong><span>Activos recurrentes</span></div>
+    <div><strong>{{ resumen.agencias }}</strong><span>Agencias</span></div>
+    <div><strong>{{ resumen.one_time }}</strong><span>One time</span></div>
+    <div><strong>{{ resumen.free_colab }}</strong><span>Free colab</span></div>
+    <div><strong>{{ resumen.colab_descuento }}</strong><span>Colab descuento</span></div>
+    <div><strong>{{ resumen.colabs_revision_pendiente }}</strong><span>Colabs a revisar</span></div>
+  </div>
+
+  <p class="muted">{{ snap.clientes|length }} clientes en esta vista · actualizado {{ snap.generado[:16].replace("T", " ") }} UTC</p>
+
+  <div class="table-wrap">
+    <table class="grid">
+      <thead>
+        <tr>
+          <th>Cliente</th><th>Tipo</th><th>Plan</th><th>Estado</th><th>Atencion</th>
+          <th>Origen</th><th>Alta</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in snap.clientes %}
+        <tr>
+          <td><a href="{{ url_for('cliente', email=c.email_key) }}">{{ c.nombre }}</a>
+              <div class="sub">{{ c.email }}</div></td>
+          <td>{{ c.tipo_cliente }}
+            {% if c.colab.revision_pendiente %}<div class="sub warn">revision vencida</div>{% endif %}
+          </td>
+          <td>{{ c.plan }}{% if c.manual_plan %}<div class="sub">ajuste manual</div>{% endif %}</td>
+          <td><span class="badge badge-{{ c.estado }}">{{ c.estado }}</span></td>
+          <td>
+            {% if c.impago %}
+              <span class="tag tag-warn">{{ c.impago.label }}</span>
+              {% if c.impago.factura_url %}
+                <a class="sub" href="{{ c.impago.factura_url }}" target="_blank" rel="noopener">factura</a>
+              {% else %}
+                <div class="sub">sin link de factura</div>
+              {% endif %}
+            {% elif c.trial %}
+              <span class="tag {{ 'tag-warn' if c.trial.por_vencer }}">{{ c.trial.fecha or "sin fecha" }}</span>
+              {% if c.trial.dias is not none %}<div class="sub">trial: {{ c.trial.dias }} dias</div>{% endif %}
+            {% elif c.reactivacion.reactivado %}
+              <span class="tag">reactivado</span>
+              <div class="sub">baja {{ c.reactivacion.ultima_baja }}</div>
+            {% else %}-{% endif %}
+          </td>
+          <td>
+            {% if c.origen == "sin_asignar" %}
+              <span class="tag tag-empty">sin asignar</span>
+            {% else %}{{ c.origen_label }}{% endif %}
+          </td>
+          <td>{{ c.fecha_alta or "-" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+{% endblock %}

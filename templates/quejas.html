@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Solicitudes{% endblock %}
+{% block content %}
+
+<a class="back" href="{{ url_for('bandeja') }}">&larr; Bandeja</a>
+<h1>Solicitudes de clientes</h1>
+<p class="muted">Hoja operativa compartida entre Customer Success y Operaciones.</p>
+
+<form method="get" class="periodo-bar">
+  <div class="presets">
+    {% for key, plabel in presets %}
+      <a class="chip {{ 'chip-on' if label == plabel }}" href="{{ url_for('quejas_list', preset=key) }}">{{ plabel }}</a>
+    {% endfor %}
+  </div>
+</form>
+
+<div class="mini-kpis">
+  <div><strong>{{ period_stats.total }}</strong><span>Registradas en {{ label }}</span></div>
+  <div><strong>{{ request_stats.total_abiertas }}</strong><span>Abiertas actuales</span></div>
+  <div><strong>{{ period_stats.por_equipo.cs }}</strong><span>Customer Success</span></div>
+  <div><strong>{{ period_stats.por_equipo.ops }}</strong><span>Operaciones</span></div>
+  <div><strong>{{ period_stats.total_resueltas }}</strong><span>Resueltas en {{ label }}</span></div>
+</div>
+
+<section class="panel">
+  <h2>Solicitudes por {{ serie_solicitudes.agrupado }}</h2>
+  {% if serie_solicitudes.valores|sum %}
+    <canvas id="chartSolicitudes" height="105"></canvas>
+  {% else %}
+    <p class="muted">Sin solicitudes registradas en este periodo.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <div class="bandeja-head">
+    <h2>Categorias</h2>
+    <form method="post" action="{{ url_for('add_queja_categoria') }}" class="inline category-form">
+      <input type="text" name="label" placeholder="Nueva categoria">
+      <button type="submit">Agregar</button>
+    </form>
+  </div>
+  <div class="category-grid">
+    {% for cat in categorias %}
+    {% set row = stats.por_categoria.get(cat.key, {}) %}
+    <div class="category-card">
+      <form method="post" action="{{ url_for('update_queja_categoria', key=cat.key) }}" class="category-edit">
+        <input type="text" name="label" value="{{ cat.label }}">
+        <button class="btn-sync" type="submit" name="action" value="rename">Guardar</button>
+        <button class="btn-sync" type="submit" name="action" value="deactivate">Ocultar</button>
+      </form>
+      <span>{{ row.get("abiertas", 0) }} abiertas &middot; {{ row.get("resueltas", 0) }} resueltas</span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel request-board">
+  <h2>Abiertas ({{ abiertas|length }})</h2>
+  {% if abiertas %}
+  <ul class="timeline clean-timeline">
+    {% for q in abiertas %}
+    <li>
+      <div class="timeline-head">
+        <a href="{{ url_for('cliente', email=q.customer_email) }}">{{ nombres.get(q.customer_email, q.customer_email) }}</a>
+        <span class="tag {{ 'tag-warn' if q.tipo == 'queja' }}">{{ q.tipo }}</span>
+        <span class="tag">{{ category_label(q.categoria, category_map) }}</span>
+        <span class="tag">{{ team_labels.get(q.equipo, q.equipo)|upper }}</span>
+        <span class="tag">{{ status_labels.get(q.estado_gestion, q.estado_gestion) }}</span>
+        <span class="muted">{{ q.created_at.strftime("%d/%m/%Y") }}{% if q.agente %} &middot; {{ q.agente }}{% endif %}</span>
+      </div>
+      <p>{{ q.texto }}</p>
+      <div class="row-actions">
+        <form method="post" action="{{ url_for('set_queja_gestion', qid=q.id) }}" class="inline">
+          <select name="equipo">
+            {% for key, label in equipos %}
+            <option value="{{ key }}" {{ "selected" if q.equipo == key }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <select name="estado_gestion">
+            {% for key, label in estados_solicitud %}
+            <option value="{{ key }}" {{ "selected" if q.estado_gestion == key }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn-sync" type="submit">Actualizar gestion</button>
+        </form>
+        <form method="post" action="{{ url_for('set_queja_categoria', qid=q.id) }}" class="inline">
+          <select name="categoria">
+            <option value="">Sin categoria</option>
+            {% for cat in categorias %}
+            <option value="{{ cat.key }}" {{ "selected" if q.categoria == cat.key }}>{{ cat.label }}</option>
+            {% endfor %}
+          </select>
+          <button class="btn-sync" type="submit">Guardar categoria</button>
+        </form>
+        <form method="post" action="{{ url_for('resolver_queja', qid=q.id) }}" class="inline">
+          <button type="submit">Marcar resuelta</button>
+        </form>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+    <p class="muted">No hay solicitudes abiertas.</p>
+  {% endif %}
+</section>
+
+{% if resueltas %}
+<section class="panel">
+  <h2>Resueltas (ultimas {{ resueltas|length }})</h2>
+  <ul class="timeline clean-timeline">
+    {% for q in resueltas %}
+    <li>
+      <div class="timeline-head">
+        <a href="{{ url_for('cliente', email=q.customer_email) }}">{{ nombres.get(q.customer_email, q.customer_email) }}</a>
+        <span class="tag">{{ q.tipo }}</span>
+        <span class="tag">{{ category_label(q.categoria, category_map) }}</span>
+        <span class="tag">{{ team_labels.get(q.equipo, q.equipo)|upper }}</span>
+        <span class="muted">{{ q.created_at.strftime("%d/%m/%Y") }}</span>
+      </div>
+      <p>{{ q.texto }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if serie_solicitudes.valores|sum %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  const solicitudes = {{ {"labels": serie_solicitudes.labels, "valores": serie_solicitudes.valores} | tojson }};
+  new Chart(document.getElementById("chartSolicitudes"), {
+    type: "line",
+    data: { labels: solicitudes.labels, datasets: [{
+      label: "Solicitudes",
+      data: solicitudes.valores,
+      borderColor: "#12aeef",
+      backgroundColor: "rgba(18,174,239,.12)",
+      fill: true,
+      tension: .3,
+      pointRadius: 2
+    }] },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { maxTicksLimit: 8, color: "#64748b" }, grid: { color: "#edf2f7" } },
+        y: { beginAtZero: true, ticks: { precision: 0, color: "#64748b" }, grid: { color: "#edf2f7" } }
+      }
+    }
+  });
+</script>
+{% endif %}
+{% endblock %}

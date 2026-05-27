@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Ingresar{% endblock %}
+{% block content %}
+<div class="login-box">
+  <h1>Account Manager</h1>
+  <p class="muted">Ingresá la clave del equipo.</p>
+  <form method="post">
+    <input type="password" name="password" placeholder="Clave" autofocus required>
+    <button type="submit">Entrar</button>
+  </form>
+</div>
+{% endblock %}

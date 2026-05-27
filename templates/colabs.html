@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Colabs{% endblock %}
+{% block content %}
+
+<h1>Colabs</h1>
+<p class="muted">Pipeline de creadores y seguimiento de colaboraciones activas.</p>
+
+<div class="mini-kpis">
+  <div><strong>{{ creator_stats.total }}</strong><span>Creadores en pipeline</span></div>
+  <div><strong>{{ creator_stats.negociando }}</strong><span>Negociando</span></div>
+  <div><strong>{{ creator_stats.activos }}</strong><span>Colabs activas</span></div>
+  <div><strong>{{ creator_stats.proximas }}</strong><span>Con proxima accion</span></div>
+</div>
+
+<section class="panel">
+  <h2>Agregar creador</h2>
+  <form method="post" action="{{ url_for('add_colab_creator') }}" class="creator-form">
+    <input type="text" name="nombre" placeholder="Nombre / cuenta">
+    <input type="text" name="contacto" placeholder="Contacto">
+    <input type="text" name="red" placeholder="Red principal">
+    <select name="estado">
+      {% for key, label in creator_status %}
+      <option value="{{ key }}">{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="tipo">
+      {% for key, label in creator_types %}
+      <option value="{{ key }}">{{ label }}</option>
+      {% endfor %}
+    </select>
+    <input type="text" name="duracion" placeholder="Duracion estimada">
+    <input type="date" name="fecha_inicio">
+    <input type="date" name="fecha_fin">
+    <textarea name="idea" placeholder="Idea de colaboracion"></textarea>
+    <textarea name="detalles" placeholder="Detalles, acuerdo, condiciones"></textarea>
+    <textarea name="proxima_accion" placeholder="Proxima accion"></textarea>
+    <input type="text" name="responsable" placeholder="Responsable">
+    <button type="submit">Agregar</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Creadores</h2>
+  {% if creators %}
+  <div class="creator-list">
+    {% for item in creators %}
+    <details class="creator-card">
+      <summary>
+        <strong>{{ item.nombre }}</strong>
+        <span class="tag">{{ creator_status_labels.get(item.estado, item.estado) }}</span>
+        <span class="tag">{{ creator_type_labels.get(item.tipo, item.tipo) }}</span>
+        {% if item.red %}<span class="muted">{{ item.red }}</span>{% endif %}
+      </summary>
+      <form method="post" action="{{ url_for('update_colab_creator', cid=item.id) }}" class="creator-form creator-edit">
+        <input type="text" name="nombre" value="{{ item.nombre }}">
+        <input type="text" name="contacto" value="{{ item.contacto }}">
+        <input type="text" name="red" value="{{ item.red }}">
+        <select name="estado">
+          {% for key, label in creator_status %}
+          <option value="{{ key }}" {{ "selected" if item.estado == key }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <select name="tipo">
+          {% for key, label in creator_types %}
+          <option value="{{ key }}" {{ "selected" if item.tipo == key }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <input type="text" name="duracion" value="{{ item.duracion }}" placeholder="Duracion">
+        <input type="date" name="fecha_inicio" value="{{ item.fecha_inicio }}">
+        <input type="date" name="fecha_fin" value="{{ item.fecha_fin }}">
+        <textarea name="idea" placeholder="Idea">{{ item.idea }}</textarea>
+        <textarea name="detalles" placeholder="Detalles">{{ item.detalles }}</textarea>
+        <textarea name="proxima_accion" placeholder="Proxima accion">{{ item.proxima_accion }}</textarea>
+        <input type="text" name="responsable" value="{{ item.responsable }}" placeholder="Responsable">
+        <div class="row-actions">
+          <button type="submit" name="action" value="save">Guardar</button>
+          <button class="btn-sync" type="submit" name="action" value="archive">Archivar</button>
+        </div>
+      </form>
+    </details>
+    {% endfor %}
+  </div>
+  {% else %}
+    <p class="muted">Todavia no hay creadores cargados.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Clientes marcados como colab</h2>
+  <div class="mini-kpis">
+    <div><strong>{{ resumen.total }}</strong><span>Total clientes colab</span></div>
+    <div><strong>{{ resumen.free }}</strong><span>Free colab</span></div>
+    <div><strong>{{ resumen.descuento }}</strong><span>Con descuento</span></div>
+    <div><strong>{{ resumen.revision }}</strong><span>A revisar</span></div>
+  </div>
+
+  {% if not snap %}
+    <p class="muted">Todavia no hay datos cargados.</p>
+  {% elif colabs %}
+    <div class="table-wrap">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Cliente</th><th>Tipo</th><th>Plan</th><th>Descuento</th><th>Acuerdo</th><th>Revision</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in colabs %}
+          <tr>
+            <td>
+              <a href="{{ url_for('cliente', email=c.email_key) }}">{{ c.nombre }}</a>
+              <div class="sub">{{ c.email }}</div>
+            </td>
+            <td>{{ c.tipo_cliente }}</td>
+            <td>{{ c.plan }}</td>
+            <td>{{ c.colab.descuento or "-" }}</td>
+            <td>{{ c.colab.acuerdo or "-" }}</td>
+            <td>
+              {% if c.colab.revision %}
+                <span class="tag {{ 'tag-warn' if c.colab.revision_pendiente }}">{{ c.colab.revision }}</span>
+                {% if c.colab.revision_pendiente %}<div class="sub warn">{{ c.colab.dias_revision }} dias</div>{% endif %}
+              {% else %}-{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">No hay clientes marcados como colab todavia.</p>
+  {% endif %}
+</section>
+
+{% endblock %}

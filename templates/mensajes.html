@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Mensajes{% endblock %}
+{% block content %}
+
+<h1>Wiki de mensajes</h1>
+<p class="muted">Textos editables para copiar y adaptar en la atencion diaria.</p>
+
+<section class="panel">
+  <div class="bandeja-head">
+    <h2>Buscar</h2>
+    <form method="post" action="{{ url_for('add_mensaje_categoria') }}" class="inline category-form">
+      <input type="text" name="label" placeholder="Nueva categoria">
+      <button type="submit">Agregar categoria</button>
+    </form>
+  </div>
+  <form method="get" class="periodo-custom wiki-filters">
+    <input type="search" name="q" placeholder="Buscar por titulo, texto o tag" value="{{ q or '' }}">
+    <select name="categoria">
+      <option value="">Todas las categorias</option>
+      {% for cat in categorias %}
+      <option value="{{ cat.key }}" {{ "selected" if categoria == cat.key }}>{{ cat.label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Buscar</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Nuevo mensaje</h2>
+  <form method="post" action="{{ url_for('add_mensaje') }}" class="message-form">
+    <input type="text" name="titulo" placeholder="Titulo">
+    <select name="categoria_key">
+      {% for cat in categorias %}
+      <option value="{{ cat.key }}">{{ cat.label }}</option>
+      {% endfor %}
+    </select>
+    <input type="text" name="tags" placeholder="Tags separados por coma">
+    <textarea name="cuerpo" rows="6" placeholder="Texto del mensaje"></textarea>
+    <button type="submit">Guardar mensaje</button>
+  </form>
+</section>
+
+<section class="message-list">
+  {% if mensajes %}
+    {% for m in mensajes %}
+    <article class="panel message-card">
+      <div class="message-head">
+        <div>
+          <h2>{{ m.titulo }}</h2>
+          <span class="tag">{{ category_map.get(m.categoria_key, m.categoria_key) }}</span>
+          {% for tag in tag_list(m.tags) %}
+          <span class="tag">{{ tag }}</span>
+          {% endfor %}
+        </div>
+        <button type="button" class="btn-sync copy-message" data-copy-target="msg-{{ m.id }}">Copiar</button>
+      </div>
+      <pre id="msg-{{ m.id }}" class="message-body">{{ m.cuerpo }}</pre>
+      <details>
+        <summary>Editar</summary>
+        <form method="post" action="{{ url_for('update_mensaje', mid=m.id) }}" class="message-form message-edit">
+          <input type="text" name="titulo" value="{{ m.titulo }}">
+          <select name="categoria_key">
+            {% for cat in categorias %}
+            <option value="{{ cat.key }}" {{ "selected" if m.categoria_key == cat.key }}>{{ cat.label }}</option>
+            {% endfor %}
+          </select>
+          <input type="text" name="tags" value="{{ m.tags }}">
+          <textarea name="cuerpo" rows="6">{{ m.cuerpo }}</textarea>
+          <div class="row-actions">
+            <button type="submit" name="action" value="save">Guardar cambios</button>
+            <button class="btn-sync" type="submit" name="action" value="archive">Archivar</button>
+          </div>
+        </form>
+      </details>
+    </article>
+    {% endfor %}
+  {% else %}
+    <section class="panel"><p class="muted">No hay mensajes para esta busqueda.</p></section>
+  {% endif %}
+</section>
+
+<script>
+document.querySelectorAll(".copy-message").forEach((button) => {
+  button.addEventListener("click", async () => {
+    const target = document.getElementById(button.dataset.copyTarget);
+    if (!target) return;
+    await navigator.clipboard.writeText(target.innerText);
+    button.innerText = "Copiado";
+    window.setTimeout(() => { button.innerText = "Copiar"; }, 1200);
+  });
+});
+</script>
+{% endblock %}

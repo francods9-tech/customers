@@ -1,0 +1,113 @@
+import datetime as dt
+from collections import defaultdict
+
+
+DEFAULT_COMPLAINT_CATEGORIES = [
+    ("encuentra_links", "Encuentra links"),
+    ("envia_links", "Envia links"),
+    ("tiempos_gestion", "Tiempos de gestion"),
+]
+
+REQUEST_TYPES = ("queja", "solicitud")
+
+TEAM_OPTIONS = [
+    ("cs", "Customer Success"),
+    ("ops", "Operaciones"),
+]
+TEAM_LABELS = dict(TEAM_OPTIONS)
+
+REQUEST_STATUS_OPTIONS = [
+    ("abierta", "Abierta"),
+    ("en_proceso", "En proceso"),
+    ("esperando", "Esperando cliente"),
+    ("resuelta", "Resuelta"),
+]
+REQUEST_STATUS_LABELS = dict(REQUEST_STATUS_OPTIONS)
+
+
+def category_key(label):
+    key = "".join(ch.lower() if ch.isalnum() else "_" for ch in (label or "").strip()).strip("_")
+    while "__" in key:
+        key = key.replace("__", "_")
+    return key
+
+
+def _parse_dt(value):
+    if not value:
+        return None
+    if isinstance(value, dt.datetime):
+        return value if value.tzinfo else value.replace(tzinfo=dt.timezone.utc)
+    try:
+        parsed = dt.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=dt.timezone.utc)
+
+
+def category_label(key, categories):
+    if not key:
+        return "Sin categoria"
+    return categories.get(key, key)
+
+
+def is_customer_request(item):
+    return getattr(item, "tipo", "") in REQUEST_TYPES
+
+
+def request_stats(items):
+    open_count = 0
+    resolved_count = 0
+    by_team = {"cs": 0, "ops": 0}
+    by_status = {key: 0 for key, _ in REQUEST_STATUS_OPTIONS}
+
+    for item in items:
+        if not is_customer_request(item):
+            continue
+        resolved = bool(getattr(item, "resuelta", False)) or getattr(item, "estado_gestion", "") == "resuelta"
+        status = getattr(item, "estado_gestion", "") or ("resuelta" if resolved else "abierta")
+        team = getattr(item, "equipo", "") or "cs"
+        by_status[status] = by_status.get(status, 0) + 1
+        if resolved:
+            resolved_count += 1
+        else:
+            open_count += 1
+            by_team[team] = by_team.get(team, 0) + 1
+
+    return {
+        "total_abiertas": open_count,
+        "total_resueltas": resolved_count,
+        "total": open_count + resolved_count,
+        "por_equipo": by_team,
+        "por_estado": by_status,
+    }
+
+
+def complaint_stats(complaints, today=None):
+    today = today or dt.datetime.now(dt.timezone.utc)
+    by_category = defaultdict(lambda: {"abiertas": 0, "resueltas": 0, "total": 0})
+    total_open = 0
+    total_resolved = 0
+    max_open_days = 0
+
+    for complaint in complaints:
+        category = getattr(complaint, "categoria", "") or "sin_categoria"
+        resolved = bool(getattr(complaint, "resuelta", False))
+        bucket = by_category[category]
+        bucket["total"] += 1
+        if resolved:
+            bucket["resueltas"] += 1
+            total_resolved += 1
+        else:
+            bucket["abiertas"] += 1
+            total_open += 1
+            created = _parse_dt(getattr(complaint, "created_at", None))
+            if created:
+                max_open_days = max(max_open_days, max(0, (today - created).days))
+
+    return {
+        "total_abiertas": total_open,
+        "total_resueltas": total_resolved,
+        "total": total_open + total_resolved,
+        "max_dias_abierta": max_open_days,
+        "por_categoria": dict(by_category),
+    }

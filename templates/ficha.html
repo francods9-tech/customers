@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% block title %}{{ c.nombre }}{% endblock %}
+{% block content %}
+
+<a class="back" href="{{ url_for('clientes_list') }}">&larr; Clientes</a>
+
+<section class="profile-hero">
+  <div>
+    <div class="profile-eyebrow">{{ c.tipo_cliente }}</div>
+    <h1>{{ c.nombre }}</h1>
+    <p class="muted">{{ c.email }}</p>
+  </div>
+  <div class="profile-badges">
+    <span class="badge badge-{{ c.estado }}">{{ c.estado }}</span>
+    <span class="tag">{{ c.plan }}</span>
+    <span class="tag">{{ "recurrente" if c.cuenta_activo_recurrente else "no recurrente" }}</span>
+  </div>
+</section>
+
+<section class="attention-strip">
+  {% if atencion.impago %}
+    <div class="attention-card danger">
+      <span>Impago</span>
+      <strong>{{ atencion.impago.label }}</strong>
+      {% if atencion.impago.monto is not none %}<small>${{ "%.2f"|format(atencion.impago.monto) }} pendiente</small>{% endif %}
+      {% if atencion.impago.factura_url %}<a href="{{ atencion.impago.factura_url }}" target="_blank" rel="noopener">Abrir factura</a>{% endif %}
+    </div>
+  {% endif %}
+  {% if atencion.quejas_abiertas %}
+    <div class="attention-card danger">
+      <span>Solicitudes abiertas</span>
+      <strong>{{ atencion.quejas_abiertas }}</strong>
+      <a href="{{ url_for('quejas_list') }}">Gestionar</a>
+    </div>
+  {% endif %}
+  {% if atencion.trial %}
+    <div class="attention-card warn">
+      <span>Trial</span>
+      <strong>{{ atencion.trial.fecha or "Sin fecha" }}</strong>
+      {% if atencion.trial.dias is not none %}
+      <small>{% if atencion.trial.vencido %}vencido hace {{ -atencion.trial.dias }} dias{% else %}faltan {{ atencion.trial.dias }} dias{% endif %}</small>
+      {% endif %}
+    </div>
+  {% endif %}
+  {% if c.reactivacion.reactivado %}
+    <div class="attention-card ok">
+      <span>Reactivado</span>
+      <strong>Volvio luego de baja</strong>
+      <small>Ultima baja {{ c.reactivacion.ultima_baja }}</small>
+    </div>
+  {% endif %}
+  {% if atencion.onboarding_pendiente %}
+    <div class="attention-card warn">
+      <span>Bienvenida</span>
+      <strong>Pendiente</strong>
+    </div>
+  {% endif %}
+  {% if not atencion.impago and not atencion.quejas_abiertas and not atencion.trial and not atencion.onboarding_pendiente %}
+    <div class="attention-card ok">
+      <span>Atencion</span>
+      <strong>Sin pendientes</strong>
+    </div>
+  {% endif %}
+</section>
+
+<div class="ficha-grid ficha-grid-main">
+  <section class="panel">
+    <h2>Suscripcion</h2>
+    <dl>
+      <dt>Plan</dt><dd>{{ c.plan }}</dd>
+      <dt>Estado</dt><dd>{{ c.estado }}</dd>
+      <dt>Tipo cliente</dt><dd>{{ c.tipo_cliente }}</dd>
+      <dt>Activo recurrente</dt><dd>{{ "Si" if c.cuenta_activo_recurrente else "No" }}</dd>
+      {% if c.colab.es_colab %}
+      <dt>Colab</dt><dd>{{ c.colab.label or c.tipo_cliente }}</dd>
+      <dt>Acuerdo</dt><dd>{{ c.colab.acuerdo or "-" }}</dd>
+      <dt>Revision</dt><dd>{{ c.colab.revision or "-" }}
+        {% if c.colab.revision_pendiente %}<span class="tag tag-warn">{{ c.colab.dias_revision }} dias</span>{% endif %}</dd>
+      {% endif %}
+      <dt>Ciclo</dt><dd>{{ "Anual" if c.anual else "Mensual" }}</dd>
+      <dt>Alta</dt><dd>{{ c.fecha_alta or "-" }}
+        {% if c.dias_de_alta is not none %}<span class="muted">({{ c.dias_de_alta }} dias)</span>{% endif %}</dd>
+      {% if c.trial %}
+      <dt>Fin trial</dt><dd>{{ c.trial.fecha or "-" }}
+        {% if c.trial.dias is not none %}<span class="muted">({{ c.trial.dias }} dias)</span>{% endif %}</dd>
+      {% endif %}
+      {% if c.reactivacion.reactivado %}
+      <dt>Reactivacion</dt><dd>Activo hoy; ultima baja {{ c.reactivacion.ultima_baja }}</dd>
+      {% endif %}
+    </dl>
+    {% if c.manual_plan or c.manual_estado %}
+      <p class="muted">Tiene ajuste manual sobre los datos originales.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Ajuste manual</h2>
+    <form method="post" action="{{ url_for('set_suscripcion', email=c.email_key) }}" class="stack-form">
+      <label>Plan</label>
+      <select name="manual_plan">
+        {% for k, label in planes %}
+        <option value="{{ k }}" {{ "selected" if meta.manual_plan == k }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+
+      <label>Estado</label>
+      <select name="manual_estado">
+        {% for k, label in estados %}
+        <option value="{{ k }}" {{ "selected" if meta.manual_estado == k }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+
+      <label>Tipo de cliente</label>
+      <select name="tipo_cliente">
+        {% for k, label in tipos %}
+        <option value="{{ k }}" {{ "selected" if meta.tipo_cliente == k }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <label>Descuento colab</label>
+      <input type="text" name="colab_descuento" value="{{ meta.colab_descuento or '' }}" placeholder="Ej: 50%, gratis, USD 99">
+
+      <label>Acuerdo colab</label>
+      <textarea name="colab_acuerdo" rows="3" placeholder="Ej: 2 historias por mes, logo, referido">{{ meta.colab_acuerdo or '' }}</textarea>
+
+      <label>Inicio colab</label>
+      <input type="date" name="colab_inicio" value="{{ meta.colab_inicio or '' }}">
+
+      <label>Proxima revision</label>
+      <input type="date" name="colab_revision" value="{{ meta.colab_revision or '' }}">
+      <button type="submit">Guardar suscripcion</button>
+    </form>
+    <p class="muted">One time payment y Free por colab no suman como activos recurrentes. Colab con descuento si suma si esta activo.</p>
+  </section>
+</div>
+
+<div class="ficha-grid">
+  <section class="panel">
+    <h2>Origen y bienvenida</h2>
+    <form method="post" action="{{ url_for('set_origen', email=c.email_key) }}" class="stack-form">
+      <label>Origen</label>
+      <select name="origen" onchange="document.getElementById('ref').style.display = this.value==='referido' ? 'block':'none'">
+        {% for k, label in origenes %}
+        <option value="{{ k }}" {{ "selected" if meta.origen == k }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <div id="ref" style="display:{{ 'block' if meta.origen=='referido' else 'none' }}">
+        <input type="text" name="referido_por" placeholder="Email del cliente que lo refirio"
+               value="{{ meta.referido_por or '' }}">
+      </div>
+      <button type="submit">Guardar origen</button>
+    </form>
+    <div class="inline-action">
+      <span>{{ "Bienvenida hecha" if meta.onboarding_hecho else "Bienvenida pendiente" }}</span>
+      <form method="post" action="{{ url_for('toggle_onboarding', email=c.email_key) }}">
+        <button type="submit" class="btn-sync">{{ "Marcar pendiente" if meta.onboarding_hecho else "Marcar como hecha" }}</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Salud de cuenta</h2>
+    {% if salud.checks %}
+      {% for ch in salud.checks %}
+        <div class="health-row">
+          <span class="badge badge-{{ 'impago' if ch.status == 'compromised' else 'activo' }}">{{ ch.status }}</span>
+          <span class="muted">{{ ch.resultCount }} resultados en Google</span>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted">Sin chequeos registrados.</p>
+    {% endif %}
+    <dl>
+      <dt>Pirateria pendiente</dt><dd>{{ salud.detected_pendientes }}</dd>
+      <dt>Pirateria gestionada</dt><dd>{{ salud.detected_gestionados }}</dd>
+      <dt>Suplantaciones pendientes</dt><dd>{{ salud.impersonations_pendientes }}</dd>
+    </dl>
+  </section>
+</div>
+
+<section class="panel">
+  <div class="bandeja-head">
+    <h2>Nuevo contacto o solicitud</h2>
+    <a class="chip" href="{{ url_for('quejas_list') }}">Ver hoja de solicitudes</a>
+  </div>
+  <form method="post" action="{{ url_for('add_interaccion', email=c.email_key) }}" class="nota-form contact-form">
+    <select name="tipo">
+      <option value="nota">Nota</option>
+      <option value="onboarding">Onboarding</option>
+      <option value="queja">Queja</option>
+      <option value="solicitud">Solicitud</option>
+      <option value="churn">Riesgo de baja</option>
+      <option value="upsell">Upsell</option>
+    </select>
+    <select name="categoria">
+      <option value="">Categoria si aplica</option>
+      {% for cat in categorias %}
+      <option value="{{ cat.key }}">{{ cat.label }}</option>
+      {% endfor %}
+    </select>
+    <select name="equipo">
+      {% for key, label in equipos %}
+      <option value="{{ key }}">{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="estado_gestion">
+      {% for key, label in estados_solicitud %}
+      <option value="{{ key }}">{{ label }}</option>
+      {% endfor %}
+    </select>
+    <input type="text" name="agente" placeholder="Tu nombre">
+    <textarea name="texto" placeholder="Que paso en este contacto?" required></textarea>
+    <button type="submit">Agregar</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Historial</h2>
+  {% if interacciones %}
+  <ul class="timeline clean-timeline">
+    {% for i in interacciones %}
+    <li>
+      <div class="timeline-head">
+        <span class="tag {{ 'tag-warn' if i.tipo == 'queja' }}">{{ i.tipo }}</span>
+        {% if i.tipo in ("queja", "solicitud") %}
+          <span class="tag">{{ category_label(i.categoria, category_map) }}</span>
+          <span class="tag">{{ i.equipo|upper }}</span>
+          <span class="tag">{{ i.estado_gestion.replace("_", " ") }}</span>
+        {% endif %}
+        <span class="muted">{{ i.created_at.strftime("%d/%m/%Y %H:%M") }}{% if i.agente %} · {{ i.agente }}{% endif %}</span>
+      </div>
+      <p>{{ i.texto }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Sin contactos registrados todavia.</p>
+  {% endif %}
+</section>
+
+{% endblock %}

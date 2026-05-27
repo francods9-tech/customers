@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}AM Dashboard{% endblock %} · Traqeer</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+{% if session.auth %}
+<header class="topbar">
+  <a class="brand" href="{{ url_for('index') }}">
+    <img src="{{ url_for('static', filename='traqeer-logo.svg') }}" alt="Traqeer">
+    <span>Traqeer</span>
+  </a>
+  <nav>
+    <a href="{{ url_for('index') }}">Inicio</a>
+    <a href="{{ url_for('clientes_list') }}">Clientes</a>
+    <a href="{{ url_for('bajas_list') }}">Bajas</a>
+    <a href="{{ url_for('bandeja') }}">Bandeja</a>
+    <a href="{{ url_for('quejas_list') }}">Solicitudes</a>
+    <a href="{{ url_for('colabs_list') }}">Colabs</a>
+    <a href="{{ url_for('mensajes_list') }}">Mensajes</a>
+    <form method="post" action="{{ url_for('sync') }}" class="inline">
+      <button class="btn-sync" type="submit">Actualizar datos</button>
+    </form>
+    <a class="logout" href="{{ url_for('logout') }}">Salir</a>
+  </nav>
+</header>
+{% endif %}
+
+<main>
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="flash flash-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Estadísticas{% endblock %}
+{% block content %}
+
+<h1>Estadísticas de origen</h1>
+
+{% if not snap %}
+  <p class="muted">No hay datos. Actualizá primero.</p>
+{% else %}
+  {% set total = snap.clientes|length %}
+  <section class="panel">
+    <h2>Clientes activos por canal de alta</h2>
+    {% set maxv = (stats.por_origen | map(attribute=1) | max) or 1 %}
+    {% for label, n in stats.por_origen %}
+      {% if n > 0 %}
+      <div class="bar-row">
+        <span class="bar-label">{{ label }}</span>
+        <span class="bar"><span class="bar-fill" style="width: {{ (n / maxv * 100) | round }}%"></span></span>
+        <span class="bar-val">{{ n }} ({{ (n / total * 100) | round }}%)</span>
+      </div>
+      {% endif %}
+    {% endfor %}
+  </section>
+
+  <section class="panel">
+    <h2>Altas por mes y canal</h2>
+    {% if stats.meses %}
+    <table class="grid">
+      <thead>
+        <tr><th>Mes</th>
+          {% for k, label in origenes if k != "sin_asignar" %}<th>{{ label }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for mes in stats.meses %}
+        <tr>
+          <td>{{ mes }}</td>
+          {% for k, label in origenes if k != "sin_asignar" %}
+            <td>{{ stats.por_mes[mes].get(k, 0) or "—" }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p class="muted">Sin fechas de alta disponibles.</p>
+    {% endif %}
+  </section>
+{% endif %}
+{% endblock %}
