@@ -206,9 +206,18 @@ Railway:
 
 - CLI instalado.
 - Proyecto indicado por Franco: `prett freedom`.
-- Bloqueo actual: la sesion local de Railway expiro con `invalid_grant`; correr `railway login` antes de link/deploy.
+- Proyecto linkeado: `pretty-freedom`.
+- Servicio web: `customers`.
+- Postgres agregado.
+- Variables cargadas en servicio web: `APP_PASSWORD`, `SECRET_KEY`, `DATABASE_URL`.
+- Variables pendientes para refresh real: `STRIPE_SECRET_KEY`, `MONGO_URI`.
+- Deploy Railway exitoso.
+- URL publica: `https://customers-production-8190.up.railway.app`
+- Verificado `/healthz` 200.
+- Verificado `/login` 200.
+- Verificado login y dashboard 200 con la clave configurada.
 
 ## Pendiente Recomendado
 
-- Ejecutar `railway login`.
-- Linkear proyecto Railway `prett freedom`, agregar Postgres y cargar variables.
+- Cargar `STRIPE_SECRET_KEY` y `MONGO_URI` en Railway para poder usar `Actualizar datos`.
+- Presionar `Actualizar datos` en produccion cuando esten las variables reales.
