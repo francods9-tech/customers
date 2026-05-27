@@ -77,6 +77,8 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - Fondo blanco/gris claro, acento celeste y bordes suaves estilo Google/minimal.
   - Header usa logo SVG en `static/traqeer-logo.svg` basado en la referencia compartida.
   - Si aparece el archivo original del logo, se puede reemplazar ese SVG sin tocar templates.
+  - Logo web agregado en `static/traqeer-logo.png` y usado en header/login.
+  - Entrada renombrada a `Customers Dashboard`.
 - Colabs ahora tiene pantalla propia `/colabs`:
   - Bandeja ya no muestra Solicitudes ni Colabs.
   - Colabs muestra total, free colab, colab con descuento y revisiones pendientes.
@@ -210,12 +212,14 @@ Railway:
 - Servicio web: `customers`.
 - Postgres agregado.
 - Variables cargadas en servicio web: `APP_PASSWORD`, `SECRET_KEY`, `DATABASE_URL`.
+- Clave de login Railway actualizada a la indicada por Franco el 2026-05-27.
 - Variables pendientes para refresh real: `STRIPE_SECRET_KEY`, `MONGO_URI`.
 - Deploy Railway exitoso.
 - URL publica: `https://customers-production-8190.up.railway.app`
 - Verificado `/healthz` 200.
 - Verificado `/login` 200.
 - Verificado login y dashboard 200 con la clave configurada.
+- Verificado login publico con `Customers Dashboard`, logo PNG y dashboard 200.
 
 ## Pendiente Recomendado
 
