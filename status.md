@@ -17,6 +17,7 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 ## Hecho
 
 - Clientes ahora tiene buscador por nombre/email.
+- Origen incluye `XBIZ` como canal seleccionable y filtrable.
 - Clientes tiene filtros por activos recurrentes, activos, trial, impagos, inactivos, one time y free colab.
 - La ficha permite ajustar manualmente plan, estado y tipo de cliente.
 - `One time payment` y `Free por colab` no suman como activos recurrentes.
@@ -117,6 +118,14 @@ Ultima verificacion luego de pack WhatsApp y pipeline Colabs:
 
 Resultado: 28 tests OK.
 
+Ultima verificacion luego de agregar origen `XBIZ`:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Resultado: 29 tests OK.
+
 Verificacion de import:
 
 ```powershell
@@ -187,7 +196,19 @@ http://127.0.0.1:5002
 
 Clave usada en la verificacion local: `test123`.
 
+GitHub:
+
+- Repo remoto: `https://github.com/francods9-tech/customers`
+- Rama publicada: `main`
+- Commit inicial: `b50e6fb Initial Traqeer customers dashboard`
+
+Railway:
+
+- CLI instalado.
+- Proyecto indicado por Franco: `prett freedom`.
+- Bloqueo actual: la sesion local de Railway expiro con `invalid_grant`; correr `railway login` antes de link/deploy.
+
 ## Pendiente Recomendado
 
-- Pulido visual final antes de Railway.
-- Crear proyecto Railway, agregar Postgres y cargar variables.
+- Ejecutar `railway login`.
+- Linkear proyecto Railway `prett freedom`, agregar Postgres y cargar variables.
