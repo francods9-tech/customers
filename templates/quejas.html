@@ -32,6 +32,56 @@
 </section>
 
 <section class="panel">
+  <h2>Nueva solicitud</h2>
+  {% if clientes %}
+  <form method="post" action="{{ url_for('add_solicitud_directa') }}" class="new-request-form">
+    <select name="customer_email" required>
+      {% for cliente in clientes %}
+      <option value="{{ cliente.email }}">{{ cliente.nombre }} · {{ cliente.email }}</option>
+      {% endfor %}
+    </select>
+    <select name="tipo">
+      <option value="solicitud">Solicitud</option>
+      <option value="queja">Queja</option>
+    </select>
+    <select name="categoria">
+      <option value="">Sin categoria</option>
+      {% for cat in categorias %}
+      <option value="{{ cat.key }}">{{ cat.label }}</option>
+      {% endfor %}
+    </select>
+    <select name="pelota">
+      <option value="cs">Customer Success</option>
+      <option value="ops">Operaciones</option>
+      <option value="cliente">Cliente</option>
+    </select>
+    <input type="text" name="agente" placeholder="Responsable">
+    <textarea name="texto" placeholder="Detalle de la solicitud" required></textarea>
+    <button type="submit">Crear solicitud</button>
+  </form>
+  {% else %}
+  <form class="new-request-form">
+    <select disabled>
+      <option>No hay clientes cargados</option>
+    </select>
+    <select disabled>
+      <option>Solicitud</option>
+    </select>
+    <select disabled>
+      <option>Sin categoria</option>
+    </select>
+    <select disabled>
+      <option>Customer Success</option>
+    </select>
+    <input type="text" placeholder="Responsable" disabled>
+    <textarea placeholder="Detalle de la solicitud" disabled></textarea>
+    <button type="button" disabled>Crear solicitud</button>
+  </form>
+  <p class="muted">No hay clientes cargados. Actualiza datos para habilitar la carga directa de solicitudes.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
   <div class="bandeja-head">
     <h2>Categorias</h2>
     <form method="post" action="{{ url_for('add_queja_categoria') }}" class="inline category-form">

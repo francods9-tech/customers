@@ -4,6 +4,55 @@
 
 <h1>Dashboard</h1>
 
+{% if finance %}
+  <section class="panel executive-panel">
+    <div class="panel-head">
+      <div>
+        <h2>Caja real {{ finance.month }}</h2>
+        <p class="muted">Ingresos = entradas Mercury conciliadas + ajustes manuales. MRR queda separado.</p>
+      </div>
+      <span class="source-badge source-{{ finance.sources.income }}">{{ finance.sources.income }}</span>
+    </div>
+    <div class="kpis finance-kpis">
+      <div class="kpi">
+        <span class="kpi-label">Ingresos cash</span>
+        <span class="kpi-val">${{ "%.2f"|format(finance.totals.income) }}</span>
+        <span class="kpi-delta">Mercury</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Gastos</span>
+        <span class="kpi-val">${{ "%.2f"|format(finance.totals.expenses) }}</span>
+        <span class="kpi-delta">Mercury</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">Resultado neto</span>
+        <span class="kpi-val">${{ "%.2f"|format(finance.totals.net_result) }}</span>
+        <span class="kpi-delta">cash</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label">MRR</span>
+        <span class="kpi-val">${{ "%.2f"|format(finance.saas.mrr) }}</span>
+        <span class="kpi-delta">{{ finance.saas.active_customers }} clientes</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Conciliacion Stripe - Mercury</h2>
+      <span class="source-badge source-{{ finance.sources.stripe }}">{{ finance.sources.stripe }}</span>
+    </div>
+    <div class="reconciliation-grid">
+      <div><span>Stripe bruto</span><strong>${{ "%.2f"|format(finance.reconciliation.stripe_gross_income) }}</strong></div>
+      <div><span>Fees Stripe</span><strong>${{ "%.2f"|format(finance.reconciliation.stripe_fees) }}</strong></div>
+      <div><span>Stripe neto</span><strong>${{ "%.2f"|format(finance.reconciliation.stripe_net) }}</strong></div>
+      <div><span>Payouts Stripe</span><strong>${{ "%.2f"|format(finance.reconciliation.stripe_payouts) }}</strong></div>
+      <div><span>Entradas Mercury</span><strong>${{ "%.2f"|format(finance.reconciliation.mercury_cash) }}</strong></div>
+      <div><span>Gap</span><strong>{% if finance.reconciliation.gap is none %}missing{% else %}${{ "%.2f"|format(finance.reconciliation.gap) }}{% endif %}</strong></div>
+    </div>
+  </section>
+{% endif %}
+
 {% if not snap or not snap.eventos %}
   <div class="empty">
     <p>Todavía no hay datos cargados.</p>
