@@ -283,6 +283,14 @@ def _emails_base_actual(clientes):
     }
 
 
+def _trial_emails(clientes):
+    return {
+        (c.get("email_key") or c.get("email") or "").lower()
+        for c in clientes
+        if c.get("estado") == "trial"
+    }
+
+
 def _complete_todo_altas_with_current_recurrentes_and_bajas(altas, clientes, bajas):
     emails_con_alta = {(e.get("email") or "").lower() for e in altas}
     completadas = list(altas)
@@ -318,6 +326,8 @@ def index():
     canal = request.args.get("canal") or None
 
     altas = metrics.enriquecer(snap["eventos"].get("altas", []), metas)
+    trial_emails = _trial_emails(snap["clientes"])
+    altas = [e for e in altas if (e.get("email") or "").lower() not in trial_emails]
     bajas = metrics.enriquecer(
         customer_rules.remove_reactivated_cancellations(snap["eventos"].get("bajas", []), snap["clientes"]),
         metas,
