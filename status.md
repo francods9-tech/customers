@@ -263,6 +263,9 @@ Verificacion HTTP local autenticada:
 - Alta sin campo `pelota`.
 - Ticket abierto con boton `Eliminar`, sin edicion de categoria en la fila.
 - Estado `abierta` mostrado como Operaciones derivado del estado.
+- PR #8 mergeado a `main`.
+- Railway deploy `5ab5fe76-ffd2-45b3-9db4-886dc5820e81` exitoso.
+- Produccion verificada: `/healthz` 200, `/login` 200, `/solicitudes` sin login redirige a login.
 
 Verificacion HTTP local luego de ficha WhatsApp y tickets:
 
