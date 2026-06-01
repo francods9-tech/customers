@@ -121,6 +121,8 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 - Ficha de cliente:
   - `Ajuste manual` queda reorganizado en grilla compacta.
   - Se agrego campo WhatsApp editable por cliente en `CustomerMeta.whatsapp`.
+  - Se agrego campo `usuario` editable por cliente en `CustomerMeta.usuario`, usado junto a WhatsApp para busqueda rapida.
+  - La ficha usa una grilla de perfil mas armonica para suscripcion, ajuste manual, contacto, origen/bienvenida y salud.
 - Solicitudes/tickets:
   - Cada solicitud se muestra como `Ticket #ID`.
   - La creacion ya no pide responsable.
@@ -135,6 +137,7 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - Los estados tienen chips de color para diferenciar abierta, en gestion, comunicar y resuelta.
   - Las abiertas pueden eliminarse desde la lista.
   - En abiertas solo se actualizan estado e importancia; la categoria queda fija luego de crear el ticket.
+  - La administracion visual de categorias se oculto de `/solicitudes`; las categorias se manejan internamente.
 
 ## Verificacion
 
@@ -285,6 +288,20 @@ Verificacion HTTP local autenticada:
 - PR #10 mergeado a `main`.
 - Railway deploy `27dd475e-d994-4981-8bef-e425ba3c7c7f` exitoso.
 - Produccion verificada: `/healthz` 200, `/login` 200, `/solicitudes` sin login redirige a login.
+
+Verificacion luego de usuario de cliente y categorias internas:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+```
+
+Resultado: 45 tests OK; `imports ok 38`.
+
+Verificacion HTTP local autenticada:
+
+- `/solicitudes` 200 sin bloque visual de `Categorias` ni endpoint `/quejas/categorias` renderizado.
+- `/cliente/<email>` 200 con campo `usuario` y grilla `customer-profile-grid`.
 
 Verificacion HTTP local luego de ficha WhatsApp y tickets:
 

@@ -35,6 +35,7 @@ class CustomerMeta(db.Model):
     manual_estado = db.Column(db.String(32), nullable=False, default="")
     tipo_cliente = db.Column(db.String(32), nullable=False, default="")
     whatsapp = db.Column(db.String(80), nullable=False, default="")
+    usuario = db.Column(db.String(120), nullable=False, default="")
     colab_descuento = db.Column(db.String(80), nullable=False, default="")
     colab_acuerdo = db.Column(db.Text, nullable=False, default="")
     colab_inicio = db.Column(db.String(10), nullable=False, default="")

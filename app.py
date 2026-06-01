@@ -63,6 +63,7 @@ def _ensure_local_schema():
         "manual_estado": "ALTER TABLE customer_meta ADD COLUMN manual_estado VARCHAR(32) NOT NULL DEFAULT ''",
         "tipo_cliente": "ALTER TABLE customer_meta ADD COLUMN tipo_cliente VARCHAR(32) NOT NULL DEFAULT ''",
         "whatsapp": "ALTER TABLE customer_meta ADD COLUMN whatsapp VARCHAR(80) NOT NULL DEFAULT ''",
+        "usuario": "ALTER TABLE customer_meta ADD COLUMN usuario VARCHAR(120) NOT NULL DEFAULT ''",
         "colab_descuento": "ALTER TABLE customer_meta ADD COLUMN colab_descuento VARCHAR(80) NOT NULL DEFAULT ''",
         "colab_acuerdo": "ALTER TABLE customer_meta ADD COLUMN colab_acuerdo TEXT NOT NULL DEFAULT ''",
         "colab_inicio": "ALTER TABLE customer_meta ADD COLUMN colab_inicio VARCHAR(10) NOT NULL DEFAULT ''",
@@ -215,6 +216,7 @@ def _clientes_snapshot(snap):
             "email": email,
             "nombre": c.get("nombre") or c.get("email") or email,
             "whatsapp": (meta.whatsapp if meta else "") or c.get("whatsapp") or "",
+            "usuario": (meta.usuario if meta else "") or c.get("usuario") or "",
         })
     return sorted(clientes, key=lambda c: (c["nombre"] or "").lower())
 
@@ -964,6 +966,7 @@ def set_suscripcion(email):
 def set_contacto_cliente(email):
     meta = _get_or_create_meta(email.lower())
     meta.whatsapp = (request.form.get("whatsapp") or "").strip()
+    meta.usuario = (request.form.get("usuario") or "").strip()
     db.session.commit()
     flash("Contacto actualizado", "ok")
     return redirect(url_for("cliente", email=email))

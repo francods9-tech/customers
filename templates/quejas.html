@@ -43,7 +43,7 @@
     </select>
     <div class="customer-search-index" hidden>
       {% for cliente in clientes %}
-      <span data-email="{{ cliente.email }}" data-search="{{ cliente.nombre }} {{ cliente.email }} {{ cliente.whatsapp }}">{{ cliente.whatsapp }}</span>
+      <span data-email="{{ cliente.email }}" data-search="{{ cliente.nombre }} {{ cliente.email }} {{ cliente.whatsapp }} {{ cliente.usuario }}">{{ cliente.whatsapp }} {{ cliente.usuario }}</span>
       {% endfor %}
     </div>
     <select name="tipo">
@@ -84,29 +84,6 @@
   </form>
   <p class="muted">No hay clientes cargados. Actualiza datos para habilitar la carga directa de solicitudes.</p>
   {% endif %}
-</section>
-
-<section class="panel">
-  <div class="bandeja-head">
-    <h2>Categorias</h2>
-    <form method="post" action="{{ url_for('add_queja_categoria') }}" class="inline category-form">
-      <input type="text" name="label" placeholder="Nueva categoria">
-      <button type="submit">Agregar</button>
-    </form>
-  </div>
-  <div class="category-grid">
-    {% for cat in categorias %}
-    {% set row = stats.por_categoria.get(cat.key, {}) %}
-    <div class="category-card">
-      <form method="post" action="{{ url_for('update_queja_categoria', key=cat.key) }}" class="category-edit">
-        <input type="text" name="label" value="{{ cat.label }}">
-        <button class="btn-sync" type="submit" name="action" value="rename">Guardar</button>
-        <button class="btn-sync" type="submit" name="action" value="deactivate">Ocultar</button>
-      </form>
-      <span>{{ row.get("abiertas", 0) }} abiertas &middot; {{ row.get("resueltas", 0) }} resueltas</span>
-    </div>
-    {% endfor %}
-  </div>
 </section>
 
 <section class="panel request-board">
