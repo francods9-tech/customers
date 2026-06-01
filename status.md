@@ -224,6 +224,7 @@ Correccion posterior:
 - Deploy Railway posterior: `ab1dfc74-c31f-40af-ab3d-b620a49dbdb9` SUCCESS; `/healthz` 200 y `/login` 200.
 - Correccion posterior: el grafico por canal respeta filtros de fecha y la leyenda se genera con una entrada por segmento del grafico.
 - Verificacion: 51 tests OK; import Flask OK con 38 rutas.
+- Deploy Railway posterior: `512965df-974b-4e5f-b706-5dd88a0750ac` SUCCESS; `/healthz` 200 y `/login` 200.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
