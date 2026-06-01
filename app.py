@@ -249,47 +249,44 @@ def index():
         customer_rules.remove_reactivated_cancellations(snap["eventos"].get("bajas", []), snap["clientes"]),
         metas,
     )
-    desde, hasta, label, pdesde, phasta = metrics.resolver_periodo(request.args, eventos=altas + bajas)
+    trials = metrics.trial_events(snap["clientes"])
+    desde, hasta, label, pdesde, phasta = metrics.resolver_periodo(request.args, eventos=altas + bajas + trials)
     altas_p = metrics.filtrar(altas, desde, hasta, canal)
     bajas_p = metrics.filtrar(bajas, desde, hasta, canal)
+    trials_p = metrics.filtrar(trials, desde, hasta, canal)
     altas_prev = metrics.filtrar(altas, pdesde, phasta, canal)
     bajas_prev = metrics.filtrar(bajas, pdesde, phasta, canal)
 
-    quejas_p = _quejas_en(desde, hasta)
-    quejas_prev = _quejas_en(pdesde, phasta)
-
     pargs = {k: v for k, v in request.args.items()}  # preservar período al navegar
     estado_summary = customer_rules.customer_summary(snap["clientes"])
-    now = dt.datetime.now(dt.timezone.utc)
-    northstar_desde = now - dt.timedelta(days=7)
     northstar = metrics.recurrent_northstar_delta(
         estado_summary["activos_recurrentes"],
-        metrics.filtrar(altas, northstar_desde, now),
-        metrics.filtrar(bajas, northstar_desde, now),
+        altas_p,
+        bajas_p,
     )
 
     kpis = [
         {"label": "Activos recurrentes", "valor": northstar["valor"], "delta": northstar["delta"],
-         "href": url_for("clientes_list", recurrente=1), "fixed_period": "7d"},
+         "href": url_for("clientes_list", recurrente=1)},
         {"label": "Altas", "valor": len(altas_p), "delta": metrics.delta_pct(len(altas_p), len(altas_prev)),
          "href": url_for("eventos", tipo="altas", **pargs)},
         {"label": "Bajas", "valor": len(bajas_p), "delta": metrics.delta_pct(len(bajas_p), len(bajas_prev)),
          "invertir": True, "href": url_for("bajas_list", **pargs)},
         {"label": "Neto", "valor": len(altas_p) - len(bajas_p),
          "delta": metrics.delta_pct(len(altas_p) - len(bajas_p), len(altas_prev) - len(bajas_prev))},
-        {"label": "Solicitudes", "valor": quejas_p, "delta": metrics.delta_pct(quejas_p, quejas_prev),
-         "invertir": True, "href": url_for("quejas_list")},
     ]
 
     canal_counts = metrics.por_canal(altas_p)
     canales = [(ORIGEN_LABELS.get(k, k), canal_counts.get(k, 0)) for k, _ in ORIGENES if canal_counts.get(k, 0)]
     serie_altas = metrics.serie_temporal(altas_p, desde, hasta)
     serie_bajas = metrics.serie_temporal(bajas_p, desde, hasta)
+    serie_trials = metrics.serie_temporal(trials_p, desde, hasta)
     serie = {
         "labels": serie_altas["labels"],
         "agrupado": serie_altas["agrupado"],
         "altas": serie_altas["valores"],
         "bajas": serie_bajas["valores"],
+        "trials": serie_trials["valores"],
     }
 
     return render_template(

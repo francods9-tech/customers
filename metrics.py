@@ -118,3 +118,16 @@ def recurrent_northstar_delta(current_count, altas_periodo, bajas_periodo):
         "previo": previous_count,
         "delta": delta_pct(current_count, previous_count),
     }
+
+
+def trial_events(customers):
+    events = []
+    for customer in customers:
+        if customer.get("estado") != "trial" or not customer.get("fecha_alta_raw"):
+            continue
+        events.append({
+            "fecha": customer["fecha_alta_raw"],
+            "email": customer.get("email_key") or customer.get("email") or "",
+            "origen": customer.get("origen", "sin_asignar"),
+        })
+    return events

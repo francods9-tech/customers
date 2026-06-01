@@ -45,10 +45,9 @@
         {% set malo = (k.delta > 0) if k.invertir else (k.delta < 0) %}
         <span class="kpi-delta {{ 'up' if bueno }}{{ 'down' if malo }}">
           {{ "▲" if k.delta > 0 }}{{ "▼" if k.delta < 0 }} {{ k.delta|abs }}%
-          {% if k.fixed_period == "7d" %} vs 7d ant.{% endif %}
         </span>
       {% else %}
-        <span class="kpi-delta">—{% if k.fixed_period == "7d" %} vs 7d ant.{% endif %}</span>
+        <span class="kpi-delta">—</span>
       {% endif %}
     </{{ tag }}>
     {% endfor %}
@@ -56,7 +55,7 @@
 
   <div class="charts">
     <section class="panel">
-      <h2>Movimiento por {{ serie.agrupado }}</h2>
+      <h2>Altas, bajas y trials por {{ serie.agrupado }}</h2>
       <canvas id="chartSerie" height="120"></canvas>
     </section>
     <section class="panel">
@@ -83,17 +82,19 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script>
-    const serie = {{ {"labels": serie.labels, "altas": serie.altas, "bajas": serie.bajas} | tojson }};
+    const serie = {{ {"labels": serie.labels, "altas": serie.altas, "bajas": serie.bajas, "trials": serie.trials} | tojson }};
     const canalData = {{ {"labels": canales|map(attribute=0)|list, "valores": canales|map(attribute=1)|list} | tojson }};
-    const grid = "#2a2f3a", txt = "#8b93a3", accent = "#5b8cff", warn = "#ff6b6b";
+    const grid = "#2a2f3a", txt = "#8b93a3", accent = "#5b8cff", warn = "#ff6b6b", trial = "#f5a623";
 
     new Chart(document.getElementById("chartSerie"), {
-      type: "line",
+      type: "bar",
       data: { labels: serie.labels, datasets: [
         { label: "Altas", data: serie.altas, borderColor: accent,
-          backgroundColor: "rgba(91,140,255,.15)", fill: true, tension: .3, pointRadius: 2 },
+          backgroundColor: "rgba(91,140,255,.72)", borderWidth: 1 },
+        { label: "Trials", data: serie.trials, borderColor: trial,
+          backgroundColor: "rgba(245,166,35,.72)", borderWidth: 1 },
         { label: "Bajas", data: serie.bajas, borderColor: warn,
-          backgroundColor: "rgba(255,107,107,.10)", fill: true, tension: .3, pointRadius: 2 } ] },
+          backgroundColor: "rgba(255,107,107,.72)", borderWidth: 1 } ] },
       options: { plugins: { legend: { labels: { color: txt } } },
         scales: { x: { ticks: { color: txt, maxTicksLimit: 8 }, grid: { color: grid } },
                   y: { beginAtZero: true, ticks: { color: txt, precision: 0 }, grid: { color: grid } } } }

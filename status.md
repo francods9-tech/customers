@@ -101,7 +101,9 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - Motivos iniciales: precio, no uso, no vio resultado, soporte, competencia, pausa temporal y otro.
 - Dashboard ahora incluye preset `Todo` y la linea temporal toma el primer evento real de altas/bajas como inicio.
 - El KPI de Bajas del dashboard abre la pantalla de bajas con motivos.
-- Inicio muestra la northstar `Activos recurrentes` como primer KPI superior, con delta fijo vs los 7 dias anteriores y link a Clientes filtrado por recurrentes.
+- Inicio muestra la northstar `Activos recurrentes` como primer KPI superior, comparada contra el periodo anterior seleccionado y con link a Clientes filtrado por recurrentes.
+- Inicio ya no muestra KPI de Solicitudes; esa lectura vive en `/solicitudes`.
+- El grafico principal de Inicio es de barras y combina Altas, Bajas y Trials por dia/semana segun el periodo.
 - Solicitudes ahora tiene dashboard por periodo:
   - Presets de tiempo, incluyendo `Todo`.
   - KPIs de registradas, abiertas actuales, Customer Success, Operaciones y resueltas.
@@ -154,6 +156,14 @@ Ultima verificacion luego de multiples facturas y aging de impagos:
 ```
 
 Resultado: 33 tests OK.
+
+Ultima verificacion luego de ajustar Inicio con northstar por periodo y barras de trials:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Resultado: 34 tests OK.
 
 Verificacion de import:
 
@@ -208,7 +218,7 @@ Verificacion HTTP local:
 - `/mensajes?q=checkpoint` 200 con plantillas del pack WhatsApp
 - `/static/traqeer-logo.svg` 200
 - `/healthz` 200 publico
-- `/` 200 autenticado con northstar `Activos recurrentes` como primer KPI superior y delta `vs 7d ant.`
+- `/` 200 autenticado con grafico de barras Altas/Bajas/Trials, sin KPI de Solicitudes y sin texto `vs 7d ant.`
 - `/clientes?estado=impago` 200 con facturas multiples y chips de aging
 - `/clientes?estado=pausado_impago` 200
 - `/clientes?estado=inactivo_impago` 200

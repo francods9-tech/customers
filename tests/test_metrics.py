@@ -31,6 +31,34 @@ class MetricsTest(unittest.TestCase):
         self.assertEqual(result["previo"], 11)
         self.assertEqual(result["delta"], 9.1)
 
+    def test_trial_events_use_trial_customer_signup_dates(self):
+        from metrics import trial_events
+
+        customers = [
+            {
+                "email": "trial@example.com",
+                "email_key": "trial@example.com",
+                "estado": "trial",
+                "fecha_alta_raw": "2026-05-20T00:00:00+00:00",
+                "origen": "instagram",
+            },
+            {
+                "email": "paid@example.com",
+                "estado": "activo",
+                "fecha_alta_raw": "2026-05-21T00:00:00+00:00",
+                "origen": "email",
+            },
+        ]
+
+        self.assertEqual(
+            trial_events(customers),
+            [{
+                "fecha": "2026-05-20T00:00:00+00:00",
+                "email": "trial@example.com",
+                "origen": "instagram",
+            }],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
