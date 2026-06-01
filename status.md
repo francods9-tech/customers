@@ -190,6 +190,7 @@ Ultima verificacion luego de agrupar variantes de Instagram:
 ```
 
 Resultado: 49 tests OK; import Flask OK con 38 rutas.
+- Deploy Railway posterior: `31e92431-3357-4745-844a-6602fa0c6ee2` SUCCESS; `/healthz` 200 y `/login` 200.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
