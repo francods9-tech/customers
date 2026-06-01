@@ -178,17 +178,33 @@
     <h2>Origen y bienvenida</h2>
     <form method="post" action="{{ url_for('set_origen', email=c.email_key) }}" class="stack-form">
       <label>Origen</label>
-      <select name="origen" onchange="document.getElementById('ref').style.display = this.value==='referido' ? 'block':'none'">
+      <select name="origen_base" data-origin-base onchange="toggleOriginDetails()">
         {% for k, label in origenes %}
-        <option value="{{ k }}" {{ "selected" if meta.origen == k }}>{{ label }}</option>
+        <option value="{{ k }}" {{ "selected" if origen_base == k }}>{{ label }}</option>
         {% endfor %}
       </select>
-      <div id="ref" style="display:{{ 'block' if meta.origen=='referido' else 'none' }}">
+      <div id="instagram-detail" style="display:{{ 'block' if origen_base=='instagram' else 'none' }}">
+        <label>Idioma Instagram</label>
+        <select name="instagram_variante">
+          {% for k, label in instagram_variants %}
+          <option value="{{ k }}" {{ "selected" if instagram_variante == k }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div id="ref" style="display:{{ 'block' if origen_base=='referido' else 'none' }}">
+        <label>Referido por</label>
         <input type="text" name="referido_por" placeholder="Email del cliente que lo refirio"
                value="{{ meta.referido_por or '' }}">
       </div>
       <button type="submit">Guardar origen</button>
     </form>
+    <script>
+      function toggleOriginDetails() {
+        const value = document.querySelector("[data-origin-base]").value;
+        document.getElementById("ref").style.display = value === "referido" ? "block" : "none";
+        document.getElementById("instagram-detail").style.display = value === "instagram" ? "block" : "none";
+      }
+    </script>
     <div class="inline-action">
       <span>{{ "Bienvenida hecha" if meta.onboarding_hecho else "Bienvenida pendiente" }}</span>
       <form method="post" action="{{ url_for('toggle_onboarding', email=c.email_key) }}">

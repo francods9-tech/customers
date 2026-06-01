@@ -104,6 +104,7 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 - Inicio muestra la northstar `Activos recurrentes` como primer KPI superior, comparada contra el periodo anterior seleccionado y con link a Clientes filtrado por recurrentes.
 - Inicio ya no muestra KPI de Solicitudes; esa lectura vive en `/solicitudes`.
 - El grafico principal de Inicio es de barras y combina Altas, Bajas y Trials por dia/semana segun el periodo.
+- Inicio agrupa `Instagram`, `Instagram ingles`, `Instagram español` e `Instagram portugues` como un solo canal `Instagram` para filtro y grafico de altas por canal.
 - Solicitudes ahora tiene dashboard por periodo:
   - Presets de tiempo, incluyendo `Todo`.
   - KPIs de registradas, abiertas actuales, Customer Success, Operaciones y resueltas.
@@ -125,6 +126,7 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - La ficha usa una grilla de perfil mas armonica: resumen/atencion arriba, suscripcion/ajuste manual como bloque principal, contacto/origen/salud como bloque secundario.
   - Los campos avanzados de colab dentro de `Ajuste manual` quedan plegados salvo que ya existan datos de colab.
   - `Nuevo contacto o solicitud` usa formulario en dos lineas para evitar campos comprimidos.
+  - En `Origen y bienvenida`, Instagram se elige como canal base y abre un selector de idioma (`Sin idioma`, `Ingles`, `Español`, `Portugues`) guardando la variante en `CustomerMeta.origen`.
 - Solicitudes/tickets:
   - Cada solicitud se muestra como `Ticket #ID`.
   - La creacion ya no pide responsable.
@@ -179,6 +181,15 @@ Verificacion visual local:
 - Ficha mobile 390px: sin overflow horizontal.
 - Se corrigio `_ensure_local_schema` para agregar `interacciones.resuelta` en SQLite local antiguo.
 - Deploy Railway posterior: `0babac60-f3fe-4549-a9f2-beff071bb35b` SUCCESS; `/healthz` 200 y `/login` 200.
+
+Ultima verificacion luego de agrupar variantes de Instagram:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+```
+
+Resultado: 49 tests OK; import Flask OK con 38 rutas.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v

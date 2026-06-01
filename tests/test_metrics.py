@@ -59,6 +59,21 @@ class MetricsTest(unittest.TestCase):
             }],
         )
 
+    def test_dashboard_metrics_group_instagram_variants(self):
+        from metrics import filtrar, por_canal
+
+        eventos = [
+            {"fecha": "2026-05-20T00:00:00+00:00", "origen": "instagram"},
+            {"fecha": "2026-05-21T00:00:00+00:00", "origen": "ig_en"},
+            {"fecha": "2026-05-22T00:00:00+00:00", "origen": "ig_es"},
+            {"fecha": "2026-05-23T00:00:00+00:00", "origen": "email"},
+        ]
+        desde = dt.datetime(2026, 5, 1, tzinfo=dt.timezone.utc)
+        hasta = dt.datetime(2026, 6, 1, tzinfo=dt.timezone.utc)
+
+        self.assertEqual(len(filtrar(eventos, desde, hasta, canal="instagram")), 3)
+        self.assertEqual(por_canal(eventos)["instagram"], 3)
+
 
 if __name__ == "__main__":
     unittest.main()
