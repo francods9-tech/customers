@@ -13,10 +13,15 @@
   <div class="profile-badges">
     <span class="tag">{{ ticket.tipo }}</span>
     <span class="tag">{{ category_label(ticket.categoria, category_map) }}</span>
-    <span class="tag">{{ team_labels.get(ticket.equipo, ticket.equipo)|upper }}</span>
-    <span class="tag">{{ status_labels.get(ticket.estado_gestion, ticket.estado_gestion) }}</span>
+    {% if ticket.resuelta %}
+      <span class="tag status-pill {{ ctx.status_class }}">Resuelta</span>
+      <span class="tag {{ ctx.duration.class }}">{{ ctx.duration.dias }} dias abierto</span>
+    {% else %}
+      <span class="tag team-pill team-{{ ticket.equipo }}">{{ team_labels.get(ticket.equipo, ticket.equipo)|upper }}</span>
+      <span class="tag status-pill {{ ctx.status_class }}">{{ status_labels.get(ticket.estado_gestion, ticket.estado_gestion) }}</span>
+      <span class="tag {{ ctx.age.class }}">{{ ctx.age.dias }} dias</span>
+    {% endif %}
     <span class="tag">Importancia {{ importance_labels.get(ticket.importancia, ticket.importancia or "Media") }}</span>
-    <span class="tag {{ ctx.age.class }}">{{ ctx.age.dias }} dias</span>
   </div>
 </section>
 
@@ -25,33 +30,39 @@
     <h2>Detalle</h2>
     <p>{{ ticket.texto }}</p>
 
-    <form method="post" action="{{ url_for('set_queja_gestion', qid=ticket.id) }}" class="ticket-form">
-      <label>Estado</label>
-      <select name="estado_gestion">
-        {% for key, label in estados_solicitud %}
-        <option value="{{ key }}" {{ "selected" if ticket.estado_gestion == key }}>{{ label }}</option>
-        {% endfor %}
-      </select>
-      <label>Importancia</label>
-      <select name="importancia">
-        {% for key, label in importancias %}
-        <option value="{{ key }}" {{ "selected" if ticket.importancia == key }}>{{ label }}</option>
-        {% endfor %}
-      </select>
-      <button type="submit">Actualizar ticket</button>
-    </form>
+    {% if ticket.resuelta %}
+      <form method="post" action="{{ url_for('reabrir_ticket', qid=ticket.id) }}" class="ticket-action-row">
+        <span>Este ticket estuvo abierto {{ ctx.duration.dias }} dias.</span>
+        <button type="submit">Reabrir ticket</button>
+      </form>
+    {% else %}
+      <form method="post" action="{{ url_for('set_queja_gestion', qid=ticket.id) }}" class="ticket-form">
+        <label>Estado</label>
+        <select name="estado_gestion">
+          {% for key, label in estados_solicitud %}
+          <option value="{{ key }}" {{ "selected" if ticket.estado_gestion == key }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <label>Importancia</label>
+        <select name="importancia">
+          {% for key, label in importancias %}
+          <option value="{{ key }}" {{ "selected" if ticket.importancia == key }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit">Actualizar ticket</button>
+      </form>
 
-    <form method="post" action="{{ url_for('resolver_queja', qid=ticket.id) }}" class="inline-action">
-      <span>Cuando ya no quede accion pendiente, pasalo a resueltas.</span>
-      <button type="submit">Marcar resuelto</button>
-    </form>
+      <form method="post" action="{{ url_for('resolver_queja', qid=ticket.id) }}" class="ticket-action-row">
+        <span>Cuando ya no quede accion pendiente, pasalo a resueltas.</span>
+        <button type="submit">Marcar resuelto</button>
+      </form>
+    {% endif %}
   </section>
 
   <section class="panel">
     <h2>Comentarios</h2>
     <form method="post" action="{{ url_for('add_ticket_comment', qid=ticket.id) }}" class="comment-form">
       <textarea name="texto" placeholder="Agregar comentario interno" required></textarea>
-      <input type="text" name="agente" placeholder="Autor">
       <button type="submit">Agregar comentario</button>
     </form>
 

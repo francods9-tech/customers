@@ -69,6 +69,7 @@ class Interaccion(db.Model):
     equipo = db.Column(db.String(16), nullable=False, default="cs")
     estado_gestion = db.Column(db.String(32), nullable=False, default="abierta")
     importancia = db.Column(db.String(16), nullable=False, default="media")
+    resolved_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
 
 class TicketComment(db.Model):

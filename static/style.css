@@ -103,6 +103,13 @@ table.grid { width: 100%; min-width: 820px; border-collapse: collapse; margin-to
 .tag { display: inline-flex; align-items: center; min-height: 22px; font-size: .75rem; padding: .12rem .45rem; border-radius: 4px; background: #f8fafc; border: 1px solid var(--border); white-space: nowrap; }
 .tag-empty { color: var(--muted); font-style: italic; }
 .tag-warn { color: var(--warn); border-color: #fecaca; background: #fef2f2; }
+.status-pill { font-weight: 700; }
+.status-abierta { color: #1d4ed8; border-color: #bfdbfe; background: #eff6ff; }
+.status-en_gestion { color: #7c2d12; border-color: #fed7aa; background: #fff7ed; }
+.status-comunicar { color: #047857; border-color: #a7f3d0; background: #ecfdf5; }
+.status-resuelta { color: #475569; border-color: #cbd5e1; background: #f1f5f9; }
+.team-cs { color: #1f5dae; border-color: #bfdbfe; background: #eff6ff; }
+.team-ops { color: #9a3412; border-color: #fed7aa; background: #fff7ed; }
 .age-warn { color: var(--trial); border-color: #fde68a; background: #fffbeb; }
 .age-danger { color: var(--warn); border-color: #fecaca; background: #fef2f2; }
 .ticket-id { font-weight: 700; color: var(--accent-2); }
@@ -189,6 +196,22 @@ table.grid { width: 100%; min-width: 820px; border-collapse: collapse; margin-to
 .row-actions select { width: auto; min-width: 190px; margin: 0; }
 .request-board .row-actions { align-items: stretch; }
 .request-board .row-actions .inline { flex-wrap: wrap; }
+.ticket-list-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .45rem;
+  margin-top: .75rem;
+}
+.ticket-list-actions .inline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin: 0;
+}
+.ticket-list-actions select { width: auto; min-width: 170px; margin: 0; }
+.ticket-list-actions button { white-space: nowrap; }
 .new-request-form {
   display: grid;
   grid-template-columns: minmax(240px, 1.4fr) 150px 180px 180px 170px auto;
@@ -215,7 +238,17 @@ table.grid { width: 100%; min-width: 820px; border-collapse: collapse; margin-to
 .ticket-form { display: grid; grid-template-columns: 1fr 1fr auto; gap: .55rem; align-items: end; margin-top: 1rem; }
 .ticket-form label { color: var(--muted); font-size: .82rem; }
 .ticket-form select, .ticket-form input, .ticket-form textarea { margin: 0; }
-.comment-form { display: grid; grid-template-columns: minmax(0, 1fr) 150px auto; gap: .55rem; align-items: start; margin-bottom: 1rem; }
+.ticket-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.ticket-action-row button { white-space: nowrap; }
+.comment-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .55rem; align-items: start; margin-bottom: 1rem; }
 .comment-form input, .comment-form textarea { margin: 0; }
 .churn-grid { min-width: 980px; }
 .churn-form {
@@ -359,6 +392,7 @@ dd { margin: 0; min-width: 0; }
   .new-request-form textarea { grid-column: auto; }
   .ticket-hero { flex-direction: column; }
   .ticket-layout, .ticket-form, .comment-form { grid-template-columns: 1fr; }
+  .ticket-action-row { align-items: flex-start; flex-direction: column; }
   .churn-form { grid-template-columns: 1fr; }
   .creator-form { grid-template-columns: 1fr; }
   .creator-form textarea, .creator-form .row-actions { grid-column: auto; }

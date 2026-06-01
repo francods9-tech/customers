@@ -109,9 +109,9 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - KPIs de registradas, abiertas actuales, Customer Success, Operaciones y resueltas.
   - Grafico temporal de solicitudes por dia o semana.
 - Solicitudes permite alta directa desde `/solicitudes`:
-  - Formulario superior `Nueva solicitud` con cliente del ultimo snapshot, tipo, motivo/categoria, pelota, responsable y detalle obligatorio.
+  - Formulario superior `Nueva solicitud` con cliente del ultimo snapshot, tipo, motivo/categoria, pelota, importancia y detalle obligatorio.
   - Nueva ruta POST `/solicitudes/nueva`.
-  - Mapeo de pelota sin migracion: Customer Success => `equipo=cs`/`estado_gestion=abierta`; Operaciones => `equipo=ops`/`estado_gestion=abierta`; Cliente => `equipo=cs`/`estado_gestion=esperando`.
+  - Mapeo de pelota: Customer Success => `equipo=cs`/`estado_gestion=abierta`; Operaciones => `equipo=ops`/`estado_gestion=en_gestion`; Cliente => `equipo=cs`/`estado_gestion=comunicar`.
   - Si no hay clientes en snapshot, el formulario queda deshabilitado con mensaje operativo.
 - Se removio el scope financiero/CEO del dashboard de Customer Success:
   - No hay bloque MRR/cash/conciliacion en Inicio.
@@ -128,6 +128,10 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - El equipo se deriva del estado: abierta/comunicar => CS, en_gestion => Ops.
   - Se agrega ficha de ticket `/solicitudes/<id>` con comentarios internos.
   - Se muestra aging en dias; amarillo si supera 7 dias, rojo si supera 14.
+  - Los tickets resueltos muestran los dias que estuvieron abiertos y ya no muestran equipo CS/Ops.
+  - Los tickets resueltos pueden reabrirse; vuelven a `abierta` con equipo CS.
+  - Los comentarios internos no piden ni guardan autor.
+  - Los estados tienen chips de color para diferenciar abierta, en gestion, comunicar y resuelta.
 
 ## Verificacion
 
@@ -224,6 +228,19 @@ Verificacion luego de ficha WhatsApp y tickets:
 ```
 
 Resultado: 43 tests OK.
+
+Verificacion luego de pulir tickets resueltos/reapertura:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+```
+
+Resultado: 44 tests OK; `imports ok 37`.
+
+Verificacion HTTP local autenticada luego de pulir tickets:
+
+- `/solicitudes` 200 con formulario visible, sin `name="agente"` y con chips de estado.
 
 Verificacion HTTP local luego de ficha WhatsApp y tickets:
 

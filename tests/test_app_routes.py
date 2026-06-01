@@ -194,7 +194,7 @@ class AppRoutesTest(unittest.TestCase):
         import datetime as dt
 
         from db import db
-        from db.models import Interaccion
+        from db.models import Interaccion, TicketComment
 
         self.login()
         self.add_snapshot([self.customer_row()])
@@ -232,6 +232,59 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn(f"Ticket #{ticket_id}", body)
         self.assertIn("Ops confirma que lo toma hoy.", body)
         self.assertIn("En gestion", body)
+        self.assertIn("status-en_gestion", body)
+        self.assertNotIn('name="agente"', body)
+        self.assertNotIn("Autor", body)
+
+        with self.app.app_context():
+            comment = TicketComment.query.filter_by(interaccion_id=ticket_id).one()
+            self.assertIsNone(comment.agente)
+
+    def test_ticket_resuelto_muestra_dias_abierto_y_permite_reabrir(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        created = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=10)
+        resolved = created + dt.timedelta(days=4)
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="solicitud",
+                texto="Ya resuelto por ops",
+                categoria="envia_links",
+                equipo="ops",
+                estado_gestion="resuelta",
+                importancia="media",
+                resuelta=True,
+                created_at=created,
+                resolved_at=resolved,
+            )
+            db.session.add(ticket)
+            db.session.commit()
+            ticket_id = ticket.id
+
+        response = self.client.get("/solicitudes")
+        body = response.get_data(as_text=True)
+        self.assertIn(f"Ticket #{ticket_id}", body)
+        ticket_row = body[body.index(f"Ticket #{ticket_id}"):]
+        ticket_row = ticket_row[:ticket_row.index("</li>")]
+        self.assertIn("4 dias abierto", body)
+        self.assertIn("status-resuelta", body)
+        self.assertIn("Reabrir", body)
+        self.assertNotIn(">OPERACIONES</span>", ticket_row)
+
+        response = self.client.post(f"/solicitudes/{ticket_id}/reabrir")
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            ticket = db.session.get(Interaccion, ticket_id)
+            self.assertFalse(ticket.resuelta)
+            self.assertEqual(ticket.estado_gestion, "abierta")
+            self.assertEqual(ticket.equipo, "cs")
+            self.assertIsNone(ticket.resolved_at)
 
     def test_ticket_aging_rojo_mas_de_catorce_dias(self):
         import datetime as dt
