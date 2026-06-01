@@ -27,6 +27,16 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 - La lista de Clientes/Impagos tambien muestra la columna Atencion con dias de impago y factura.
 - El snapshot nuevo guarda `ultima_factura_fecha_raw`, `ultima_factura_url`, `impago_monto_pendiente`, `impago_dias` y estado de factura para impagos Stripe.
 - Se agrego refresh parcial solo Stripe para enriquecer impagos sin necesitar Mongo.
+- Impagos ahora soporta multiples facturas pendientes por cliente:
+  - El snapshot guarda `facturas_pendientes` con fecha, link, monto pendiente y estado por factura.
+  - Clientes, Bandeja y Ficha muestran cantidad de facturas, monto total pendiente, factura mas vieja y links de factura.
+  - `estado=impago` agrupa todos los estados operativos de deuda.
+- Aging operativo de impagos agregado sin contaminar churn:
+  - 0-29 dias: `impago`.
+  - 30-89 dias: `pausado_impago`.
+  - 90+ dias: `inactivo_impago`.
+  - Estos estados no cuentan como activos recurrentes y no se agregan a Bajas/Churn salvo cancelacion real en Stripe.
+  - Si el plan detectado contiene `free`, la UI muestra `acceso free por impago` como senal operativa separada del billing.
 - Bandeja ahora ordena impagos por mas dias de atraso y quejas abiertas por mas antiguedad.
 - Ficha de cliente redisenada con cabecera de perfil, badges, bloque de atencion, ajuste manual, origen/bienvenida, salud y contacto/historial.
 - Quejas tiene dashboard propio con abiertas, resueltas, dias maximos abiertas y total registrado.
@@ -137,6 +147,14 @@ Ultima verificacion luego de mover northstar a Inicio:
 
 Resultado: 30 tests OK.
 
+Ultima verificacion luego de multiples facturas y aging de impagos:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Resultado: 33 tests OK.
+
 Verificacion de import:
 
 ```powershell
@@ -191,6 +209,10 @@ Verificacion HTTP local:
 - `/static/traqeer-logo.svg` 200
 - `/healthz` 200 publico
 - `/` 200 autenticado con northstar `Activos recurrentes` como primer KPI superior y delta `vs 7d ant.`
+- `/clientes?estado=impago` 200 con facturas multiples y chips de aging
+- `/clientes?estado=pausado_impago` 200
+- `/clientes?estado=inactivo_impago` 200
+- `/bandeja` 200 con detalle de facturas pendientes
 - `/clientes?estado=trial` 200 con informacion de trial
 - `/clientes` 200 con tabla responsive
 - Flujo verificado: crear queja desde ficha, verla en `/quejas`, agregar categoria, renombrar categoria, categorizar queja, ocultar categoria y resolver queja.

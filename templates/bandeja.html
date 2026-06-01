@@ -33,9 +33,15 @@
       </div>
       <div class="attention-meta">
         <span class="tag tag-warn">{{ c.impago.label }}</span>
+        <span class="sub">{{ c.impago.estado_label }} · {{ c.impago.facturas_count }} factura{{ "" if c.impago.facturas_count == 1 else "s" }}</span>
+        {% if c.impago.acceso_free %}<span class="sub warn">acceso free por impago</span>{% endif %}
         {% if c.impago.monto is not none %}<span class="sub">${{ "%.2f"|format(c.impago.monto) }} pendiente</span>{% endif %}
         {% if c.impago.factura_url %}
-          <a class="chip" href="{{ c.impago.factura_url }}" target="_blank" rel="noopener">Ultima factura</a>
+          {% for factura in c.impago.facturas %}
+            <a class="chip" href="{{ factura.url }}" target="_blank" rel="noopener">Factura {{ loop.index }}</a>
+          {% else %}
+            <a class="chip" href="{{ c.impago.factura_url }}" target="_blank" rel="noopener">Factura</a>
+          {% endfor %}
         {% else %}
           <span class="sub">sin link de factura</span>
         {% endif %}

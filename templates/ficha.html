@@ -22,8 +22,14 @@
     <div class="attention-card danger">
       <span>Impago</span>
       <strong>{{ atencion.impago.label }}</strong>
+      <small>{{ atencion.impago.estado_label }} · {{ atencion.impago.facturas_count }} factura{{ "" if atencion.impago.facturas_count == 1 else "s" }}</small>
+      {% if atencion.impago.acceso_free %}<small>Acceso free por impago</small>{% endif %}
       {% if atencion.impago.monto is not none %}<small>${{ "%.2f"|format(atencion.impago.monto) }} pendiente</small>{% endif %}
-      {% if atencion.impago.factura_url %}<a href="{{ atencion.impago.factura_url }}" target="_blank" rel="noopener">Abrir factura</a>{% endif %}
+      {% for factura in atencion.impago.facturas %}
+        <a href="{{ factura.url }}" target="_blank" rel="noopener">Abrir factura {{ loop.index }}</a>
+      {% else %}
+        {% if atencion.impago.factura_url %}<a href="{{ atencion.impago.factura_url }}" target="_blank" rel="noopener">Abrir factura</a>{% endif %}
+      {% endfor %}
     </div>
   {% endif %}
   {% if atencion.quejas_abiertas %}

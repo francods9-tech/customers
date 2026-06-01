@@ -213,7 +213,7 @@ def _clientes_enriquecidos():
         c["origen"] = m.origen if m else "sin_asignar"
         c["origen_label"] = ORIGEN_LABELS.get(c["origen"], c["origen"])
         c["onboarding_hecho"] = bool(m and m.onboarding_hecho)
-        if c["estado"] == "impago":
+        if c["estado"] in customer_rules.UNPAID_STATES:
             c["impago"] = customer_rules.unpaid_summary(c)
     return snap, metas
 
@@ -323,7 +323,10 @@ def clientes_list():
             titulo = "Clientes activos recurrentes"
         if estado:
             titulo = {"activo": "Clientes activos", "trial": "Clientes en trial",
-                      "impago": "Clientes con impago", "inactivo": "Clientes inactivos"}.get(estado, titulo)
+                      "impago": "Clientes con impago",
+                      "pausado_impago": "Clientes pausados por impago",
+                      "inactivo_impago": "Clientes inactivos por impago",
+                      "inactivo": "Clientes inactivos"}.get(estado, titulo)
         if tipo:
             titulo = customer_rules.TYPE_LABELS.get(tipo, titulo)
         if origen == "sin_asignar":
@@ -698,7 +701,7 @@ def bandeja():
     pendientes = {"onboarding": [], "impago": [], "trial": []}
     if snap:
         for c in snap["clientes"]:
-            if c["estado"] == "impago":
+            if c["estado"] in customer_rules.UNPAID_STATES:
                 pendientes["impago"].append(c)
             elif c["estado"] == "trial":
                 pendientes["trial"].append(c)
@@ -766,7 +769,7 @@ def cliente(email):
                      .order_by(Interaccion.created_at.desc()).all())
     quejas_abiertas = [i for i in interacciones if complaint_rules.is_customer_request(i) and not i.resuelta]
     atencion = {
-        "impago": customer_rules.unpaid_summary(c) if c.get("estado") == "impago" else None,
+        "impago": customer_rules.unpaid_summary(c) if c.get("estado") in customer_rules.UNPAID_STATES else None,
         "quejas_abiertas": len(quejas_abiertas),
         "trial": c.get("trial") if c.get("estado") == "trial" else None,
         "onboarding_pendiente": c.get("estado") in ("activo", "trial") and not meta.onboarding_hecho,

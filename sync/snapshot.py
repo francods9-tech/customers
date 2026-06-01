@@ -71,6 +71,12 @@ def _invoice_info(sub, now):
     created = getattr(inv, "created", None)
     created_dt = dt.datetime.fromtimestamp(created, tz=dt.timezone.utc) if created else None
     return {
+        "id": getattr(inv, "id", "") or "",
+        "fecha": _fmt_fecha(created_dt),
+        "fecha_raw": created_dt.isoformat() if created_dt else "",
+        "url": getattr(inv, "hosted_invoice_url", "") or "",
+        "monto_pendiente": round(pending, 2),
+        "estado": getattr(inv, "status", "") or "",
         "ultima_factura_fecha": _fmt_fecha(created_dt),
         "ultima_factura_fecha_raw": created_dt.isoformat() if created_dt else "",
         "ultima_factura_url": getattr(inv, "hosted_invoice_url", "") or "",
@@ -78,6 +84,39 @@ def _invoice_info(sub, now):
         "impago_dias": (now - created_dt).days if created_dt else None,
         "impago_estado_factura": getattr(inv, "status", "") or "",
     }
+
+
+def _normalize_unpaid_info(info):
+    invoices = [dict(invoice) for invoice in info.get("facturas_pendientes") or []]
+    if not invoices and (info.get("url") or info.get("ultima_factura_url")):
+        invoices = [{
+            "id": info.get("id", ""),
+            "fecha": info.get("fecha") or info.get("ultima_factura_fecha", ""),
+            "fecha_raw": info.get("fecha_raw") or info.get("ultima_factura_fecha_raw", ""),
+            "url": info.get("url") or info.get("ultima_factura_url", ""),
+            "monto_pendiente": info.get("monto_pendiente", info.get("impago_monto_pendiente", 0)),
+            "estado": info.get("estado") or info.get("impago_estado_factura", ""),
+        }]
+    invoices = sorted(invoices, key=lambda invoice: invoice.get("fecha_raw") or "9999")
+    total = round(sum((invoice.get("monto_pendiente") or 0) for invoice in invoices), 2)
+    oldest = invoices[0] if invoices else {}
+    return {
+        "facturas_pendientes": invoices,
+        "ultima_factura_fecha": oldest.get("fecha", ""),
+        "ultima_factura_fecha_raw": oldest.get("fecha_raw", ""),
+        "ultima_factura_url": oldest.get("url", ""),
+        "impago_monto_pendiente": total,
+        "impago_estado_factura": oldest.get("estado", ""),
+    }
+
+
+def _pending_invoice_infos(customer_id, now):
+    invoices = []
+    for inv in stripe.Invoice.list(customer=customer_id, status="open", limit=100).auto_paging_iter():
+        info = _invoice_info(type("SubInvoice", (), {"latest_invoice": inv})(), now)
+        if info.get("monto_pendiente", 0) > 0:
+            invoices.append(info)
+    return invoices
 
 
 def build_snapshot() -> dict:
@@ -221,7 +260,9 @@ def build_snapshot() -> dict:
                 continue
             name = cus.name or cus.email or "?"
             info = db_info(email)
-            inv_info = _invoice_info(sub, now)
+            customer_id = sub.customer if isinstance(sub.customer, str) else getattr(sub.customer, "id", "")
+            invoices = _pending_invoice_infos(customer_id, now)
+            inv_info = _normalize_unpaid_info({"facturas_pendientes": invoices}) if invoices else _normalize_unpaid_info(_invoice_info(sub, now))
             # Si ya estaba listado como activo, marcarlo como impago (estado mas urgente)
             existing = next((c for c in clientes if c["email_key"] == email), None)
             if existing:

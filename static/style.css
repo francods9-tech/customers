@@ -96,6 +96,8 @@ table.grid { width: 100%; min-width: 820px; border-collapse: collapse; margin-to
 .badge-activo { background: #dcfce7; color: var(--ok); }
 .badge-trial { background: #fef3c7; color: var(--trial); }
 .badge-impago { background: #fee2e2; color: var(--warn); }
+.badge-pausado_impago { background: #ffedd5; color: #c2410c; }
+.badge-inactivo_impago { background: #f3e8ff; color: #7e22ce; }
 .badge-inactivo { background: #e2e8f0; color: var(--muted); }
 
 .tag { display: inline-flex; align-items: center; min-height: 22px; font-size: .75rem; padding: .12rem .45rem; border-radius: 4px; background: #f8fafc; border: 1px solid var(--border); white-space: nowrap; }
