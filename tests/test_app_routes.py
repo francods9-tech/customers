@@ -177,7 +177,7 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn('"labels": ["Instagram"]', body)
         self.assertIn('"valores": [2]', body)
 
-    def test_dashboard_canales_suma_altas_y_trials(self):
+    def test_dashboard_canales_usa_base_actual_recurrentes_y_trials(self):
         from db import db
         from db.models import CustomerMeta, Snapshot
 
@@ -186,6 +186,7 @@ class AppRoutesTest(unittest.TestCase):
             {**self.customer_row(nombre="Alta IG", email="alta-ig@example.test"), "estado": "activo"},
             {**self.customer_row(nombre="Trial IG", email="trial-ig@example.test"), "estado": "trial"},
             {**self.customer_row(nombre="Trial Email", email="trial-email@example.test"), "estado": "trial"},
+            {**self.customer_row(nombre="One Time", email="one-time@example.test"), "estado": "activo"},
         ]
         with self.app.app_context():
             db.session.add(Snapshot(payload={
@@ -202,13 +203,14 @@ class AppRoutesTest(unittest.TestCase):
             db.session.add(CustomerMeta(email="alta-ig@example.test", origen="instagram"))
             db.session.add(CustomerMeta(email="trial-ig@example.test", origen="ig_es"))
             db.session.add(CustomerMeta(email="trial-email@example.test", origen="email"))
+            db.session.add(CustomerMeta(email="one-time@example.test", origen="telegram", manual_plan="one_time"))
             db.session.commit()
 
         response = self.client.get("/?preset=todo")
 
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
-        self.assertIn("Altas y trials por canal", body)
+        self.assertIn("Base actual por canal", body)
         self.assertIn('"labels": ["Email", "Instagram"]', body)
         self.assertIn('"valores": [1, 2]', body)
         self.assertIn("return `${label} · ${value} (${pct}%)`;", body)

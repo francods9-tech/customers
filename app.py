@@ -16,7 +16,7 @@ from db.models import (ChurnReason, ColabCreator, ComplaintCategory, CustomerMet
                        Interaccion, INSTAGRAM_ORIGEN_KEYS, INSTAGRAM_VARIANTS,
                        MessageCategory, MessageTemplate, ORIGENES, ORIGENES_BASE,
                        TicketComment,
-                       ORIGEN_LABELS)
+                       ORIGEN_LABELS, origen_group_key)
 from sync import refrescar_snapshot, ultimo_snapshot
 from sync.health import salud_de_cuentas
 
@@ -317,7 +317,13 @@ def index():
          "delta": metrics.delta_pct(len(altas_p) - len(bajas_p), len(altas_prev) - len(bajas_prev))},
     ]
 
-    canal_counts = metrics.por_canal(altas_p + trials_p)
+    clientes_canal = [
+        c for c in snap["clientes"]
+        if c.get("cuenta_activo_recurrente") or c.get("estado") == "trial"
+    ]
+    if canal:
+        clientes_canal = [c for c in clientes_canal if origen_group_key(c.get("origen")) == canal]
+    canal_counts = Counter(origen_group_key(c.get("origen")) for c in clientes_canal)
     canales = [(ORIGEN_LABELS.get(k, k), canal_counts.get(k, 0)) for k, _ in ORIGENES_BASE if canal_counts.get(k, 0)]
     serie_altas = metrics.serie_temporal(altas_p, desde, hasta)
     serie_bajas = metrics.serie_temporal(bajas_p, desde, hasta)
