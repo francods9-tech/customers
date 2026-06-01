@@ -215,7 +215,7 @@ table.grid { width: 100%; min-width: 820px; border-collapse: collapse; margin-to
 .ticket-list-actions button { white-space: nowrap; }
 .new-request-form {
   display: grid;
-  grid-template-columns: minmax(220px, 1.2fr) minmax(240px, 1.4fr) 130px 170px 170px 150px auto;
+  grid-template-columns: minmax(220px, 1.1fr) minmax(240px, 1.4fr) 130px 170px 150px auto;
   gap: .6rem;
   align-items: start;
 }

@@ -520,7 +520,7 @@ def add_solicitud_directa():
     customer_email = (request.form.get("customer_email") or "").lower()
     texto = (request.form.get("texto") or "").strip()
     tipo = request.form.get("tipo") if request.form.get("tipo") in complaint_rules.REQUEST_TYPES else "solicitud"
-    estado_gestion = complaint_rules.normalize_status(request.form.get("estado_gestion", "abierta"))
+    estado_gestion = "abierta"
     equipo = complaint_rules.team_for_status(estado_gestion)
 
     if not clientes:

@@ -109,8 +109,9 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - KPIs de registradas, abiertas actuales, Customer Success, Operaciones y resueltas.
   - Grafico temporal de solicitudes por dia o semana.
 - Solicitudes permite alta directa desde `/solicitudes`:
-  - Formulario superior `Nueva solicitud` con buscador de cliente por nombre/email/WhatsApp, tipo, motivo/categoria, estado inicial, importancia y detalle obligatorio.
+  - Formulario superior `Nueva solicitud` con buscador de cliente por nombre/email/WhatsApp, tipo, motivo/categoria, importancia y detalle obligatorio.
   - Nueva ruta POST `/solicitudes/nueva`.
+  - Todas las solicitudes nuevas se crean como `abierta`; luego se gestionan desde la lista/ficha.
   - El equipo no se selecciona al crear: se deriva del estado (`abierta`/`en_gestion` => Ops; `comunicar` => CS).
   - Si no hay clientes en snapshot, el formulario queda deshabilitado con mensaje operativo.
 - Se removio el scope financiero/CEO del dashboard de Customer Success:
@@ -266,6 +267,21 @@ Verificacion HTTP local autenticada:
 - PR #8 mergeado a `main`.
 - Railway deploy `5ab5fe76-ffd2-45b3-9db4-886dc5820e81` exitoso.
 - Produccion verificada: `/healthz` 200, `/login` 200, `/solicitudes` sin login redirige a login.
+
+Verificacion luego de alta siempre abierta:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+```
+
+Resultado: 45 tests OK; `imports ok 38`.
+
+Verificacion HTTP local autenticada:
+
+- `/solicitudes` 200.
+- Formulario de alta con buscador e importancia.
+- Formulario de alta sin `estado_gestion`; el backend ignora cualquier estado enviado y crea `abierta`.
 
 Verificacion HTTP local luego de ficha WhatsApp y tickets:
 

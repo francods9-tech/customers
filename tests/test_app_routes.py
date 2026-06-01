@@ -125,7 +125,7 @@ class AppRoutesTest(unittest.TestCase):
             "customer_email": "cliente-z@example.test",
             "tipo": "solicitud",
             "categoria": "envia_links",
-            "pelota": "cs",
+            "estado_gestion": "comunicar",
             "importancia": "alta",
             "agente": "Fran",
             "texto": "Necesita bajar tres enlaces.",
@@ -144,7 +144,7 @@ class AppRoutesTest(unittest.TestCase):
             self.assertEqual(row.estado_gestion, "abierta")
             self.assertFalse(row.resuelta)
 
-    def test_solicitud_directa_deriva_equipo_desde_estado_inicial(self):
+    def test_solicitud_directa_ignora_estado_inicial_y_crea_abierta(self):
         from db.models import Interaccion
 
         self.login()
@@ -154,24 +154,19 @@ class AppRoutesTest(unittest.TestCase):
             "email_key": "estado@example.test",
         }])
 
-        cases = [
-            ("abierta", "ops"),
-            ("en_gestion", "ops"),
-            ("comunicar", "cs"),
-        ]
-        for estado, equipo in cases:
-            response = self.client.post("/solicitudes/nueva", data={
-                "customer_email": "estado@example.test",
-                "tipo": "queja",
-                "categoria": "tiempos_gestion",
-                "estado_gestion": estado,
-                "texto": f"Detalle {estado}",
-            })
-            self.assertEqual(response.status_code, 302)
+        response = self.client.post("/solicitudes/nueva", data={
+            "customer_email": "estado@example.test",
+            "tipo": "queja",
+            "categoria": "tiempos_gestion",
+            "estado_gestion": "comunicar",
+            "texto": "Detalle default abierta",
+        })
+        self.assertEqual(response.status_code, 302)
 
         with self.app.app_context():
-            rows = Interaccion.query.filter_by(customer_email="estado@example.test").order_by(Interaccion.id.asc()).all()
-            self.assertEqual([(r.equipo, r.estado_gestion) for r in rows], [(c[1], c[0]) for c in cases])
+            row = Interaccion.query.filter_by(customer_email="estado@example.test").one()
+            self.assertEqual(row.estado_gestion, "abierta")
+            self.assertEqual(row.equipo, "ops")
 
     def test_solicitudes_muestra_formulario_con_clientes_ordenados(self):
         from db import db
@@ -196,7 +191,9 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn('type="search"', body)
         self.assertIn('data-customer-search', body)
         self.assertIn('name="importancia"', body)
-        self.assertIn('name="estado_gestion"', body)
+        new_form = body[body.index('action="/solicitudes/nueva"'):]
+        new_form = new_form[:new_form.index("</form>")]
+        self.assertNotIn('name="estado_gestion"', new_form)
         self.assertNotIn('name="pelota"', body)
         self.assertNotIn('name="agente"', body)
         self.assertLess(body.index("Ana"), body.index("Zeta"))
