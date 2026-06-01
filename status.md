@@ -214,6 +214,11 @@ Ultima verificacion luego de agregar porcentajes al grafico por canal:
 Resultado: 50 tests OK; import Flask OK con 38 rutas.
 - Deploy Railway posterior: `bf568317-14aa-4e06-b67a-970be1d8abce` SUCCESS; `/healthz` 200 y `/login` 200.
 
+Correccion posterior:
+
+- La leyenda del grafico por canal usa el indice de `canalData.labels` como fuente del label para evitar `undefined` en Chart.js.
+- Verificacion: 50 tests OK; import Flask OK con 38 rutas.
+
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```

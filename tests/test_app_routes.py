@@ -214,6 +214,8 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("return `${label} · ${value} (${pct}%)`;", body)
         self.assertIn("text: `${label} · ${value} (${pct}%)`", body)
         self.assertIn("const totalCanal = canalData.valores.reduce((a, b) => a + b, 0);", body)
+        self.assertIn("labels.map((item, index) =>", body)
+        self.assertIn("canalData.labels[index] || item.text", body)
 
     def test_solicitud_directa_requires_login(self):
         response = self.client.post("/solicitudes/nueva", data={"texto": "Alta manual"})

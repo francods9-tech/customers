@@ -111,10 +111,10 @@
             color: txt,
             generateLabels(chart) {
               const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
-              return labels.map(item => {
-                const value = canalData.valores[item.index] || 0;
+              return labels.map((item, index) => {
+                const value = canalData.valores[index] || 0;
                 const pct = totalCanal ? Math.round(value / totalCanal * 100) : 0;
-                const label = canalData.labels[item.index];
+                const label = canalData.labels[index] || item.text;
                 return { ...item, text: `${label} · ${value} (${pct}%)` };
               });
             },
