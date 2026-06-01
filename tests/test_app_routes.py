@@ -211,6 +211,9 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("Altas y trials por canal", body)
         self.assertIn('"labels": ["Email", "Instagram"]', body)
         self.assertIn('"valores": [1, 2]', body)
+        self.assertIn("return `${label} · ${value} (${pct}%)`;", body)
+        self.assertIn("text: `${label} · ${value} (${pct}%)`", body)
+        self.assertIn("const totalCanal = canalData.valores.reduce((a, b) => a + b, 0);", body)
 
     def test_solicitud_directa_requires_login(self):
         response = self.client.post("/solicitudes/nueva", data={"texto": "Alta manual"})

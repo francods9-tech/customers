@@ -101,11 +101,33 @@
     });
 
     if (document.getElementById("chartCanal")) {
+      const totalCanal = canalData.valores.reduce((a, b) => a + b, 0);
       new Chart(document.getElementById("chartCanal"), {
         type: "doughnut",
         data: { labels: canalData.labels, datasets: [{ data: canalData.valores,
           backgroundColor: ["#5b8cff","#2ecc71","#f5a623","#e056fd","#22d3ee","#ff6b6b","#a78bfa","#94a3b8"] }] },
-        options: { plugins: { legend: { position: "right", labels: { color: txt } } } }
+        options: { plugins: {
+          legend: { position: "right", labels: {
+            color: txt,
+            generateLabels(chart) {
+              const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+              return labels.map(item => {
+                const value = canalData.valores[item.index] || 0;
+                const pct = totalCanal ? Math.round(value / totalCanal * 100) : 0;
+                const label = canalData.labels[item.index];
+                return { ...item, text: `${label} · ${value} (${pct}%)` };
+              });
+            },
+          } },
+          tooltip: { callbacks: {
+            label(context) {
+              const label = context.label || "";
+              const value = context.parsed || 0;
+              const pct = totalCanal ? Math.round(value / totalCanal * 100) : 0;
+              return `${label} · ${value} (${pct}%)`;
+            },
+          } },
+        } }
       });
     }
   </script>
