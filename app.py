@@ -14,6 +14,7 @@ from config import Config
 from db import db
 from db.models import (ChurnReason, ColabCreator, ComplaintCategory, CustomerMeta,
                        Interaccion, MessageCategory, MessageTemplate, ORIGENES,
+                       TicketComment,
                        ORIGEN_LABELS)
 from sync import refrescar_snapshot, ultimo_snapshot
 from sync.health import salud_de_cuentas
@@ -61,6 +62,7 @@ def _ensure_local_schema():
         "manual_plan": "ALTER TABLE customer_meta ADD COLUMN manual_plan VARCHAR(32) NOT NULL DEFAULT ''",
         "manual_estado": "ALTER TABLE customer_meta ADD COLUMN manual_estado VARCHAR(32) NOT NULL DEFAULT ''",
         "tipo_cliente": "ALTER TABLE customer_meta ADD COLUMN tipo_cliente VARCHAR(32) NOT NULL DEFAULT ''",
+        "whatsapp": "ALTER TABLE customer_meta ADD COLUMN whatsapp VARCHAR(80) NOT NULL DEFAULT ''",
         "colab_descuento": "ALTER TABLE customer_meta ADD COLUMN colab_descuento VARCHAR(80) NOT NULL DEFAULT ''",
         "colab_acuerdo": "ALTER TABLE customer_meta ADD COLUMN colab_acuerdo TEXT NOT NULL DEFAULT ''",
         "colab_inicio": "ALTER TABLE customer_meta ADD COLUMN colab_inicio VARCHAR(10) NOT NULL DEFAULT ''",
@@ -75,6 +77,7 @@ def _ensure_local_schema():
         "categoria": "ALTER TABLE interacciones ADD COLUMN categoria VARCHAR(64) NOT NULL DEFAULT ''",
         "equipo": "ALTER TABLE interacciones ADD COLUMN equipo VARCHAR(16) NOT NULL DEFAULT 'cs'",
         "estado_gestion": "ALTER TABLE interacciones ADD COLUMN estado_gestion VARCHAR(32) NOT NULL DEFAULT 'abierta'",
+        "importancia": "ALTER TABLE interacciones ADD COLUMN importancia VARCHAR(16) NOT NULL DEFAULT 'media'",
     }
     for name, sql in interaction_additions.items():
         columns = {c["name"] for c in inspect(db.engine).get_columns("interacciones")}
@@ -210,6 +213,16 @@ def _clientes_snapshot(snap):
             "nombre": c.get("nombre") or c.get("email") or email,
         })
     return sorted(clientes, key=lambda c: (c["nombre"] or "").lower())
+
+
+def _ticket_context(ticket):
+    return {
+        "age": complaint_rules.ticket_age(ticket),
+        "importance_label": complaint_rules.IMPORTANCE_LABELS.get(
+            getattr(ticket, "importancia", "") or "media",
+            getattr(ticket, "importancia", "") or "Media",
+        ),
+    }
 
 
 def _clientes_enriquecidos():
@@ -481,6 +494,9 @@ def quejas_list():
                            estados_solicitud=complaint_rules.REQUEST_STATUS_OPTIONS,
                            team_labels=complaint_rules.TEAM_LABELS,
                            status_labels=complaint_rules.REQUEST_STATUS_LABELS,
+                           importancias=complaint_rules.IMPORTANCE_OPTIONS,
+                           importance_labels=complaint_rules.IMPORTANCE_LABELS,
+                           ticket_context=_ticket_context,
                            category_label=complaint_rules.category_label)
 
 
@@ -496,8 +512,8 @@ def add_solicitud_directa():
     pelota = request.form.get("pelota") or "cs"
     pelota_map = {
         "cs": ("cs", "abierta"),
-        "ops": ("ops", "abierta"),
-        "cliente": ("cs", "esperando"),
+        "ops": ("ops", "en_gestion"),
+        "cliente": ("cs", "comunicar"),
     }
     equipo, estado_gestion = pelota_map.get(pelota, pelota_map["cs"])
 
@@ -512,10 +528,11 @@ def add_solicitud_directa():
             customer_email=customer_email,
             tipo=tipo,
             texto=texto,
-            agente=(request.form.get("agente") or "").strip() or None,
+            agente=None,
             categoria=request.form.get("categoria", ""),
             equipo=equipo,
             estado_gestion=estado_gestion,
+            importancia=request.form.get("importancia") or "media",
             resuelta=False,
         ))
         db.session.commit()
@@ -551,12 +568,56 @@ def set_queja_categoria(qid):
 def set_queja_gestion(qid):
     q = db.session.get(Interaccion, qid)
     if q and complaint_rules.is_customer_request(q):
-        q.equipo = request.form.get("equipo", "cs")
-        q.estado_gestion = request.form.get("estado_gestion", "abierta")
+        estado = complaint_rules.normalize_status(request.form.get("estado_gestion", "abierta"))
+        q.estado_gestion = estado
+        q.equipo = complaint_rules.team_for_status(estado)
+        q.importancia = request.form.get("importancia") or q.importancia or "media"
         q.resuelta = q.estado_gestion == "resuelta"
         db.session.commit()
         flash("Gestion actualizada", "ok")
     return redirect(request.referrer or url_for("quejas_list"))
+
+
+@app.route("/solicitudes/<int:qid>")
+@login_required
+def ticket_detail(qid):
+    ticket = db.session.get(Interaccion, qid)
+    if not ticket or not complaint_rules.is_customer_request(ticket):
+        abort(404)
+    snap = ultimo_snapshot() or {}
+    nombres = {c["email_key"]: c["nombre"] for c in snap.get("clientes", [])}
+    comments = ticket.comentarios.order_by(TicketComment.created_at.asc()).all()
+    return render_template(
+        "ticket.html",
+        ticket=ticket,
+        comments=comments,
+        nombre=nombres.get(ticket.customer_email, ticket.customer_email),
+        categorias=_complaint_categories(),
+        category_map=_complaint_category_map(),
+        category_label=complaint_rules.category_label,
+        estados_solicitud=complaint_rules.REQUEST_STATUS_OPTIONS,
+        status_labels=complaint_rules.REQUEST_STATUS_LABELS,
+        importancias=complaint_rules.IMPORTANCE_OPTIONS,
+        importance_labels=complaint_rules.IMPORTANCE_LABELS,
+        ctx=_ticket_context(ticket),
+        team_labels=complaint_rules.TEAM_LABELS,
+    )
+
+
+@app.route("/solicitudes/<int:qid>/comentarios", methods=["POST"])
+@login_required
+def add_ticket_comment(qid):
+    ticket = db.session.get(Interaccion, qid)
+    texto = (request.form.get("texto") or "").strip()
+    if ticket and complaint_rules.is_customer_request(ticket) and texto:
+        db.session.add(TicketComment(
+            interaccion_id=ticket.id,
+            texto=texto,
+            agente=(request.form.get("agente") or "").strip() or None,
+        ))
+        db.session.commit()
+        flash("Comentario agregado", "ok")
+    return redirect(url_for("ticket_detail", qid=qid))
 
 
 @app.route("/quejas/categorias", methods=["POST"])
@@ -833,6 +894,7 @@ def cliente(email):
                            atencion=atencion, categorias=_complaint_categories(),
                            equipos=complaint_rules.TEAM_OPTIONS,
                            estados_solicitud=complaint_rules.REQUEST_STATUS_OPTIONS,
+                           importancias=complaint_rules.IMPORTANCE_OPTIONS,
                            category_map=_complaint_category_map(),
                            category_label=complaint_rules.category_label)
 
@@ -864,20 +926,32 @@ def set_suscripcion(email):
     return redirect(url_for("cliente", email=email))
 
 
+@app.route("/cliente/<path:email>/contacto", methods=["POST"])
+@login_required
+def set_contacto_cliente(email):
+    meta = _get_or_create_meta(email.lower())
+    meta.whatsapp = (request.form.get("whatsapp") or "").strip()
+    db.session.commit()
+    flash("Contacto actualizado", "ok")
+    return redirect(url_for("cliente", email=email))
+
+
 @app.route("/cliente/<path:email>/interaccion", methods=["POST"])
 @login_required
 def add_interaccion(email):
     texto = (request.form.get("texto") or "").strip()
     tipo = request.form.get("tipo", "nota")
     if texto:
+        estado = complaint_rules.normalize_status(request.form.get("estado_gestion", "abierta"))
         db.session.add(Interaccion(
             customer_email=email.lower(),
             tipo=tipo,
             texto=texto,
             agente=(request.form.get("agente") or "").strip() or None,
             categoria=request.form.get("categoria", "") if tipo in complaint_rules.REQUEST_TYPES else "",
-            equipo=request.form.get("equipo", "cs") if tipo in complaint_rules.REQUEST_TYPES else "cs",
-            estado_gestion=request.form.get("estado_gestion", "abierta") if tipo in complaint_rules.REQUEST_TYPES else "",
+            equipo=complaint_rules.team_for_status(estado) if tipo in complaint_rules.REQUEST_TYPES else "cs",
+            estado_gestion=estado if tipo in complaint_rules.REQUEST_TYPES else "",
+            importancia=request.form.get("importancia", "media") if tipo in complaint_rules.REQUEST_TYPES else "media",
         ))
         db.session.commit()
         flash("Nota agregada", "ok")

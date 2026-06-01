@@ -43,7 +43,7 @@ class ComplaintRulesTest(unittest.TestCase):
 
         rows = [
             type("Q", (), {"tipo": "queja", "equipo": "cs", "estado_gestion": "abierta", "resuelta": False})(),
-            type("Q", (), {"tipo": "solicitud", "equipo": "ops", "estado_gestion": "en_proceso", "resuelta": False})(),
+            type("Q", (), {"tipo": "solicitud", "equipo": "ops", "estado_gestion": "en_gestion", "resuelta": False})(),
             type("Q", (), {"tipo": "nota", "equipo": "", "estado_gestion": "", "resuelta": False})(),
             type("Q", (), {"tipo": "queja", "equipo": "ops", "estado_gestion": "resuelta", "resuelta": True})(),
         ]
@@ -54,7 +54,7 @@ class ComplaintRulesTest(unittest.TestCase):
         self.assertEqual(stats["total_resueltas"], 1)
         self.assertEqual(stats["por_equipo"]["cs"], 1)
         self.assertEqual(stats["por_equipo"]["ops"], 1)
-        self.assertEqual(stats["por_estado"]["en_proceso"], 1)
+        self.assertEqual(stats["por_estado"]["en_gestion"], 1)
 
 
 if __name__ == "__main__":

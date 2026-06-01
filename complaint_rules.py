@@ -18,11 +18,30 @@ TEAM_LABELS = dict(TEAM_OPTIONS)
 
 REQUEST_STATUS_OPTIONS = [
     ("abierta", "Abierta"),
-    ("en_proceso", "En proceso"),
-    ("esperando", "Esperando cliente"),
-    ("resuelta", "Resuelta"),
+    ("en_gestion", "En gestion"),
+    ("comunicar", "Comunicar al cliente"),
 ]
-REQUEST_STATUS_LABELS = dict(REQUEST_STATUS_OPTIONS)
+REQUEST_STATUS_LABELS = dict(REQUEST_STATUS_OPTIONS) | {
+    "en_proceso": "En gestion",
+    "esperando": "Comunicar al cliente",
+    "resuelta": "Resuelta",
+}
+
+IMPORTANCE_OPTIONS = [
+    ("baja", "Baja"),
+    ("media", "Media"),
+    ("alta", "Alta"),
+]
+IMPORTANCE_LABELS = dict(IMPORTANCE_OPTIONS)
+
+STATUS_TEAM = {
+    "abierta": "cs",
+    "en_gestion": "ops",
+    "comunicar": "cs",
+    "en_proceso": "ops",
+    "esperando": "cs",
+    "resuelta": "cs",
+}
 
 
 def category_key(label):
@@ -54,6 +73,32 @@ def is_customer_request(item):
     return getattr(item, "tipo", "") in REQUEST_TYPES
 
 
+def normalize_status(status):
+    legacy = {"en_proceso": "en_gestion", "esperando": "comunicar"}
+    return legacy.get(status or "", status or "abierta")
+
+
+def team_for_status(status):
+    return STATUS_TEAM.get(status or "abierta", "cs")
+
+
+def ticket_age(ticket, today=None):
+    created = _parse_dt(getattr(ticket, "created_at", None))
+    if not created:
+        return {"dias": 0, "class": ""}
+    today = today or dt.datetime.now(dt.timezone.utc)
+    if today.tzinfo is None:
+        today = today.replace(tzinfo=dt.timezone.utc)
+    days = max(0, (today - created).days)
+    if days > 14:
+        klass = "age-danger"
+    elif days > 7:
+        klass = "age-warn"
+    else:
+        klass = ""
+    return {"dias": days, "class": klass}
+
+
 def request_stats(items):
     open_count = 0
     resolved_count = 0
@@ -64,7 +109,7 @@ def request_stats(items):
         if not is_customer_request(item):
             continue
         resolved = bool(getattr(item, "resuelta", False)) or getattr(item, "estado_gestion", "") == "resuelta"
-        status = getattr(item, "estado_gestion", "") or ("resuelta" if resolved else "abierta")
+        status = normalize_status(getattr(item, "estado_gestion", "") or ("resuelta" if resolved else "abierta"))
         team = getattr(item, "equipo", "") or "cs"
         by_status[status] = by_status.get(status, 0) + 1
         if resolved:

@@ -34,6 +34,7 @@ class CustomerMeta(db.Model):
     manual_plan = db.Column(db.String(32), nullable=False, default="")
     manual_estado = db.Column(db.String(32), nullable=False, default="")
     tipo_cliente = db.Column(db.String(32), nullable=False, default="")
+    whatsapp = db.Column(db.String(80), nullable=False, default="")
     colab_descuento = db.Column(db.String(80), nullable=False, default="")
     colab_acuerdo = db.Column(db.Text, nullable=False, default="")
     colab_inicio = db.Column(db.String(10), nullable=False, default="")
@@ -67,6 +68,23 @@ class Interaccion(db.Model):
     categoria = db.Column(db.String(64), nullable=False, default="")
     equipo = db.Column(db.String(16), nullable=False, default="cs")
     estado_gestion = db.Column(db.String(32), nullable=False, default="abierta")
+    importancia = db.Column(db.String(16), nullable=False, default="media")
+
+
+class TicketComment(db.Model):
+    """Comentario interno dentro de una solicitud/queja operativa."""
+    __tablename__ = "ticket_comments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    interaccion_id = db.Column(db.Integer, db.ForeignKey("interacciones.id"), nullable=False, index=True)
+    texto = db.Column(db.Text, nullable=False)
+    agente = db.Column(db.String(120), nullable=True)
+    created_at = db.Column(db.DateTime(timezone=True), default=_now)
+
+    ticket = db.relationship(
+        "Interaccion",
+        backref=db.backref("comentarios", lazy="dynamic", cascade="all, delete-orphan"),
+    )
 
 
 class ComplaintCategory(db.Model):

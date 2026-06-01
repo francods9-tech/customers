@@ -99,40 +99,49 @@
     {% endif %}
   </section>
 
-  <section class="panel">
+  <section class="panel manual-panel">
     <h2>Ajuste manual</h2>
-    <form method="post" action="{{ url_for('set_suscripcion', email=c.email_key) }}" class="stack-form">
-      <label>Plan</label>
-      <select name="manual_plan">
-        {% for k, label in planes %}
-        <option value="{{ k }}" {{ "selected" if meta.manual_plan == k }}>{{ label }}</option>
-        {% endfor %}
-      </select>
-
-      <label>Estado</label>
-      <select name="manual_estado">
-        {% for k, label in estados %}
-        <option value="{{ k }}" {{ "selected" if meta.manual_estado == k }}>{{ label }}</option>
-        {% endfor %}
-      </select>
-
-      <label>Tipo de cliente</label>
-      <select name="tipo_cliente">
-        {% for k, label in tipos %}
-        <option value="{{ k }}" {{ "selected" if meta.tipo_cliente == k }}>{{ label }}</option>
-        {% endfor %}
-      </select>
-      <label>Descuento colab</label>
-      <input type="text" name="colab_descuento" value="{{ meta.colab_descuento or '' }}" placeholder="Ej: 50%, gratis, USD 99">
-
-      <label>Acuerdo colab</label>
-      <textarea name="colab_acuerdo" rows="3" placeholder="Ej: 2 historias por mes, logo, referido">{{ meta.colab_acuerdo or '' }}</textarea>
-
-      <label>Inicio colab</label>
-      <input type="date" name="colab_inicio" value="{{ meta.colab_inicio or '' }}">
-
-      <label>Proxima revision</label>
-      <input type="date" name="colab_revision" value="{{ meta.colab_revision or '' }}">
+    <form method="post" action="{{ url_for('set_suscripcion', email=c.email_key) }}" class="manual-form">
+      <div>
+        <label>Plan</label>
+        <select name="manual_plan">
+          {% for k, label in planes %}
+          <option value="{{ k }}" {{ "selected" if meta.manual_plan == k }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Estado</label>
+        <select name="manual_estado">
+          {% for k, label in estados %}
+          <option value="{{ k }}" {{ "selected" if meta.manual_estado == k }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Tipo de cliente</label>
+        <select name="tipo_cliente">
+          {% for k, label in tipos %}
+          <option value="{{ k }}" {{ "selected" if meta.tipo_cliente == k }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Descuento colab</label>
+        <input type="text" name="colab_descuento" value="{{ meta.colab_descuento or '' }}" placeholder="Ej: 50%, gratis, USD 99">
+      </div>
+      <div class="wide">
+        <label>Acuerdo colab</label>
+        <textarea name="colab_acuerdo" rows="3" placeholder="Ej: 2 historias por mes, logo, referido">{{ meta.colab_acuerdo or '' }}</textarea>
+      </div>
+      <div>
+        <label>Inicio colab</label>
+        <input type="date" name="colab_inicio" value="{{ meta.colab_inicio or '' }}">
+      </div>
+      <div>
+        <label>Proxima revision</label>
+        <input type="date" name="colab_revision" value="{{ meta.colab_revision or '' }}">
+      </div>
       <button type="submit">Guardar suscripcion</button>
     </form>
     <p class="muted">One time payment y Free por colab no suman como activos recurrentes. Colab con descuento si suma si esta activo.</p>
@@ -140,6 +149,15 @@
 </div>
 
 <div class="ficha-grid">
+  <section class="panel">
+    <h2>Contacto</h2>
+    <form method="post" action="{{ url_for('set_contacto_cliente', email=c.email_key) }}" class="stack-form">
+      <label>WhatsApp</label>
+      <input type="text" name="whatsapp" value="{{ meta.whatsapp or '' }}" placeholder="+54 9 11 ...">
+      <button type="submit">Guardar contacto</button>
+    </form>
+  </section>
+
   <section class="panel">
     <h2>Origen y bienvenida</h2>
     <form method="post" action="{{ url_for('set_origen', email=c.email_key) }}" class="stack-form">
@@ -213,6 +231,11 @@
       <option value="{{ key }}">{{ label }}</option>
       {% endfor %}
     </select>
+    <select name="importancia">
+      {% for key, label in importancias %}
+      <option value="{{ key }}" {{ "selected" if key == "media" }}>{{ label }}</option>
+      {% endfor %}
+    </select>
     <input type="text" name="agente" placeholder="Tu nombre">
     <textarea name="texto" placeholder="Que paso en este contacto?" required></textarea>
     <button type="submit">Agregar</button>
@@ -228,9 +251,11 @@
       <div class="timeline-head">
         <span class="tag {{ 'tag-warn' if i.tipo == 'queja' }}">{{ i.tipo }}</span>
         {% if i.tipo in ("queja", "solicitud") %}
+          <a class="ticket-id" href="{{ url_for('ticket_detail', qid=i.id) }}">Ticket #{{ i.id }}</a>
           <span class="tag">{{ category_label(i.categoria, category_map) }}</span>
           <span class="tag">{{ i.equipo|upper }}</span>
           <span class="tag">{{ i.estado_gestion.replace("_", " ") }}</span>
+          <span class="tag">Importancia {{ i.importancia }}</span>
         {% endif %}
         <span class="muted">{{ i.created_at.strftime("%d/%m/%Y %H:%M") }}{% if i.agente %} · {{ i.agente }}{% endif %}</span>
       </div>
