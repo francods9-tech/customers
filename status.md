@@ -178,6 +178,7 @@ Verificacion visual local:
 - Ficha desktop 1240px: sin overflow horizontal.
 - Ficha mobile 390px: sin overflow horizontal.
 - Se corrigio `_ensure_local_schema` para agregar `interacciones.resuelta` en SQLite local antiguo.
+- Deploy Railway posterior: `0babac60-f3fe-4549-a9f2-beff071bb35b` SUCCESS; `/healthz` 200 y `/login` 200.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
