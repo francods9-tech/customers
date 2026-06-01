@@ -104,7 +104,8 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 - Inicio muestra la northstar `Activos recurrentes` como primer KPI superior, comparada contra el periodo anterior seleccionado y con link a Clientes filtrado por recurrentes.
 - Inicio ya no muestra KPI de Solicitudes; esa lectura vive en `/solicitudes`.
 - El grafico principal de Inicio es de barras y combina Altas, Bajas y Trials por dia/semana segun el periodo.
-- Inicio agrupa `Instagram`, `Instagram ingles`, `Instagram español` e `Instagram portugues` como un solo canal `Instagram` para filtro y grafico de altas por canal.
+- Inicio agrupa `Instagram`, `Instagram ingles`, `Instagram español` e `Instagram portugues` como un solo canal `Instagram` para filtro y grafico de altas/trials por canal.
+- Inicio muestra el grafico lateral `Altas y trials por canal`, sumando clientes de alta paga y clientes en trial por canal de adquisicion.
 - Solicitudes ahora tiene dashboard por periodo:
   - Presets de tiempo, incluyendo `Todo`.
   - KPIs de registradas, abiertas actuales, Customer Success, Operaciones y resueltas.
@@ -191,6 +192,15 @@ Ultima verificacion luego de agrupar variantes de Instagram:
 
 Resultado: 49 tests OK; import Flask OK con 38 rutas.
 - Deploy Railway posterior: `31e92431-3357-4745-844a-6602fa0c6ee2` SUCCESS; `/healthz` 200 y `/login` 200.
+
+Ultima verificacion luego de sumar trials al grafico por canal:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+```
+
+Resultado: 50 tests OK; import Flask OK con 38 rutas.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
