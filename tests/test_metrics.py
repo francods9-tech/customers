@@ -18,6 +18,19 @@ class MetricsTest(unittest.TestCase):
         self.assertEqual(desde.date(), dt.date(2026, 3, 10))
         self.assertGreater(hasta, desde)
 
+    def test_recurrent_northstar_compares_current_count_with_previous_7_days(self):
+        from metrics import recurrent_northstar_delta
+
+        result = recurrent_northstar_delta(
+            current_count=12,
+            altas_periodo=[{"email": "a@example.com"}, {"email": "b@example.com"}],
+            bajas_periodo=[{"email": "c@example.com"}],
+        )
+
+        self.assertEqual(result["valor"], 12)
+        self.assertEqual(result["previo"], 11)
+        self.assertEqual(result["delta"], 9.1)
+
 
 if __name__ == "__main__":
     unittest.main()

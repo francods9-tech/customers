@@ -91,6 +91,7 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - Motivos iniciales: precio, no uso, no vio resultado, soporte, competencia, pausa temporal y otro.
 - Dashboard ahora incluye preset `Todo` y la linea temporal toma el primer evento real de altas/bajas como inicio.
 - El KPI de Bajas del dashboard abre la pantalla de bajas con motivos.
+- Inicio muestra la northstar `Activos recurrentes` como primer KPI superior, con delta fijo vs los 7 dias anteriores y link a Clientes filtrado por recurrentes.
 - Solicitudes ahora tiene dashboard por periodo:
   - Presets de tiempo, incluyendo `Todo`.
   - KPIs de registradas, abiertas actuales, Customer Success, Operaciones y resueltas.
@@ -128,6 +129,14 @@ Ultima verificacion luego de agregar origen `XBIZ`:
 
 Resultado: 29 tests OK.
 
+Ultima verificacion luego de mover northstar a Inicio:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Resultado: 30 tests OK.
+
 Verificacion de import:
 
 ```powershell
@@ -143,6 +152,14 @@ Ultima verificacion de import:
 ```
 
 Resultado: `imports ok 30`.
+
+Ultima verificacion de import:
+
+```powershell
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+```
+
+Resultado: `imports ok 32`.
 
 Ultima verificacion de import:
 
@@ -173,6 +190,7 @@ Verificacion HTTP local:
 - `/mensajes?q=checkpoint` 200 con plantillas del pack WhatsApp
 - `/static/traqeer-logo.svg` 200
 - `/healthz` 200 publico
+- `/` 200 autenticado con northstar `Activos recurrentes` como primer KPI superior y delta `vs 7d ant.`
 - `/clientes?estado=trial` 200 con informacion de trial
 - `/clientes` 200 con tabla responsive
 - Flujo verificado: crear queja desde ficha, verla en `/quejas`, agregar categoria, renombrar categoria, categorizar queja, ocultar categoria y resolver queja.
@@ -190,10 +208,10 @@ Refresh parcial Stripe ejecutado:
 - Cruzados con clientes actuales: 7
 - Con link de factura: 6
 
-Servidor activo:
+Servidor activo en la ultima verificacion local:
 
 ```text
-http://127.0.0.1:5002
+http://127.0.0.1:5001
 ```
 
 Clave usada en la verificacion local: `test123`.

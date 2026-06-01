@@ -109,3 +109,12 @@ def delta_pct(actual, anterior):
     if anterior == 0:
         return None if actual == 0 else 100.0
     return round((actual - anterior) / anterior * 100, 1)
+
+
+def recurrent_northstar_delta(current_count, altas_periodo, bajas_periodo):
+    previous_count = current_count - len(altas_periodo) + len(bajas_periodo)
+    return {
+        "valor": current_count,
+        "previo": previous_count,
+        "delta": delta_pct(current_count, previous_count),
+    }

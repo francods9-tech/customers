@@ -259,7 +259,18 @@ def index():
     quejas_prev = _quejas_en(pdesde, phasta)
 
     pargs = {k: v for k, v in request.args.items()}  # preservar período al navegar
+    estado_summary = customer_rules.customer_summary(snap["clientes"])
+    now = dt.datetime.now(dt.timezone.utc)
+    northstar_desde = now - dt.timedelta(days=7)
+    northstar = metrics.recurrent_northstar_delta(
+        estado_summary["activos_recurrentes"],
+        metrics.filtrar(altas, northstar_desde, now),
+        metrics.filtrar(bajas, northstar_desde, now),
+    )
+
     kpis = [
+        {"label": "Activos recurrentes", "valor": northstar["valor"], "delta": northstar["delta"],
+         "href": url_for("clientes_list", recurrente=1), "fixed_period": "7d"},
         {"label": "Altas", "valor": len(altas_p), "delta": metrics.delta_pct(len(altas_p), len(altas_prev)),
          "href": url_for("eventos", tipo="altas", **pargs)},
         {"label": "Bajas", "valor": len(bajas_p), "delta": metrics.delta_pct(len(bajas_p), len(bajas_prev)),
@@ -286,8 +297,8 @@ def index():
         kpis=kpis, label=label, canal=canal, canales=canales, serie=serie,
         desde=desde.strftime("%Y-%m-%d"), hasta=(hasta - dt.timedelta(days=1)).strftime("%Y-%m-%d"),
         estado={
-            **customer_rules.customer_summary(snap["clientes"]),
-            "activos": customer_rules.customer_summary(snap["clientes"])["activos_recurrentes"],
+            **estado_summary,
+            "activos": estado_summary["activos_recurrentes"],
         },
     )
 
