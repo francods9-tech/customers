@@ -241,6 +241,9 @@ Resultado: 44 tests OK; `imports ok 37`.
 Verificacion HTTP local autenticada luego de pulir tickets:
 
 - `/solicitudes` 200 con formulario visible, sin `name="agente"` y con chips de estado.
+- PR #6 mergeado a `main`.
+- Railway deploy `4ea78907-f526-4952-8e1e-7d5bc44916b1` exitoso.
+- Produccion verificada: `/healthz` 200, `/login` 200, `/solicitudes` sin login redirige a login.
 
 Verificacion HTTP local luego de ficha WhatsApp y tickets:
 
