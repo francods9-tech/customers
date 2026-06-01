@@ -240,6 +240,8 @@ Correccion posterior:
 - Correccion posterior: las altas excluyen emails que hoy estan en trial, para que en periodos como 7 dias `Altas` no duplique trials; los trials quedan solo en su serie propia.
 - Verificacion: 54 tests OK; import Flask OK con 38 rutas.
 - Deploy Railway posterior: `69013efe-1c0c-45a2-b18d-5c93b65db112` SUCCESS; `/healthz` 200 y `/login` 200.
+- Correccion posterior: en periodos filtrados, la torta por canal cuenta todos los eventos de altas + trials con canal definido, aunque el email no este en la base actual; solo descarta `Sin asignar`.
+- Verificacion: 55 tests OK; import Flask OK con 38 rutas.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
