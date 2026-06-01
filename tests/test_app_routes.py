@@ -84,6 +84,9 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn('name="whatsapp"', body)
         self.assertIn('name="usuario"', body)
         self.assertIn("customer-profile-grid", body)
+        self.assertIn("profile-overview-grid", body)
+        self.assertIn("profile-secondary-grid", body)
+        self.assertIn("client-action-form", body)
 
         response = self.client.post(
             "/cliente/cliente-z@example.test/contacto",

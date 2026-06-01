@@ -122,8 +122,9 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - `Ajuste manual` queda reorganizado en grilla compacta.
   - Se agrego campo WhatsApp editable por cliente en `CustomerMeta.whatsapp`.
   - Se agrego campo `usuario` editable por cliente en `CustomerMeta.usuario`, usado junto a WhatsApp para busqueda rapida.
-  - La ficha usa una grilla de perfil mas armonica para suscripcion, ajuste manual, contacto, origen/bienvenida y salud.
-  - Pendiente visual: Franco enviara screenshot para terminar de pulir el layout de la ficha.
+  - La ficha usa una grilla de perfil mas armonica: resumen/atencion arriba, suscripcion/ajuste manual como bloque principal, contacto/origen/salud como bloque secundario.
+  - Los campos avanzados de colab dentro de `Ajuste manual` quedan plegados salvo que ya existan datos de colab.
+  - `Nuevo contacto o solicitud` usa formulario en dos lineas para evitar campos comprimidos.
 - Solicitudes/tickets:
   - Cada solicitud se muestra como `Ticket #ID`.
   - La creacion ya no pide responsable.
@@ -161,6 +162,22 @@ Bulk de canales de adquisicion aplicado en produccion desde `C:\Users\Franco Sal
 - Verificacion posterior: 46 matched, 0 mismatches.
 - Conteo final aplicado: `instagram=20`, `referido=16`, `whatsapp=3`, `telegram=2`, `email=2`, `directo=2`, `sky=1`.
 - Deploy Railway previo al bulk: `cfb784fe-9338-4ca7-94b7-9fa7a8654711` SUCCESS; `/healthz` 200 y `/login` 200.
+
+Ultima verificacion luego de pulir layout de ficha de cliente:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+```
+
+Resultado: 46 tests OK; import Flask OK con 38 rutas.
+
+Verificacion visual local:
+
+- Servidor local: `http://127.0.0.1:5010`.
+- Ficha desktop 1240px: sin overflow horizontal.
+- Ficha mobile 390px: sin overflow horizontal.
+- Se corrigio `_ensure_local_schema` para agregar `interacciones.resuelta` en SQLite local antiguo.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
