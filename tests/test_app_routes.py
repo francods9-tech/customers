@@ -10,10 +10,12 @@ class AppRoutesTest(unittest.TestCase):
 
     def tearDown(self):
         from db import db
-        from db.models import Interaccion, Snapshot
+        from db.models import CustomerMeta, Interaccion, Snapshot, TicketComment
 
         with self.app.app_context():
+            TicketComment.query.filter(TicketComment.ticket.has(Interaccion.customer_email.like("%@example.test"))).delete(synchronize_session=False)
             Interaccion.query.filter(Interaccion.customer_email.like("%@example.test")).delete(synchronize_session=False)
+            CustomerMeta.query.filter(CustomerMeta.email.like("%@example.test")).delete(synchronize_session=False)
             Snapshot.query.filter(Snapshot.payload["test_marker"].as_string() == "solicitudes_directas").delete(synchronize_session=False)
             db.session.commit()
 
@@ -33,6 +35,20 @@ class AppRoutesTest(unittest.TestCase):
                 "resumen": {},
             }))
             db.session.commit()
+
+    def customer_row(self, nombre="Cliente Z", email="cliente-z@example.test"):
+        return {
+            "nombre": nombre,
+            "email": email,
+            "email_key": email,
+            "plan": "Premium",
+            "estado": "activo",
+            "anual": False,
+            "fecha_alta": "01/05/2026",
+            "fecha_alta_raw": "2026-05-01T00:00:00+00:00",
+            "dias_de_alta": 10,
+            "account_ids": [],
+        }
 
     def test_healthz_is_public(self):
         response = self.client.get("/healthz")
@@ -57,6 +73,25 @@ class AppRoutesTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login", response.location)
+
+    def test_ficha_permita_guardar_whatsapp(self):
+        self.login()
+        self.add_snapshot([self.customer_row()])
+
+        response = self.client.get("/cliente/cliente-z@example.test")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('name="whatsapp"', response.get_data(as_text=True))
+
+        response = self.client.post(
+            "/cliente/cliente-z@example.test/contacto",
+            data={"whatsapp": "+54 9 11 2222 3333"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            from db.models import CustomerMeta
+            meta = CustomerMeta.query.filter_by(email="cliente-z@example.test").one()
+            self.assertEqual(meta.whatsapp, "+54 9 11 2222 3333")
 
     def test_dashboard_no_muestra_finanzas_ni_gastos(self):
         self.login()
@@ -91,6 +126,7 @@ class AppRoutesTest(unittest.TestCase):
             "tipo": "solicitud",
             "categoria": "envia_links",
             "pelota": "cs",
+            "importancia": "alta",
             "agente": "Fran",
             "texto": "Necesita bajar tres enlaces.",
         })
@@ -102,7 +138,8 @@ class AppRoutesTest(unittest.TestCase):
             self.assertEqual(row.tipo, "solicitud")
             self.assertEqual(row.categoria, "envia_links")
             self.assertEqual(row.texto, "Necesita bajar tres enlaces.")
-            self.assertEqual(row.agente, "Fran")
+            self.assertIsNone(row.agente)
+            self.assertEqual(row.importancia, "alta")
             self.assertEqual(row.equipo, "cs")
             self.assertEqual(row.estado_gestion, "abierta")
             self.assertFalse(row.resuelta)
@@ -119,8 +156,8 @@ class AppRoutesTest(unittest.TestCase):
 
         cases = [
             ("cs", "cs", "abierta"),
-            ("ops", "ops", "abierta"),
-            ("cliente", "cs", "esperando"),
+            ("ops", "ops", "en_gestion"),
+            ("cliente", "cs", "comunicar"),
         ]
         for pelota, equipo, estado in cases:
             response = self.client.post("/solicitudes/nueva", data={
@@ -149,7 +186,76 @@ class AppRoutesTest(unittest.TestCase):
         body = response.get_data(as_text=True)
         self.assertIn("Nueva solicitud", body)
         self.assertIn("ana@example.test", body)
+        self.assertIn('name="importancia"', body)
+        self.assertNotIn('name="agente"', body)
         self.assertLess(body.index("Ana"), body.index("Zeta"))
+
+    def test_ticket_muestra_numero_aging_y_comentarios(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="solicitud",
+                texto="Revisar enlace activo",
+                categoria="envia_links",
+                equipo="ops",
+                estado_gestion="en_gestion",
+                importancia="alta",
+                created_at=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=8),
+            )
+            db.session.add(ticket)
+            db.session.commit()
+            ticket_id = ticket.id
+
+        response = self.client.get("/solicitudes")
+        body = response.get_data(as_text=True)
+        self.assertIn(f"Ticket #{ticket_id}", body)
+        self.assertIn("8 dias", body)
+        self.assertIn("age-warn", body)
+        self.assertIn("Alta", body)
+        self.assertIn(f'/solicitudes/{ticket_id}', body)
+
+        response = self.client.post(
+            f"/solicitudes/{ticket_id}/comentarios",
+            data={"texto": "Ops confirma que lo toma hoy."},
+        )
+        self.assertEqual(response.status_code, 302)
+
+        response = self.client.get(f"/solicitudes/{ticket_id}")
+        body = response.get_data(as_text=True)
+        self.assertIn(f"Ticket #{ticket_id}", body)
+        self.assertIn("Ops confirma que lo toma hoy.", body)
+        self.assertIn("En gestion", body)
+
+    def test_ticket_aging_rojo_mas_de_catorce_dias(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="queja",
+                texto="Pendiente viejo",
+                estado_gestion="abierta",
+                created_at=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=15),
+            )
+            db.session.add(ticket)
+            db.session.commit()
+
+        response = self.client.get("/solicitudes")
+        body = response.get_data(as_text=True)
+        self.assertIn("15 dias", body)
+        self.assertIn("age-danger", body)
 
     def test_solicitudes_sin_snapshot_deshabilita_formulario(self):
         import app as app_module

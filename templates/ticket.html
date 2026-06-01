@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Ticket #{{ ticket.id }}{% endblock %}
+{% block content %}
+
+<a class="back" href="{{ url_for('quejas_list') }}">&larr; Solicitudes</a>
+
+<section class="ticket-hero">
+  <div>
+    <div class="profile-eyebrow">Ticket #{{ ticket.id }}</div>
+    <h1>{{ nombre }}</h1>
+    <p class="muted">{{ ticket.customer_email }}</p>
+  </div>
+  <div class="profile-badges">
+    <span class="tag">{{ ticket.tipo }}</span>
+    <span class="tag">{{ category_label(ticket.categoria, category_map) }}</span>
+    <span class="tag">{{ team_labels.get(ticket.equipo, ticket.equipo)|upper }}</span>
+    <span class="tag">{{ status_labels.get(ticket.estado_gestion, ticket.estado_gestion) }}</span>
+    <span class="tag">Importancia {{ importance_labels.get(ticket.importancia, ticket.importancia or "Media") }}</span>
+    <span class="tag {{ ctx.age.class }}">{{ ctx.age.dias }} dias</span>
+  </div>
+</section>
+
+<div class="ticket-layout">
+  <section class="panel">
+    <h2>Detalle</h2>
+    <p>{{ ticket.texto }}</p>
+
+    <form method="post" action="{{ url_for('set_queja_gestion', qid=ticket.id) }}" class="ticket-form">
+      <label>Estado</label>
+      <select name="estado_gestion">
+        {% for key, label in estados_solicitud %}
+        <option value="{{ key }}" {{ "selected" if ticket.estado_gestion == key }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <label>Importancia</label>
+      <select name="importancia">
+        {% for key, label in importancias %}
+        <option value="{{ key }}" {{ "selected" if ticket.importancia == key }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Actualizar ticket</button>
+    </form>
+
+    <form method="post" action="{{ url_for('resolver_queja', qid=ticket.id) }}" class="inline-action">
+      <span>Cuando ya no quede accion pendiente, pasalo a resueltas.</span>
+      <button type="submit">Marcar resuelto</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Comentarios</h2>
+    <form method="post" action="{{ url_for('add_ticket_comment', qid=ticket.id) }}" class="comment-form">
+      <textarea name="texto" placeholder="Agregar comentario interno" required></textarea>
+      <input type="text" name="agente" placeholder="Autor">
+      <button type="submit">Agregar comentario</button>
+    </form>
+
+    {% if comments %}
+    <ul class="timeline clean-timeline">
+      {% for comment in comments %}
+      <li>
+        <div class="timeline-head">
+          <span class="muted">{{ comment.created_at.strftime("%d/%m/%Y %H:%M") }}{% if comment.agente %} &middot; {{ comment.agente }}{% endif %}</span>
+        </div>
+        <p>{{ comment.texto }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">Sin comentarios todavia.</p>
+    {% endif %}
+  </section>
+</div>
+
+{% endblock %}

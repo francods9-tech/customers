@@ -117,6 +117,17 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - No hay bloque MRR/cash/conciliacion en Inicio.
   - No hay pantalla `/gastos` ni APIs financieras.
   - Queda un test preventivo para evitar reintroducir `Gastos`, `MRR`, `Stripe` o `Mercury` en Inicio.
+- Ficha de cliente:
+  - `Ajuste manual` queda reorganizado en grilla compacta.
+  - Se agrego campo WhatsApp editable por cliente en `CustomerMeta.whatsapp`.
+- Solicitudes/tickets:
+  - Cada solicitud se muestra como `Ticket #ID`.
+  - La creacion ya no pide responsable.
+  - Se agrega importancia (`Baja`, `Media`, `Alta`).
+  - Estados operativos simplificados: `abierta`, `en_gestion`, `comunicar`; `resuelta` queda como accion separada.
+  - El equipo se deriva del estado: abierta/comunicar => CS, en_gestion => Ops.
+  - Se agrega ficha de ticket `/solicitudes/<id>` con comentarios internos.
+  - Se muestra aging en dias; amarillo si supera 7 dias, rojo si supera 14.
 
 ## Verificacion
 
@@ -206,6 +217,19 @@ Verificacion completa final:
 
 Resultado: 40 tests OK.
 
+Verificacion luego de ficha WhatsApp y tickets:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Resultado: 43 tests OK.
+
+Verificacion HTTP local luego de ficha WhatsApp y tickets:
+
+- `/solicitudes` 200 con tickets numerados, selector de importancia y sin campo responsable en alta.
+- `/solicitudes/<id>` 200 con ficha de ticket, estado, importancia y comentarios.
+
 Verificacion de import:
 
 ```powershell
@@ -228,7 +252,7 @@ Ultima verificacion de import:
 .\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
 ```
 
-Resultado: `imports ok 37`.
+Resultado: `imports ok 36`.
 
 Ultima verificacion de import:
 

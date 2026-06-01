@@ -55,7 +55,11 @@
       <option value="ops">Operaciones</option>
       <option value="cliente">Cliente</option>
     </select>
-    <input type="text" name="agente" placeholder="Responsable">
+    <select name="importancia">
+      {% for key, label in importancias %}
+      <option value="{{ key }}" {{ "selected" if key == "media" }}>{{ label }}</option>
+      {% endfor %}
+    </select>
     <textarea name="texto" placeholder="Detalle de la solicitud" required></textarea>
     <button type="submit">Crear solicitud</button>
   </form>
@@ -73,7 +77,9 @@
     <select disabled>
       <option>Customer Success</option>
     </select>
-    <input type="text" placeholder="Responsable" disabled>
+    <select disabled>
+      <option>Media</option>
+    </select>
     <textarea placeholder="Detalle de la solicitud" disabled></textarea>
     <button type="button" disabled>Crear solicitud</button>
   </form>
@@ -109,26 +115,30 @@
   {% if abiertas %}
   <ul class="timeline clean-timeline">
     {% for q in abiertas %}
+    {% set tctx = ticket_context(q) %}
     <li>
       <div class="timeline-head">
+        <a class="ticket-id" href="{{ url_for('ticket_detail', qid=q.id) }}">Ticket #{{ q.id }}</a>
         <a href="{{ url_for('cliente', email=q.customer_email) }}">{{ nombres.get(q.customer_email, q.customer_email) }}</a>
         <span class="tag {{ 'tag-warn' if q.tipo == 'queja' }}">{{ q.tipo }}</span>
         <span class="tag">{{ category_label(q.categoria, category_map) }}</span>
         <span class="tag">{{ team_labels.get(q.equipo, q.equipo)|upper }}</span>
         <span class="tag">{{ status_labels.get(q.estado_gestion, q.estado_gestion) }}</span>
+        <span class="tag">Importancia {{ importance_labels.get(q.importancia, q.importancia or "Media") }}</span>
+        <span class="tag {{ tctx.age.class }}">{{ tctx.age.dias }} dias</span>
         <span class="muted">{{ q.created_at.strftime("%d/%m/%Y") }}{% if q.agente %} &middot; {{ q.agente }}{% endif %}</span>
       </div>
       <p>{{ q.texto }}</p>
       <div class="row-actions">
         <form method="post" action="{{ url_for('set_queja_gestion', qid=q.id) }}" class="inline">
-          <select name="equipo">
-            {% for key, label in equipos %}
-            <option value="{{ key }}" {{ "selected" if q.equipo == key }}>{{ label }}</option>
-            {% endfor %}
-          </select>
           <select name="estado_gestion">
             {% for key, label in estados_solicitud %}
             <option value="{{ key }}" {{ "selected" if q.estado_gestion == key }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <select name="importancia">
+            {% for key, label in importancias %}
+            <option value="{{ key }}" {{ "selected" if q.importancia == key }}>{{ label }}</option>
             {% endfor %}
           </select>
           <button class="btn-sync" type="submit">Actualizar gestion</button>
@@ -161,6 +171,7 @@
     {% for q in resueltas %}
     <li>
       <div class="timeline-head">
+        <a class="ticket-id" href="{{ url_for('ticket_detail', qid=q.id) }}">Ticket #{{ q.id }}</a>
         <a href="{{ url_for('cliente', email=q.customer_email) }}">{{ nombres.get(q.customer_email, q.customer_email) }}</a>
         <span class="tag">{{ q.tipo }}</span>
         <span class="tag">{{ category_label(q.categoria, category_map) }}</span>

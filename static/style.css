@@ -103,6 +103,9 @@ table.grid { width: 100%; min-width: 820px; border-collapse: collapse; margin-to
 .tag { display: inline-flex; align-items: center; min-height: 22px; font-size: .75rem; padding: .12rem .45rem; border-radius: 4px; background: #f8fafc; border: 1px solid var(--border); white-space: nowrap; }
 .tag-empty { color: var(--muted); font-style: italic; }
 .tag-warn { color: var(--warn); border-color: #fecaca; background: #fef2f2; }
+.age-warn { color: var(--trial); border-color: #fde68a; background: #fffbeb; }
+.age-danger { color: var(--warn); border-color: #fecaca; background: #fef2f2; }
+.ticket-id { font-weight: 700; color: var(--accent-2); }
 
 .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 1.15rem; margin-bottom: 1rem; box-shadow: var(--shadow); }
 .ficha-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
@@ -144,6 +147,16 @@ table.grid { width: 100%; min-width: 820px; border-collapse: collapse; margin-to
 .attention-card.ok { border-color: #bbf7d0; background: #f0fdf4; }
 .stack-form label { display: block; color: var(--muted); font-size: .82rem; margin-bottom: .25rem; }
 .stack-form input, .stack-form select, .stack-form textarea { margin-bottom: .75rem; }
+.manual-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .65rem;
+  align-items: start;
+}
+.manual-form label { display: block; color: var(--muted); font-size: .82rem; margin-bottom: .25rem; }
+.manual-form input, .manual-form select, .manual-form textarea { margin: 0; }
+.manual-form .wide { grid-column: 1 / -1; }
+.manual-form button { justify-self: start; }
 .inline-action {
   display: flex;
   align-items: center;
@@ -156,7 +169,7 @@ table.grid { width: 100%; min-width: 820px; border-collapse: collapse; margin-to
 .inline-action form { margin: 0; }
 .contact-form {
   display: grid;
-  grid-template-columns: 130px 170px 150px 170px 150px minmax(220px, 1fr) auto;
+  grid-template-columns: 130px 170px 150px 170px 150px 150px minmax(220px, 1fr) auto;
   gap: .5rem;
   align-items: start;
 }
@@ -185,6 +198,25 @@ table.grid { width: 100%; min-width: 820px; border-collapse: collapse; margin-to
 .new-request-form input, .new-request-form select, .new-request-form textarea { margin: 0; }
 .new-request-form textarea { grid-column: 1 / -1; min-height: 82px; }
 .new-request-form button { justify-self: start; }
+.ticket-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin: .5rem 0 1rem;
+  box-shadow: var(--shadow);
+}
+.ticket-hero h1 { font-size: 1.5rem; margin: .1rem 0; }
+.ticket-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, .85fr); gap: 1rem; align-items: start; }
+.ticket-form { display: grid; grid-template-columns: 1fr 1fr auto; gap: .55rem; align-items: end; margin-top: 1rem; }
+.ticket-form label { color: var(--muted); font-size: .82rem; }
+.ticket-form select, .ticket-form input, .ticket-form textarea { margin: 0; }
+.comment-form { display: grid; grid-template-columns: minmax(0, 1fr) 150px auto; gap: .55rem; align-items: start; margin-bottom: 1rem; }
+.comment-form input, .comment-form textarea { margin: 0; }
 .churn-grid { min-width: 980px; }
 .churn-form {
   display: grid;
@@ -315,6 +347,8 @@ dd { margin: 0; min-width: 0; }
 @media (max-width: 720px) {
   main { padding: 1rem; }
   .ficha-grid { grid-template-columns: 1fr; }
+  .manual-form { grid-template-columns: 1fr; }
+  .manual-form .wide { grid-column: auto; }
   .profile-hero { flex-direction: column; }
   .profile-badges { justify-content: flex-start; min-width: 0; }
   .attention-strip { grid-template-columns: 1fr; }
@@ -323,6 +357,8 @@ dd { margin: 0; min-width: 0; }
   .category-edit { grid-template-columns: 1fr; }
   .new-request-form { grid-template-columns: 1fr; }
   .new-request-form textarea { grid-column: auto; }
+  .ticket-hero { flex-direction: column; }
+  .ticket-layout, .ticket-form, .comment-form { grid-template-columns: 1fr; }
   .churn-form { grid-template-columns: 1fr; }
   .creator-form { grid-template-columns: 1fr; }
   .creator-form textarea, .creator-form .row-actions { grid-column: auto; }
