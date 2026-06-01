@@ -104,8 +104,8 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 - Inicio muestra la northstar `Activos recurrentes` como primer KPI superior, comparada contra el periodo anterior seleccionado y con link a Clientes filtrado por recurrentes.
 - Inicio ya no muestra KPI de Solicitudes; esa lectura vive en `/solicitudes`.
 - El grafico principal de Inicio es de barras y combina Altas, Bajas y Trials por dia/semana segun el periodo.
-- Inicio agrupa `Instagram`, `Instagram ingles`, `Instagram español` e `Instagram portugues` como un solo canal `Instagram` para filtro y grafico de altas/trials por canal.
-- Inicio muestra el grafico lateral `Altas y trials por canal`, sumando clientes de alta paga y clientes en trial por canal de adquisicion.
+- Inicio agrupa `Instagram`, `Instagram ingles`, `Instagram español` e `Instagram portugues` como un solo canal `Instagram` para filtro y grafico de base actual por canal.
+- Inicio muestra el grafico lateral `Base actual por canal`, calculado sobre clientes activos recurrentes + trials actuales por canal de adquisicion.
 - El grafico lateral de canales muestra cantidad y porcentaje por canal en la leyenda y tooltip.
 - Solicitudes ahora tiene dashboard por periodo:
   - Presets de tiempo, incluyendo `Todo`.
@@ -217,6 +217,8 @@ Resultado: 50 tests OK; import Flask OK con 38 rutas.
 Correccion posterior:
 
 - La leyenda del grafico por canal usa el indice de `canalData.labels` como fuente del label para evitar `undefined` en Chart.js.
+- Verificacion: 50 tests OK; import Flask OK con 38 rutas.
+- El grafico por canal ahora usa la base actual de activos recurrentes + trials actuales, no eventos historicos de altas/trials, para que `Sin asignar` no incluya clientes viejos fuera del snapshot vigente.
 - Verificacion: 50 tests OK; import Flask OK con 38 rutas.
 
 ```powershell
