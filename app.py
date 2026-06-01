@@ -283,6 +283,20 @@ def _emails_base_actual(clientes):
     }
 
 
+def _complete_todo_altas_with_current_recurrentes(altas, clientes):
+    emails_con_alta = {(e.get("email") or "").lower() for e in altas}
+    completadas = list(altas)
+    for c in clientes:
+        email = (c.get("email_key") or c.get("email") or "").lower()
+        if not email or email in emails_con_alta or not c.get("cuenta_activo_recurrente"):
+            continue
+        fecha = c.get("fecha_alta_raw")
+        if not fecha:
+            continue
+        completadas.append({"email": email, "fecha": fecha, "origen": c.get("origen", "sin_asignar")})
+    return completadas
+
+
 @app.route("/")
 @login_required
 def index():
@@ -299,6 +313,8 @@ def index():
         metas,
     )
     trials = metrics.trial_events(snap["clientes"])
+    if request.args.get("preset") == "todo" and not request.args.get("desde") and not request.args.get("hasta"):
+        altas = _complete_todo_altas_with_current_recurrentes(altas, snap["clientes"])
     desde, hasta, label, pdesde, phasta = metrics.resolver_periodo(request.args, eventos=altas + bajas + trials)
     altas_p = metrics.filtrar(altas, desde, hasta, canal)
     bajas_p = metrics.filtrar(bajas, desde, hasta, canal)

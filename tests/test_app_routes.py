@@ -291,6 +291,49 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn('"valores": [1, 1]', body)
         self.assertNotIn('"Sin asignar"', body)
 
+    def test_dashboard_todo_completa_altas_con_recurrentes_actuales(self):
+        from db import db
+        from db.models import CustomerMeta, Snapshot
+
+        self.login()
+        clientes = [
+            {**self.customer_row(nombre="Con evento", email="con-evento@example.test"), "fecha_alta_raw": "2026-05-15T00:00:00+00:00"},
+            {**self.customer_row(nombre="Sin evento", email="sin-evento@example.test"), "fecha_alta_raw": "2026-05-20T00:00:00+00:00"},
+        ]
+        with self.app.app_context():
+            db.session.add(Snapshot(payload={
+                "test_marker": "solicitudes_directas",
+                "clientes": clientes,
+                "eventos": {
+                    "altas": [
+                        {"email": "con-evento@example.test", "fecha": "2026-05-15T00:00:00+00:00"},
+                    ],
+                    "bajas": [],
+                },
+                "resumen": {},
+            }))
+            db.session.add(CustomerMeta(email="con-evento@example.test", origen="instagram"))
+            db.session.add(CustomerMeta(email="sin-evento@example.test", origen="email"))
+            db.session.commit()
+
+        response = self.client.get("/?preset=todo")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        altas_block = body[body.index('<span class="kpi-label">Altas</span>'):]
+        altas_block = altas_block[:altas_block.index("</a>")]
+        self.assertIn('<span class="kpi-val">2</span>', altas_block)
+        self.assertIn('"labels": ["Email", "Instagram"]', body)
+        self.assertIn('"valores": [1, 1]', body)
+
+        response = self.client.get("/?desde=2026-05-01&hasta=2026-05-31")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        altas_block = body[body.index('<span class="kpi-label">Altas</span>'):]
+        altas_block = altas_block[:altas_block.index("</a>")]
+        self.assertIn('<span class="kpi-val">1</span>', altas_block)
+
     def test_solicitud_directa_requires_login(self):
         response = self.client.post("/solicitudes/nueva", data={"texto": "Alta manual"})
 
