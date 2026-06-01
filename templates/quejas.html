@@ -56,11 +56,6 @@
       <option value="{{ cat.key }}">{{ cat.label }}</option>
       {% endfor %}
     </select>
-    <select name="estado_gestion">
-      {% for key, label in estados_solicitud %}
-      <option value="{{ key }}">{{ label }}</option>
-      {% endfor %}
-    </select>
     <select name="importancia">
       {% for key, label in importancias %}
       <option value="{{ key }}" {{ "selected" if key == "media" }}>{{ label }}</option>
@@ -80,9 +75,6 @@
     </select>
     <select disabled>
       <option>Sin categoria</option>
-    </select>
-    <select disabled>
-      <option>Abierta</option>
     </select>
     <select disabled>
       <option>Media</option>
