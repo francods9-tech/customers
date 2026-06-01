@@ -3,6 +3,8 @@ Todo en UTC (Stripe y Mongo guardan en UTC)."""
 import datetime as dt
 from collections import Counter, OrderedDict
 
+from db.models import origen_group_key
+
 PRESETS = [
     ("todo", "Todo"),
     ("7d", "Últimos 7 días"),
@@ -75,12 +77,12 @@ def enriquecer(eventos, metas):
 def filtrar(eventos, desde, hasta, canal=None):
     res = [e for e in eventos if _en_rango(e, desde, hasta)]
     if canal:
-        res = [e for e in res if e.get("origen") == canal]
+        res = [e for e in res if origen_group_key(e.get("origen")) == canal]
     return res
 
 
 def por_canal(eventos):
-    return Counter(e.get("origen", "sin_asignar") for e in eventos)
+    return Counter(origen_group_key(e.get("origen")) for e in eventos)
 
 
 def serie_temporal(eventos, desde, hasta):

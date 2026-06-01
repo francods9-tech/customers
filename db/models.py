@@ -19,6 +19,22 @@ ORIGENES = [
 ]
 ORIGEN_LABELS = dict(ORIGENES)
 ORIGEN_KEYS = [k for k, _ in ORIGENES]
+INSTAGRAM_ORIGEN_KEYS = {"instagram", "ig_en", "ig_es", "ig_pt"}
+INSTAGRAM_VARIANTS = [
+    ("instagram", "Sin idioma"),
+    ("ig_en", "Ingles"),
+    ("ig_es", "Español"),
+    ("ig_pt", "Portugues"),
+]
+ORIGENES_BASE = [(k, label) for k, label in ORIGENES if k not in {"ig_en", "ig_es", "ig_pt"}]
+
+
+def origen_group_key(origen):
+    return "instagram" if origen in INSTAGRAM_ORIGEN_KEYS else (origen or "sin_asignar")
+
+
+def origen_group_label(origen):
+    return ORIGEN_LABELS.get(origen_group_key(origen), origen_group_key(origen))
 
 
 def _now():

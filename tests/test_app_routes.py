@@ -100,6 +100,32 @@ class AppRoutesTest(unittest.TestCase):
             self.assertEqual(meta.whatsapp, "+54 9 11 2222 3333")
             self.assertEqual(meta.usuario, "@clientez")
 
+    def test_ficha_origen_instagram_permita_elegir_idioma(self):
+        self.login()
+        self.add_snapshot([self.customer_row()])
+
+        response = self.client.get("/cliente/cliente-z@example.test")
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn('name="origen_base"', body)
+        self.assertIn('name="instagram_variante"', body)
+        origen_form = body[body.index('action="/cliente/cliente-z@example.test/origen"'):]
+        origen_form = origen_form[:origen_form.index("</form>")]
+        origen_select = origen_form[origen_form.index('name="origen_base"'):]
+        origen_select = origen_select[:origen_select.index("</select>")]
+        self.assertNotIn('value="ig_en"', origen_select)
+
+        response = self.client.post(
+            "/cliente/cliente-z@example.test/origen",
+            data={"origen_base": "instagram", "instagram_variante": "ig_es"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            from db.models import CustomerMeta
+            meta = CustomerMeta.query.filter_by(email="cliente-z@example.test").one()
+            self.assertEqual(meta.origen, "ig_es")
+
     def test_dashboard_no_muestra_finanzas_ni_gastos(self):
         self.login()
 
@@ -111,6 +137,45 @@ class AppRoutesTest(unittest.TestCase):
         self.assertNotIn("MRR", body)
         self.assertNotIn("Stripe", body)
         self.assertNotIn("Mercury", body)
+
+    def test_dashboard_agrupa_variantes_de_instagram(self):
+        from db import db
+        from db.models import CustomerMeta, Snapshot
+
+        self.login()
+        clientes = [
+            self.customer_row(nombre="IG EN", email="ig-en@example.test"),
+            self.customer_row(nombre="IG ES", email="ig-es@example.test"),
+            self.customer_row(nombre="Email", email="email@example.test"),
+        ]
+        with self.app.app_context():
+            db.session.add(Snapshot(payload={
+                "test_marker": "solicitudes_directas",
+                "clientes": clientes,
+                "eventos": {
+                    "altas": [
+                        {"email": "ig-en@example.test", "fecha": "2026-05-20T00:00:00+00:00"},
+                        {"email": "ig-es@example.test", "fecha": "2026-05-21T00:00:00+00:00"},
+                        {"email": "email@example.test", "fecha": "2026-05-22T00:00:00+00:00"},
+                    ],
+                    "bajas": [],
+                },
+                "resumen": {},
+            }))
+            db.session.add(CustomerMeta(email="ig-en@example.test", origen="ig_en"))
+            db.session.add(CustomerMeta(email="ig-es@example.test", origen="ig_es"))
+            db.session.add(CustomerMeta(email="email@example.test", origen="email"))
+            db.session.commit()
+
+        response = self.client.get("/?preset=todo&canal=instagram")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn('<option value="instagram" selected>Instagram</option>', body)
+        self.assertNotIn("Instagram inglés", body)
+        self.assertNotIn("Instagram español", body)
+        self.assertIn('"labels": ["Instagram"]', body)
+        self.assertIn('"valores": [2]', body)
 
     def test_solicitud_directa_requires_login(self):
         response = self.client.post("/solicitudes/nueva", data={"texto": "Alta manual"})

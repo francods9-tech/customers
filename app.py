@@ -13,7 +13,8 @@ import metrics
 from config import Config
 from db import db
 from db.models import (ChurnReason, ColabCreator, ComplaintCategory, CustomerMeta,
-                       Interaccion, MessageCategory, MessageTemplate, ORIGENES,
+                       Interaccion, INSTAGRAM_ORIGEN_KEYS, INSTAGRAM_VARIANTS,
+                       MessageCategory, MessageTemplate, ORIGENES, ORIGENES_BASE,
                        TicketComment,
                        ORIGEN_LABELS)
 from sync import refrescar_snapshot, ultimo_snapshot
@@ -279,7 +280,7 @@ def _quejas_en(rango_desde, rango_hasta):
 def index():
     snap, _ = _clientes_enriquecidos()
     if not snap or not snap.get("eventos"):
-        return render_template("dashboard.html", snap=snap, origenes=ORIGENES,
+        return render_template("dashboard.html", snap=snap, origenes=ORIGENES_BASE,
                                presets=metrics.PRESETS)
     metas = _meta_map()
     canal = request.args.get("canal") or None
@@ -317,7 +318,7 @@ def index():
     ]
 
     canal_counts = metrics.por_canal(altas_p)
-    canales = [(ORIGEN_LABELS.get(k, k), canal_counts.get(k, 0)) for k, _ in ORIGENES if canal_counts.get(k, 0)]
+    canales = [(ORIGEN_LABELS.get(k, k), canal_counts.get(k, 0)) for k, _ in ORIGENES_BASE if canal_counts.get(k, 0)]
     serie_altas = metrics.serie_temporal(altas_p, desde, hasta)
     serie_bajas = metrics.serie_temporal(bajas_p, desde, hasta)
     serie_trials = metrics.serie_temporal(trials_p, desde, hasta)
@@ -330,7 +331,7 @@ def index():
     }
 
     return render_template(
-        "dashboard.html", snap=snap, origenes=ORIGENES, presets=metrics.PRESETS,
+        "dashboard.html", snap=snap, origenes=ORIGENES_BASE, presets=metrics.PRESETS,
         kpis=kpis, label=label, canal=canal, canales=canales, serie=serie,
         desde=desde.strftime("%Y-%m-%d"), hasta=(hasta - dt.timedelta(days=1)).strftime("%Y-%m-%d"),
         estado={
@@ -922,8 +923,13 @@ def cliente(email):
         "trial": c.get("trial") if c.get("estado") == "trial" else None,
         "onboarding_pendiente": c.get("estado") in ("activo", "trial") and not meta.onboarding_hecho,
     }
+    origen_base = "instagram" if meta.origen in INSTAGRAM_ORIGEN_KEYS else meta.origen
+    instagram_variante = meta.origen if meta.origen in INSTAGRAM_ORIGEN_KEYS else "instagram"
     return render_template("ficha.html", c=c, meta=meta, salud=salud,
-                           interacciones=interacciones, origenes=ORIGENES,
+                           interacciones=interacciones, origenes=ORIGENES_BASE,
+                           origen_base=origen_base,
+                           instagram_variante=instagram_variante,
+                           instagram_variants=INSTAGRAM_VARIANTS,
                            planes=customer_rules.PLAN_OPTIONS,
                            estados=customer_rules.STATUS_OPTIONS,
                            tipos=customer_rules.TYPE_OPTIONS,
@@ -939,8 +945,13 @@ def cliente(email):
 @login_required
 def set_origen(email):
     meta = _get_or_create_meta(email.lower())
-    meta.origen = request.form.get("origen", "sin_asignar")
-    meta.referido_por = (request.form.get("referido_por") or "").strip().lower() or None
+    origen = request.form.get("origen_base") or request.form.get("origen") or "sin_asignar"
+    if origen == "instagram":
+        origen = request.form.get("instagram_variante") or "instagram"
+    if origen not in ORIGEN_LABELS:
+        origen = "sin_asignar"
+    meta.origen = origen
+    meta.referido_por = ((request.form.get("referido_por") or "").strip().lower() or None) if origen == "referido" else None
     db.session.commit()
     flash("Origen actualizado", "ok")
     return redirect(url_for("cliente", email=email))
