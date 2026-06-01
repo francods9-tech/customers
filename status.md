@@ -302,6 +302,9 @@ Verificacion HTTP local autenticada:
 
 - `/solicitudes` 200 sin bloque visual de `Categorias` ni endpoint `/quejas/categorias` renderizado.
 - `/cliente/<email>` 200 con campo `usuario` y grilla `customer-profile-grid`.
+- PR #12 mergeado a `main`.
+- Railway deploy `3538b7b3-830d-4fe4-9d6a-b3d4a2e10191` exitoso.
+- Produccion verificada: `/healthz` 200, `/login` 200, `/solicitudes` sin login redirige a login.
 
 Verificacion HTTP local luego de ficha WhatsApp y tickets:
 
