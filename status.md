@@ -106,6 +106,7 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 - El grafico principal de Inicio es de barras y combina Altas, Bajas y Trials por dia/semana segun el periodo.
 - Inicio agrupa `Instagram`, `Instagram ingles`, `Instagram español` e `Instagram portugues` como un solo canal `Instagram` para filtro y grafico de altas/trials por canal.
 - Inicio muestra el grafico lateral `Altas y trials por canal`, sumando clientes de alta paga y clientes en trial por canal de adquisicion.
+- El grafico lateral de canales muestra cantidad y porcentaje por canal en la leyenda y tooltip.
 - Solicitudes ahora tiene dashboard por periodo:
   - Presets de tiempo, incluyendo `Todo`.
   - KPIs de registradas, abiertas actuales, Customer Success, Operaciones y resueltas.
@@ -202,6 +203,15 @@ Ultima verificacion luego de sumar trials al grafico por canal:
 
 Resultado: 50 tests OK; import Flask OK con 38 rutas.
 - Deploy Railway posterior: `0993a175-ee0d-46c0-a14b-d223d6754858` SUCCESS; `/healthz` 200 y `/login` 200.
+
+Ultima verificacion luego de agregar porcentajes al grafico por canal:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+```
+
+Resultado: 50 tests OK; import Flask OK con 38 rutas.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
