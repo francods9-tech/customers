@@ -16,9 +16,12 @@ STATUS_OPTIONS = [
     ("activo", "Activo"),
     ("trial", "Trial"),
     ("impago", "Impago"),
+    ("pausado_impago", "Pausado por impago"),
+    ("inactivo_impago", "Inactivo por impago"),
     ("inactivo", "Inactivo"),
 ]
 STATUS_LABELS = dict(STATUS_OPTIONS)
+UNPAID_STATES = {"impago", "pausado_impago", "inactivo_impago"}
 
 TYPE_OPTIONS = [
     ("", "Automatico"),
@@ -142,6 +145,8 @@ def enrich_customer(customer, meta=None):
         out["estado"] = manual_status
     else:
         out["estado"] = original_status
+        if original_status == "impago":
+            out["estado"] = unpaid_operational_status(unpaid_summary(out).get("dias")).get("estado")
 
     if manual_plan in ("one_time", "free_colab"):
         tipo_key = manual_plan
@@ -169,7 +174,10 @@ def filter_customers(customers, estado=None, origen=None, tipo=None, q=None, rec
     if recurrente:
         rows = [c for c in rows if c.get("cuenta_activo_recurrente")]
     if estado:
-        rows = [c for c in rows if c.get("estado") == estado]
+        if estado == "impago":
+            rows = [c for c in rows if c.get("estado") in UNPAID_STATES]
+        else:
+            rows = [c for c in rows if c.get("estado") == estado]
     if origen:
         rows = [c for c in rows if c.get("origen") == origen]
     if tipo:
@@ -190,7 +198,9 @@ def customer_summary(customers):
         "total": len(rows),
         "activos_recurrentes": sum(1 for c in rows if c.get("cuenta_activo_recurrente")),
         "trial": sum(1 for c in rows if c.get("estado") == "trial"),
-        "impago": sum(1 for c in rows if c.get("estado") == "impago"),
+        "impago": sum(1 for c in rows if c.get("estado") in UNPAID_STATES),
+        "pausado_impago": sum(1 for c in rows if c.get("estado") == "pausado_impago"),
+        "inactivo_impago": sum(1 for c in rows if c.get("estado") == "inactivo_impago"),
         "inactivo": sum(1 for c in rows if c.get("estado") == "inactivo"),
         "agencias": sum(1 for c in rows if c.get("tipo_cliente_key") == "agencia"),
         "one_time": sum(1 for c in rows if c.get("tipo_cliente_key") == "one_time"),
@@ -217,18 +227,53 @@ def _parse_dt(value):
 
 def unpaid_summary(customer, today=None):
     today = today or dt.datetime.now(dt.timezone.utc)
-    invoice_date = _parse_dt(
+    invoices = _pending_invoices(customer)
+    invoice_date = _parse_dt(invoices[0].get("fecha_raw")) if invoices else _parse_dt(
         customer.get("ultima_factura_fecha_raw") or customer.get("impago_desde_raw")
     )
     days = None
     if invoice_date:
         days = max(0, (today - invoice_date).days)
+    amount = round(sum((invoice.get("monto_pendiente") or 0) for invoice in invoices), 2) if invoices else customer.get("impago_monto_pendiente")
+    status = unpaid_operational_status(days)
     return {
         "dias": days,
         "label": f"{days} dias" if days is not None else "sin fecha",
-        "factura_url": customer.get("ultima_factura_url") or "",
-        "monto": customer.get("impago_monto_pendiente"),
+        "factura_url": (invoices[0].get("url") if invoices else "") or customer.get("ultima_factura_url") or "",
+        "monto": amount,
+        "facturas": invoices,
+        "facturas_count": len(invoices) if invoices else (1 if customer.get("ultima_factura_url") else 0),
+        "estado_operativo": status["estado"],
+        "estado_label": status["label"],
+        "acceso_free": _looks_free_access(customer),
     }
+
+
+def _pending_invoices(customer):
+    invoices = []
+    for invoice in customer.get("facturas_pendientes") or []:
+        copied = dict(invoice)
+        copied.setdefault("url", copied.get("factura_url", ""))
+        copied.setdefault("monto_pendiente", copied.get("monto", 0))
+        invoices.append(copied)
+    return sorted(
+        invoices,
+        key=lambda invoice: _parse_dt(invoice.get("fecha_raw")) or dt.datetime.max.replace(tzinfo=dt.timezone.utc),
+    )
+
+
+def unpaid_operational_status(days):
+    if days is None or days < 30:
+        return {"estado": "impago", "label": "Impago"}
+    if days < 90:
+        return {"estado": "pausado_impago", "label": "Pausado por impago"}
+    return {"estado": "inactivo_impago", "label": "Inactivo por impago"}
+
+
+def _looks_free_access(customer):
+    plan = (customer.get("plan") or "").lower()
+    original = (customer.get("plan_original") or "").lower()
+    return "free" in plan or "free" in original
 
 
 def sort_unpaid_priority(customers):

@@ -19,6 +19,8 @@
       <a class="chip {{ 'chip-on' if estado == 'activo' and not recurrente }}" href="{{ url_for('clientes_list', estado='activo', origen=origen, tipo=tipo, q=q) }}">Activos</a>
       <a class="chip {{ 'chip-on' if estado == 'trial' }}" href="{{ url_for('clientes_list', estado='trial', origen=origen, tipo=tipo, q=q) }}">En trial</a>
       <a class="chip {{ 'chip-on' if estado == 'impago' }}" href="{{ url_for('clientes_list', estado='impago', origen=origen, tipo=tipo, q=q) }}">Impagos</a>
+      <a class="chip {{ 'chip-on' if estado == 'pausado_impago' }}" href="{{ url_for('clientes_list', estado='pausado_impago', origen=origen, tipo=tipo, q=q) }}">Pausados impago</a>
+      <a class="chip {{ 'chip-on' if estado == 'inactivo_impago' }}" href="{{ url_for('clientes_list', estado='inactivo_impago', origen=origen, tipo=tipo, q=q) }}">Inactivos impago</a>
       <a class="chip {{ 'chip-on' if estado == 'inactivo' }}" href="{{ url_for('clientes_list', estado='inactivo', origen=origen, tipo=tipo, q=q) }}">Inactivos</a>
       <a class="chip {{ 'chip-on' if tipo == 'one_time' }}" href="{{ url_for('clientes_list', tipo='one_time', origen=origen, q=q) }}">One time</a>
       <a class="chip {{ 'chip-on' if tipo == 'free_colab' }}" href="{{ url_for('clientes_list', tipo='free_colab', origen=origen, q=q) }}">Free colab</a>
@@ -76,8 +78,15 @@
           <td>
             {% if c.impago %}
               <span class="tag tag-warn">{{ c.impago.label }}</span>
+              <div class="sub">{{ c.impago.estado_label }} · {{ c.impago.facturas_count }} factura{{ "" if c.impago.facturas_count == 1 else "s" }}</div>
+              {% if c.impago.acceso_free %}<div class="sub warn">acceso free por impago</div>{% endif %}
+              {% if c.impago.monto is not none %}<div class="sub">${{ "%.2f"|format(c.impago.monto) }} pendiente</div>{% endif %}
               {% if c.impago.factura_url %}
-                <a class="sub" href="{{ c.impago.factura_url }}" target="_blank" rel="noopener">factura</a>
+                {% for factura in c.impago.facturas %}
+                  <a class="sub" href="{{ factura.url }}" target="_blank" rel="noopener">factura {{ loop.index }}</a>{% if not loop.last %} · {% endif %}
+                {% else %}
+                  <a class="sub" href="{{ c.impago.factura_url }}" target="_blank" rel="noopener">factura</a>
+                {% endfor %}
               {% else %}
                 <div class="sub">sin link de factura</div>
               {% endif %}

@@ -148,6 +148,45 @@ class CustomerRulesTest(unittest.TestCase):
         self.assertEqual(summary["factura_url"], "https://stripe.test/inv_123")
         self.assertEqual(summary["monto"], 129.5)
 
+    def test_unpaid_summary_uses_multiple_pending_invoices(self):
+        from customer_rules import unpaid_summary
+
+        customer = {
+            "facturas_pendientes": [
+                {
+                    "fecha_raw": "2026-05-20T00:00:00+00:00",
+                    "url": "https://stripe.test/inv_recent",
+                    "monto_pendiente": 50.0,
+                },
+                {
+                    "fecha_raw": "2026-04-20T00:00:00+00:00",
+                    "url": "https://stripe.test/inv_old",
+                    "monto_pendiente": 99.0,
+                },
+            ],
+        }
+        today = dt.datetime(2026, 6, 1, tzinfo=dt.timezone.utc)
+
+        summary = unpaid_summary(customer, today=today)
+
+        self.assertEqual(summary["dias"], 42)
+        self.assertEqual(summary["label"], "42 dias")
+        self.assertEqual(summary["facturas_count"], 2)
+        self.assertEqual(summary["monto"], 149.0)
+        self.assertEqual(summary["factura_url"], "https://stripe.test/inv_old")
+        self.assertEqual(
+            [invoice["url"] for invoice in summary["facturas"]],
+            ["https://stripe.test/inv_old", "https://stripe.test/inv_recent"],
+        )
+
+    def test_unpaid_operational_status_segments_recoverable_customers(self):
+        from customer_rules import unpaid_operational_status
+
+        self.assertEqual(unpaid_operational_status(29)["estado"], "impago")
+        self.assertEqual(unpaid_operational_status(30)["estado"], "pausado_impago")
+        self.assertEqual(unpaid_operational_status(89)["estado"], "pausado_impago")
+        self.assertEqual(unpaid_operational_status(90)["estado"], "inactivo_impago")
+
     def test_unpaid_summary_handles_missing_invoice(self):
         from customer_rules import unpaid_summary
 
