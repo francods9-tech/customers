@@ -242,6 +242,7 @@ Correccion posterior:
 - Deploy Railway posterior: `69013efe-1c0c-45a2-b18d-5c93b65db112` SUCCESS; `/healthz` 200 y `/login` 200.
 - Correccion posterior: en periodos filtrados, la torta por canal cuenta todos los eventos de altas + trials con canal definido, aunque el email no este en la base actual; solo descarta `Sin asignar`.
 - Verificacion: 55 tests OK; import Flask OK con 38 rutas.
+- Deploy Railway posterior: `a04a9ab2-ea07-45a9-aed7-31c7ff76f347` SUCCESS; `/healthz` 200 y `/login` 200.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
