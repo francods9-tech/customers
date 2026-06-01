@@ -282,6 +282,9 @@ Verificacion HTTP local autenticada:
 - `/solicitudes` 200.
 - Formulario de alta con buscador e importancia.
 - Formulario de alta sin `estado_gestion`; el backend ignora cualquier estado enviado y crea `abierta`.
+- PR #10 mergeado a `main`.
+- Railway deploy `27dd475e-d994-4981-8bef-e425ba3c7c7f` exitoso.
+- Produccion verificada: `/healthz` 200, `/login` 200, `/solicitudes` sin login redirige a login.
 
 Verificacion HTTP local luego de ficha WhatsApp y tickets:
 
