@@ -82,21 +82,50 @@ def team_for_status(status):
     return STATUS_TEAM.get(status or "abierta", "cs")
 
 
+def _elapsed_days(start, end):
+    if not start:
+        return 0
+    if end.tzinfo is None:
+        end = end.replace(tzinfo=dt.timezone.utc)
+    return max(0, (end - start).days)
+
+
+def _age_class(days):
+    if days > 14:
+        return "age-danger"
+    if days > 7:
+        return "age-warn"
+    return ""
+
+
 def ticket_age(ticket, today=None):
     created = _parse_dt(getattr(ticket, "created_at", None))
     if not created:
         return {"dias": 0, "class": ""}
     today = today or dt.datetime.now(dt.timezone.utc)
-    if today.tzinfo is None:
-        today = today.replace(tzinfo=dt.timezone.utc)
-    days = max(0, (today - created).days)
-    if days > 14:
-        klass = "age-danger"
-    elif days > 7:
-        klass = "age-warn"
-    else:
-        klass = ""
-    return {"dias": days, "class": klass}
+    days = _elapsed_days(created, today)
+    return {"dias": days, "class": _age_class(days)}
+
+
+def ticket_duration(ticket, today=None):
+    created = _parse_dt(getattr(ticket, "created_at", None))
+    if not created:
+        return {"dias": 0, "class": ""}
+    today = today or dt.datetime.now(dt.timezone.utc)
+    resolved_at = _parse_dt(getattr(ticket, "resolved_at", None))
+    end = resolved_at if resolved_at else today
+    days = _elapsed_days(created, end)
+    return {"dias": days, "class": _age_class(days)}
+
+
+def ticket_status_key(ticket):
+    if bool(getattr(ticket, "resuelta", False)) or getattr(ticket, "estado_gestion", "") == "resuelta":
+        return "resuelta"
+    return normalize_status(getattr(ticket, "estado_gestion", "") or "abierta")
+
+
+def ticket_status_class(ticket):
+    return f"status-{ticket_status_key(ticket)}"
 
 
 def request_stats(items):

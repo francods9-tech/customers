@@ -122,14 +122,14 @@
         <a href="{{ url_for('cliente', email=q.customer_email) }}">{{ nombres.get(q.customer_email, q.customer_email) }}</a>
         <span class="tag {{ 'tag-warn' if q.tipo == 'queja' }}">{{ q.tipo }}</span>
         <span class="tag">{{ category_label(q.categoria, category_map) }}</span>
-        <span class="tag">{{ team_labels.get(q.equipo, q.equipo)|upper }}</span>
-        <span class="tag">{{ status_labels.get(q.estado_gestion, q.estado_gestion) }}</span>
+        <span class="tag team-pill team-{{ q.equipo }}">{{ team_labels.get(q.equipo, q.equipo)|upper }}</span>
+        <span class="tag status-pill {{ tctx.status_class }}">{{ status_labels.get(q.estado_gestion, q.estado_gestion) }}</span>
         <span class="tag">Importancia {{ importance_labels.get(q.importancia, q.importancia or "Media") }}</span>
         <span class="tag {{ tctx.age.class }}">{{ tctx.age.dias }} dias</span>
         <span class="muted">{{ q.created_at.strftime("%d/%m/%Y") }}{% if q.agente %} &middot; {{ q.agente }}{% endif %}</span>
       </div>
       <p>{{ q.texto }}</p>
-      <div class="row-actions">
+      <div class="ticket-list-actions">
         <form method="post" action="{{ url_for('set_queja_gestion', qid=q.id) }}" class="inline">
           <select name="estado_gestion">
             {% for key, label in estados_solicitud %}
@@ -141,7 +141,7 @@
             <option value="{{ key }}" {{ "selected" if q.importancia == key }}>{{ label }}</option>
             {% endfor %}
           </select>
-          <button class="btn-sync" type="submit">Actualizar gestion</button>
+          <button class="btn-sync" type="submit">Actualizar</button>
         </form>
         <form method="post" action="{{ url_for('set_queja_categoria', qid=q.id) }}" class="inline">
           <select name="categoria">
@@ -150,7 +150,7 @@
             <option value="{{ cat.key }}" {{ "selected" if q.categoria == cat.key }}>{{ cat.label }}</option>
             {% endfor %}
           </select>
-          <button class="btn-sync" type="submit">Guardar categoria</button>
+          <button class="btn-sync" type="submit">Categoria</button>
         </form>
         <form method="post" action="{{ url_for('resolver_queja', qid=q.id) }}" class="inline">
           <button type="submit">Marcar resuelta</button>
@@ -169,16 +169,23 @@
   <h2>Resueltas (ultimas {{ resueltas|length }})</h2>
   <ul class="timeline clean-timeline">
     {% for q in resueltas %}
+    {% set tctx = ticket_context(q) %}
     <li>
       <div class="timeline-head">
         <a class="ticket-id" href="{{ url_for('ticket_detail', qid=q.id) }}">Ticket #{{ q.id }}</a>
         <a href="{{ url_for('cliente', email=q.customer_email) }}">{{ nombres.get(q.customer_email, q.customer_email) }}</a>
         <span class="tag">{{ q.tipo }}</span>
         <span class="tag">{{ category_label(q.categoria, category_map) }}</span>
-        <span class="tag">{{ team_labels.get(q.equipo, q.equipo)|upper }}</span>
+        <span class="tag status-pill {{ tctx.status_class }}">Resuelta</span>
+        <span class="tag {{ tctx.duration.class }}">{{ tctx.duration.dias }} dias abierto</span>
         <span class="muted">{{ q.created_at.strftime("%d/%m/%Y") }}</span>
       </div>
       <p>{{ q.texto }}</p>
+      <div class="ticket-list-actions">
+        <form method="post" action="{{ url_for('reabrir_ticket', qid=q.id) }}" class="inline">
+          <button class="btn-sync" type="submit">Reabrir</button>
+        </form>
+      </div>
     </li>
     {% endfor %}
   </ul>

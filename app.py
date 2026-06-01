@@ -78,6 +78,7 @@ def _ensure_local_schema():
         "equipo": "ALTER TABLE interacciones ADD COLUMN equipo VARCHAR(16) NOT NULL DEFAULT 'cs'",
         "estado_gestion": "ALTER TABLE interacciones ADD COLUMN estado_gestion VARCHAR(32) NOT NULL DEFAULT 'abierta'",
         "importancia": "ALTER TABLE interacciones ADD COLUMN importancia VARCHAR(16) NOT NULL DEFAULT 'media'",
+        "resolved_at": "ALTER TABLE interacciones ADD COLUMN resolved_at TIMESTAMP WITH TIME ZONE",
     }
     for name, sql in interaction_additions.items():
         columns = {c["name"] for c in inspect(db.engine).get_columns("interacciones")}
@@ -218,6 +219,9 @@ def _clientes_snapshot(snap):
 def _ticket_context(ticket):
     return {
         "age": complaint_rules.ticket_age(ticket),
+        "duration": complaint_rules.ticket_duration(ticket),
+        "status_class": complaint_rules.ticket_status_class(ticket),
+        "status_key": complaint_rules.ticket_status_key(ticket),
         "importance_label": complaint_rules.IMPORTANCE_LABELS.get(
             getattr(ticket, "importancia", "") or "media",
             getattr(ticket, "importancia", "") or "Media",
@@ -547,9 +551,24 @@ def resolver_queja(qid):
     if q and complaint_rules.is_customer_request(q):
         q.resuelta = True
         q.estado_gestion = "resuelta"
+        q.resolved_at = dt.datetime.now(dt.timezone.utc)
         db.session.commit()
         flash("Solicitud marcada como resuelta", "ok")
     return redirect(request.referrer or url_for("quejas_list"))
+
+
+@app.route("/solicitudes/<int:qid>/reabrir", methods=["POST"])
+@login_required
+def reabrir_ticket(qid):
+    ticket = db.session.get(Interaccion, qid)
+    if ticket and complaint_rules.is_customer_request(ticket):
+        ticket.resuelta = False
+        ticket.estado_gestion = "abierta"
+        ticket.equipo = "cs"
+        ticket.resolved_at = None
+        db.session.commit()
+        flash("Ticket reabierto", "ok")
+    return redirect(request.referrer or url_for("ticket_detail", qid=qid))
 
 
 @app.route("/queja/<int:qid>/categoria", methods=["POST"])
@@ -573,6 +592,7 @@ def set_queja_gestion(qid):
         q.equipo = complaint_rules.team_for_status(estado)
         q.importancia = request.form.get("importancia") or q.importancia or "media"
         q.resuelta = q.estado_gestion == "resuelta"
+        q.resolved_at = dt.datetime.now(dt.timezone.utc) if q.resuelta else None
         db.session.commit()
         flash("Gestion actualizada", "ok")
     return redirect(request.referrer or url_for("quejas_list"))
@@ -613,7 +633,7 @@ def add_ticket_comment(qid):
         db.session.add(TicketComment(
             interaccion_id=ticket.id,
             texto=texto,
-            agente=(request.form.get("agente") or "").strip() or None,
+            agente=None,
         ))
         db.session.commit()
         flash("Comentario agregado", "ok")
@@ -947,7 +967,7 @@ def add_interaccion(email):
             customer_email=email.lower(),
             tipo=tipo,
             texto=texto,
-            agente=(request.form.get("agente") or "").strip() or None,
+            agente=None,
             categoria=request.form.get("categoria", "") if tipo in complaint_rules.REQUEST_TYPES else "",
             equipo=complaint_rules.team_for_status(estado) if tipo in complaint_rules.REQUEST_TYPES else "cs",
             estado_gestion=estado if tipo in complaint_rules.REQUEST_TYPES else "",
