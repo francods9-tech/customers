@@ -8,6 +8,14 @@ class CustomerRulesTest(unittest.TestCase):
 
         self.assertEqual(ORIGEN_LABELS["xbiz"], "XBIZ")
 
+    def test_origin_options_include_bulk_acquisition_channels(self):
+        from db.models import ORIGEN_LABELS
+
+        self.assertEqual(ORIGEN_LABELS["instagram"], "Instagram")
+        self.assertEqual(ORIGEN_LABELS["whatsapp"], "WhatsApp")
+        self.assertEqual(ORIGEN_LABELS["sky"], "Sky")
+        self.assertEqual(ORIGEN_LABELS["reactivacion"], "Reactivacion")
+
     def test_manual_plan_one_time_is_not_recurrent_active(self):
         from customer_rules import enrich_customer
 
