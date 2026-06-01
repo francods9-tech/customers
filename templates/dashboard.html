@@ -110,12 +110,19 @@
           legend: { position: "right", labels: {
             color: txt,
             generateLabels(chart) {
-              const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
-              return labels.map((item, index) => {
+              const dataset = chart.data.datasets[0];
+              return canalData.labels.map((label, index) => {
                 const value = canalData.valores[index] || 0;
                 const pct = totalCanal ? Math.round(value / totalCanal * 100) : 0;
-                const label = canalData.labels[index] || item.text;
-                return { ...item, text: `${label} · ${value} (${pct}%)` };
+                const hidden = !chart.getDataVisibility(index);
+                return {
+                  text: `${label} · ${value} (${pct}%)`,
+                  fillStyle: dataset.backgroundColor[index],
+                  strokeStyle: dataset.backgroundColor[index],
+                  lineWidth: 0,
+                  hidden,
+                  index,
+                };
               });
             },
           } },

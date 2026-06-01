@@ -275,6 +275,14 @@ def _quejas_en(rango_desde, rango_hasta):
     return n
 
 
+def _customer_in_period(customer, desde, hasta, period_emails):
+    email = (customer.get("email_key") or customer.get("email") or "").lower()
+    fecha = metrics._parse_date(customer.get("fecha_alta_raw"))
+    if fecha:
+        return desde <= fecha < hasta
+    return email in period_emails
+
+
 @app.route("/")
 @login_required
 def index():
@@ -321,6 +329,13 @@ def index():
         c for c in snap["clientes"]
         if c.get("cuenta_activo_recurrente") or c.get("estado") == "trial"
     ]
+    if request.args.get("preset") != "todo" or request.args.get("desde") or request.args.get("hasta"):
+        period_emails = {
+            (e.get("email") or "").lower()
+            for e in altas_p + trials_p
+            if e.get("email")
+        }
+        clientes_canal = [c for c in clientes_canal if _customer_in_period(c, desde, hasta, period_emails)]
     if canal:
         clientes_canal = [c for c in clientes_canal if origen_group_key(c.get("origen")) == canal]
     canal_counts = Counter(origen_group_key(c.get("origen")) for c in clientes_canal)
