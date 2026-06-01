@@ -75,6 +75,7 @@ def _ensure_local_schema():
     db.session.commit()
 
     interaction_additions = {
+        "resuelta": "ALTER TABLE interacciones ADD COLUMN resuelta BOOLEAN NOT NULL DEFAULT 0",
         "categoria": "ALTER TABLE interacciones ADD COLUMN categoria VARCHAR(64) NOT NULL DEFAULT ''",
         "equipo": "ALTER TABLE interacciones ADD COLUMN equipo VARCHAR(16) NOT NULL DEFAULT 'cs'",
         "estado_gestion": "ALTER TABLE interacciones ADD COLUMN estado_gestion VARCHAR(32) NOT NULL DEFAULT 'abierta'",

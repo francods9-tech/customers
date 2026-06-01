@@ -4,6 +4,7 @@
 
 <a class="back" href="{{ url_for('clientes_list') }}">&larr; Clientes</a>
 
+<div class="profile-overview-grid">
 <section class="profile-hero">
   <div>
     <div class="profile-eyebrow">{{ c.tipo_cliente }}</div>
@@ -17,7 +18,9 @@
   </div>
 </section>
 
-<section class="attention-strip">
+<section class="panel attention-panel">
+  <h2>Atencion</h2>
+<div class="attention-strip">
   {% if atencion.impago %}
     <div class="attention-card danger">
       <span>Impago</span>
@@ -63,11 +66,13 @@
   {% endif %}
   {% if not atencion.impago and not atencion.quejas_abiertas and not atencion.trial and not atencion.onboarding_pendiente %}
     <div class="attention-card ok">
-      <span>Atencion</span>
+      <span>Estado operativo</span>
       <strong>Sin pendientes</strong>
     </div>
   {% endif %}
+</div>
 </section>
+</div>
 
 <div class="customer-profile-grid">
   <section class="panel">
@@ -99,7 +104,7 @@
     {% endif %}
   </section>
 
-  <section class="panel manual-panel profile-span-2">
+  <section class="panel manual-panel">
     <h2>Ajuste manual</h2>
     <form method="post" action="{{ url_for('set_suscripcion', email=c.email_key) }}" class="manual-form">
       <div>
@@ -126,26 +131,34 @@
           {% endfor %}
         </select>
       </div>
-      <div>
-        <label>Descuento colab</label>
-        <input type="text" name="colab_descuento" value="{{ meta.colab_descuento or '' }}" placeholder="Ej: 50%, gratis, USD 99">
-      </div>
-      <div class="wide">
-        <label>Acuerdo colab</label>
-        <textarea name="colab_acuerdo" rows="3" placeholder="Ej: 2 historias por mes, logo, referido">{{ meta.colab_acuerdo or '' }}</textarea>
-      </div>
-      <div>
-        <label>Inicio colab</label>
-        <input type="date" name="colab_inicio" value="{{ meta.colab_inicio or '' }}">
-      </div>
-      <div>
-        <label>Proxima revision</label>
-        <input type="date" name="colab_revision" value="{{ meta.colab_revision or '' }}">
-      </div>
+      <details class="collab-details wide" {% if c.colab.es_colab or meta.colab_descuento or meta.colab_acuerdo or meta.colab_inicio or meta.colab_revision %}open{% endif %}>
+        <summary>Campos de colab</summary>
+        <div class="collab-fields">
+          <div>
+            <label>Descuento colab</label>
+            <input type="text" name="colab_descuento" value="{{ meta.colab_descuento or '' }}" placeholder="Ej: 50%, gratis, USD 99">
+          </div>
+          <div>
+            <label>Inicio colab</label>
+            <input type="date" name="colab_inicio" value="{{ meta.colab_inicio or '' }}">
+          </div>
+          <div>
+            <label>Proxima revision</label>
+            <input type="date" name="colab_revision" value="{{ meta.colab_revision or '' }}">
+          </div>
+          <div class="wide">
+            <label>Acuerdo colab</label>
+            <textarea name="colab_acuerdo" rows="3" placeholder="Ej: 2 historias por mes, logo, referido">{{ meta.colab_acuerdo or '' }}</textarea>
+          </div>
+        </div>
+      </details>
       <button type="submit">Guardar suscripcion</button>
     </form>
     <p class="muted">One time payment y Free por colab no suman como activos recurrentes. Colab con descuento si suma si esta activo.</p>
   </section>
+</div>
+
+<div class="profile-secondary-grid">
   <section class="panel">
     <h2>Contacto</h2>
     <form method="post" action="{{ url_for('set_contacto_cliente', email=c.email_key) }}" class="compact-form">
@@ -209,32 +222,47 @@
     <h2>Nuevo contacto o solicitud</h2>
     <a class="chip" href="{{ url_for('quejas_list') }}">Ver hoja de solicitudes</a>
   </div>
-  <form method="post" action="{{ url_for('add_interaccion', email=c.email_key) }}" class="nota-form contact-form">
-    <select name="tipo">
-      <option value="nota">Nota</option>
-      <option value="onboarding">Onboarding</option>
-      <option value="queja">Queja</option>
-      <option value="solicitud">Solicitud</option>
-      <option value="churn">Riesgo de baja</option>
-      <option value="upsell">Upsell</option>
-    </select>
-    <select name="categoria">
-      <option value="">Categoria si aplica</option>
-      {% for cat in categorias %}
-      <option value="{{ cat.key }}">{{ cat.label }}</option>
-      {% endfor %}
-    </select>
-    <select name="estado_gestion">
-      {% for key, label in estados_solicitud %}
-      <option value="{{ key }}">{{ label }}</option>
-      {% endfor %}
-    </select>
-    <select name="importancia">
-      {% for key, label in importancias %}
-      <option value="{{ key }}" {{ "selected" if key == "media" }}>{{ label }}</option>
-      {% endfor %}
-    </select>
-    <textarea name="texto" placeholder="Que paso en este contacto?" required></textarea>
+  <form method="post" action="{{ url_for('add_interaccion', email=c.email_key) }}" class="nota-form client-action-form">
+    <div>
+      <label>Tipo</label>
+      <select name="tipo">
+        <option value="nota">Nota</option>
+        <option value="onboarding">Onboarding</option>
+        <option value="queja">Queja</option>
+        <option value="solicitud">Solicitud</option>
+        <option value="churn">Riesgo de baja</option>
+        <option value="upsell">Upsell</option>
+      </select>
+    </div>
+    <div>
+      <label>Categoria</label>
+      <select name="categoria">
+        <option value="">Si aplica</option>
+        {% for cat in categorias %}
+        <option value="{{ cat.key }}">{{ cat.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Estado</label>
+      <select name="estado_gestion">
+        {% for key, label in estados_solicitud %}
+        <option value="{{ key }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Importancia</label>
+      <select name="importancia">
+        {% for key, label in importancias %}
+        <option value="{{ key }}" {{ "selected" if key == "media" }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="action-detail">
+      <label>Detalle</label>
+      <textarea name="texto" placeholder="Que paso en este contacto?" required></textarea>
+    </div>
     <button type="submit">Agregar</button>
   </form>
 </section>
