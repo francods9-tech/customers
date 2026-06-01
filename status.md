@@ -201,6 +201,7 @@ Ultima verificacion luego de sumar trials al grafico por canal:
 ```
 
 Resultado: 50 tests OK; import Flask OK con 38 rutas.
+- Deploy Railway posterior: `0993a175-ee0d-46c0-a14b-d223d6754858` SUCCESS; `/healthz` 200 y `/login` 200.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
