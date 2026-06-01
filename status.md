@@ -234,6 +234,8 @@ Correccion posterior:
 - Correccion posterior: en preset `Todo`, el KPI Altas completa eventos faltantes con clientes recurrentes actuales que no tienen alta historica registrada, para evitar que Altas quede por debajo de Activos recurrentes.
 - Verificacion: 53 tests OK; import Flask OK con 38 rutas.
 - Deploy Railway posterior: `838040de-2ed2-49df-9784-ad25770889f4` SUCCESS; `/healthz` 200 y `/login` 200.
+- Correccion posterior: en preset `Todo`, Altas tambien completa bajas historicas sin alta registrada, para que `Altas - Bajas` cierre contra la base activa recurrente cuando el historial de altas esta incompleto.
+- Verificacion: 53 tests OK; import Flask OK con 38 rutas.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v

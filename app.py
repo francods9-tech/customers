@@ -283,7 +283,7 @@ def _emails_base_actual(clientes):
     }
 
 
-def _complete_todo_altas_with_current_recurrentes(altas, clientes):
+def _complete_todo_altas_with_current_recurrentes_and_bajas(altas, clientes, bajas):
     emails_con_alta = {(e.get("email") or "").lower() for e in altas}
     completadas = list(altas)
     for c in clientes:
@@ -294,6 +294,16 @@ def _complete_todo_altas_with_current_recurrentes(altas, clientes):
         if not fecha:
             continue
         completadas.append({"email": email, "fecha": fecha, "origen": c.get("origen", "sin_asignar")})
+        emails_con_alta.add(email)
+    for baja in bajas:
+        email = (baja.get("email") or "").lower()
+        if not email or email in emails_con_alta:
+            continue
+        fecha = baja.get("fecha")
+        if not fecha:
+            continue
+        completadas.append({"email": email, "fecha": fecha, "origen": baja.get("origen", "sin_asignar")})
+        emails_con_alta.add(email)
     return completadas
 
 
@@ -314,7 +324,7 @@ def index():
     )
     trials = metrics.trial_events(snap["clientes"])
     if request.args.get("preset") == "todo" and not request.args.get("desde") and not request.args.get("hasta"):
-        altas = _complete_todo_altas_with_current_recurrentes(altas, snap["clientes"])
+        altas = _complete_todo_altas_with_current_recurrentes_and_bajas(altas, snap["clientes"], bajas)
     desde, hasta, label, pdesde, phasta = metrics.resolver_periodo(request.args, eventos=altas + bajas + trials)
     altas_p = metrics.filtrar(altas, desde, hasta, canal)
     bajas_p = metrics.filtrar(bajas, desde, hasta, canal)
