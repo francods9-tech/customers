@@ -371,10 +371,9 @@ def index():
         canal_counts = Counter(origen_group_key(c.get("origen")) for c in clientes_canal)
         canales_titulo = "Base actual por canal"
     else:
-        emails_actuales = _emails_base_actual(snap["clientes"])
         eventos_canal = [
             e for e in altas_p + trials_p
-            if (e.get("email") or "").lower() in emails_actuales
+            if origen_group_key(e.get("origen")) != "sin_asignar"
         ]
         canal_counts = metrics.por_canal(eventos_canal)
         canales_titulo = "Altas y trials por canal"
