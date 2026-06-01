@@ -17,7 +17,7 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 ## Hecho
 
 - Clientes ahora tiene buscador por nombre/email.
-- Origen incluye `XBIZ` como canal seleccionable y filtrable.
+- Origen incluye `XBIZ`, `Instagram`, `WhatsApp`, `Sky` y `Reactivacion` como canales seleccionables y filtrables.
 - Clientes tiene filtros por activos recurrentes, activos, trial, impagos, inactivos, one time y free colab.
 - La ficha permite ajustar manualmente plan, estado y tipo de cliente.
 - `One time payment` y `Free por colab` no suman como activos recurrentes.
@@ -123,6 +123,7 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - Se agrego campo WhatsApp editable por cliente en `CustomerMeta.whatsapp`.
   - Se agrego campo `usuario` editable por cliente en `CustomerMeta.usuario`, usado junto a WhatsApp para busqueda rapida.
   - La ficha usa una grilla de perfil mas armonica para suscripcion, ajuste manual, contacto, origen/bienvenida y salud.
+  - Pendiente visual: Franco enviara screenshot para terminar de pulir el layout de la ficha.
 - Solicitudes/tickets:
   - Cada solicitud se muestra como `Ticket #ID`.
   - La creacion ya no pide responsable.
@@ -140,6 +141,26 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - La administracion visual de categorias se oculto de `/solicitudes`; las categorias se manejan internamente.
 
 ## Verificacion
+
+Ultima verificacion luego de agregar canales de adquisicion para bulk:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+```
+
+Resultado: 46 tests OK; import Flask OK con 38 rutas.
+
+Bulk de canales de adquisicion aplicado en produccion desde `C:\Users\Franco Salemme\Downloads\Hoja de cálculo sin título (2).xlsx`:
+
+- Excel: 102 emails unicos con canal normalizado.
+- Snapshot actual: 46 clientes encontrados y actualizados.
+- Fuera del snapshot actual: 56 emails sin tocar.
+- Canales desconocidos: 0.
+- Duplicados/conflictos: 7; se aplico la ultima aparicion del Excel.
+- Verificacion posterior: 46 matched, 0 mismatches.
+- Conteo final aplicado: `instagram=20`, `referido=16`, `whatsapp=3`, `telegram=2`, `email=2`, `directo=2`, `sky=1`.
+- Deploy Railway previo al bulk: `cfb784fe-9338-4ca7-94b7-9fa7a8654711` SUCCESS; `/healthz` 200 y `/login` 200.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
