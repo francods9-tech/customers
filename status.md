@@ -113,19 +113,10 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - Nueva ruta POST `/solicitudes/nueva`.
   - Mapeo de pelota sin migracion: Customer Success => `equipo=cs`/`estado_gestion=abierta`; Operaciones => `equipo=ops`/`estado_gestion=abierta`; Cliente => `equipo=cs`/`estado_gestion=esperando`.
   - Si no hay clientes en snapshot, el formulario queda deshabilitado con mensaje operativo.
-- Inicio ahora tiene lectura CEO cash-based:
-  - `Ingresos cash` usa entradas positivas Mercury conciliadas + ajustes manuales explicitos.
-  - MRR y clientes activos quedan como metricas SaaS separadas, no se suman a caja.
-  - Panel `Conciliacion Stripe - Mercury` muestra Stripe bruto, fees, neto, payouts, entradas Mercury y gap.
-  - Badges de fuente muestran `ok`, `missing`, `estimate` o `stale`.
-- Backend financiero agregado:
-  - Nuevo modulo `sync/finance.py`.
-  - `GET /api/summary?month=YYYY-MM` devuelve `totals`, `saas`, `reconciliation`, `details` y `sources`.
-  - `POST /api/refresh` calcula Mercury + Stripe + SaaS sin crear snapshot mensual.
-  - `POST /api/snapshot` persiste `data/income_YYYY-MM.json` con el resumen conciliado.
-  - Mercury excluye cuentas `Sky Reputation`, transferencias internas y no inventa ingresos si la fuente falta.
-  - Stripe se usa para conciliacion (gross/fees/net/payouts), no como source of truth de ingresos.
-- Pantalla `/gastos` agregada para auditar gastos externos Mercury del mes.
+- Se removio el scope financiero/CEO del dashboard de Customer Success:
+  - No hay bloque MRR/cash/conciliacion en Inicio.
+  - No hay pantalla `/gastos` ni APIs financieras.
+  - Queda un test preventivo para evitar reintroducir `Gastos`, `MRR`, `Stripe` o `Mercury` en Inicio.
 
 ## Verificacion
 
@@ -197,15 +188,15 @@ Verificacion completa luego de alta directa de solicitudes:
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-Resultado historico intermedio: hubo una falla en `tests/test_finance.py` por definicion de gap. Corregido en la iteracion cash-based; ver verificacion final abajo.
+Resultado historico intermedio: 47 tests OK antes de remover el scope financiero.
 
-Verificacion focal financiera:
+Verificacion focal luego de remover finanzas del dashboard CS:
 
 ```powershell
-.\.venv\Scripts\python.exe -m unittest tests.test_finance -v
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes.AppRoutesTest.test_dashboard_no_muestra_finanzas_ni_gastos -v
 ```
 
-Resultado: 8 tests OK.
+Resultado: 1 test OK.
 
 Verificacion completa final:
 
@@ -213,7 +204,7 @@ Verificacion completa final:
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-Resultado: 47 tests OK.
+Resultado: 40 tests OK.
 
 Verificacion de import:
 
@@ -264,9 +255,8 @@ Verificacion HTTP local:
 - `/bajas?preset=todo` 200 con motivos de baja editables
 - `/solicitudes?preset=todo` 200 con dashboard y grafico temporal
 - `/solicitudes` 200 autenticado con formulario `Nueva solicitud` y accion `/solicitudes/nueva`.
-- `/` 200 autenticado con panel `Conciliacion Stripe - Mercury`.
-- `/gastos` 200 autenticado con pantalla de gastos Mercury.
-- `/api/summary?month=2026-05` 200 autenticado con `reconciliation`.
+- `/` 200 autenticado sin bloque financiero/CEO.
+- Produccion Railway redeployada luego de remover finanzas: `/healthz` 200, `/gastos` 404.
 - `/?preset=todo` 200 con preset Todo
 - `/mensajes` 200 con wiki editable de mensajes
 - `/mensajes?q=checkpoint` 200 con plantillas del pack WhatsApp

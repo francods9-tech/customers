@@ -287,40 +287,6 @@ dd { margin: 0; min-width: 0; }
 .kpi-delta { font-size: .85rem; color: var(--muted); }
 .kpi-delta.up { color: var(--ok); }
 .kpi-delta.down { color: var(--warn); }
-.panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: .8rem; }
-.panel-head h2 { margin-bottom: .25rem; }
-.executive-panel .kpis { margin-bottom: 0; }
-.finance-kpis .kpi-val { font-size: 1.7rem; }
-.source-badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  border-radius: 99px;
-  padding: .16rem .55rem;
-  font-size: .75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  background: #fff;
-}
-.source-ok { color: var(--ok); border-color: #bbf7d0; background: #f0fdf4; }
-.source-missing { color: var(--warn); border-color: #fecaca; background: #fef2f2; }
-.source-estimate { color: var(--trial); border-color: #fde68a; background: #fffbeb; }
-.source-stale { color: #7e22ce; border-color: #e9d5ff; background: #faf5ff; }
-.reconciliation-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: .75rem;
-}
-.reconciliation-grid div {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: .75rem .85rem;
-  background: #f8fafc;
-}
-.reconciliation-grid span { display: block; color: var(--muted); font-size: .8rem; }
-.reconciliation-grid strong { display: block; margin-top: .12rem; font-size: 1.08rem; }
 
 .charts { display: grid; grid-template-columns: minmax(0, 3fr) minmax(280px, 2fr); gap: 1rem; }
 .charts .panel { margin-bottom: 1.25rem; }

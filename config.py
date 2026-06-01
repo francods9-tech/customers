@@ -30,7 +30,3 @@ class Config:
 
     MONGO_URI = os.environ.get("MONGO_URI", "")
     STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
-    FINANCE_DATA_DIR = os.environ.get(
-        "FINANCE_DATA_DIR",
-        str(pathlib.Path(__file__).resolve().parent / "data"),
-    )

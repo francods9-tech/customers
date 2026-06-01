@@ -58,6 +58,18 @@ class AppRoutesTest(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login", response.location)
 
+    def test_dashboard_no_muestra_finanzas_ni_gastos(self):
+        self.login()
+
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertNotIn("Gastos", body)
+        self.assertNotIn("MRR", body)
+        self.assertNotIn("Stripe", body)
+        self.assertNotIn("Mercury", body)
+
     def test_solicitud_directa_requires_login(self):
         response = self.client.post("/solicitudes/nueva", data={"texto": "Alta manual"})
 
