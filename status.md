@@ -239,6 +239,7 @@ Correccion posterior:
 - Deploy Railway posterior: `1b6c0e0a-c10d-4649-839b-3ce7cb0addd0` SUCCESS; `/healthz` 200 y `/login` 200.
 - Correccion posterior: las altas excluyen emails que hoy estan en trial, para que en periodos como 7 dias `Altas` no duplique trials; los trials quedan solo en su serie propia.
 - Verificacion: 54 tests OK; import Flask OK con 38 rutas.
+- Deploy Railway posterior: `69013efe-1c0c-45a2-b18d-5c93b65db112` SUCCESS; `/healthz` 200 y `/login` 200.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
