@@ -269,7 +269,7 @@ dd { margin: 0; min-width: 0; }
 .mini-kpis strong { display: block; font-size: 1.35rem; }
 .mini-kpis span { display: block; color: var(--muted); font-size: .82rem; }
 
-.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: .85rem; margin: 1rem 0 1.25rem; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .85rem; margin: 1rem 0 1.25rem; }
 .kpi { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; box-shadow: var(--shadow); }
 .kpi-label { display: block; color: var(--muted); font-size: .85rem; }
 .kpi-val { display: block; font-size: 2rem; font-weight: 700; line-height: 1.2; }

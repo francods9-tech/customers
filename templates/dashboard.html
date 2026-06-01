@@ -45,9 +45,10 @@
         {% set malo = (k.delta > 0) if k.invertir else (k.delta < 0) %}
         <span class="kpi-delta {{ 'up' if bueno }}{{ 'down' if malo }}">
           {{ "▲" if k.delta > 0 }}{{ "▼" if k.delta < 0 }} {{ k.delta|abs }}%
+          {% if k.fixed_period == "7d" %} vs 7d ant.{% endif %}
         </span>
       {% else %}
-        <span class="kpi-delta">—</span>
+        <span class="kpi-delta">—{% if k.fixed_period == "7d" %} vs 7d ant.{% endif %}</span>
       {% endif %}
     </{{ tag }}>
     {% endfor %}
