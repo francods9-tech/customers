@@ -17,7 +17,7 @@
       <span class="tag status-pill {{ ctx.status_class }}">Resuelta</span>
       <span class="tag {{ ctx.duration.class }}">{{ ctx.duration.dias }} dias abierto</span>
     {% else %}
-      <span class="tag team-pill team-{{ ticket.equipo }}">{{ team_labels.get(ticket.equipo, ticket.equipo)|upper }}</span>
+      <span class="tag team-pill team-{{ ctx.team_key }}">{{ ctx.team_label|upper }}</span>
       <span class="tag status-pill {{ ctx.status_class }}">{{ status_labels.get(ticket.estado_gestion, ticket.estado_gestion) }}</span>
       <span class="tag {{ ctx.age.class }}">{{ ctx.age.dias }} dias</span>
     {% endif %}

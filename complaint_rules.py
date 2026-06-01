@@ -35,7 +35,7 @@ IMPORTANCE_OPTIONS = [
 IMPORTANCE_LABELS = dict(IMPORTANCE_OPTIONS)
 
 STATUS_TEAM = {
-    "abierta": "cs",
+    "abierta": "ops",
     "en_gestion": "ops",
     "comunicar": "cs",
     "en_proceso": "ops",
@@ -79,7 +79,7 @@ def normalize_status(status):
 
 
 def team_for_status(status):
-    return STATUS_TEAM.get(status or "abierta", "cs")
+    return STATUS_TEAM.get(status or "abierta", "ops")
 
 
 def _elapsed_days(start, end):
@@ -139,12 +139,12 @@ def request_stats(items):
             continue
         resolved = bool(getattr(item, "resuelta", False)) or getattr(item, "estado_gestion", "") == "resuelta"
         status = normalize_status(getattr(item, "estado_gestion", "") or ("resuelta" if resolved else "abierta"))
-        team = getattr(item, "equipo", "") or "cs"
         by_status[status] = by_status.get(status, 0) + 1
         if resolved:
             resolved_count += 1
         else:
             open_count += 1
+            team = team_for_status(status)
             by_team[team] = by_team.get(team, 0) + 1
 
     return {

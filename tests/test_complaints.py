@@ -52,8 +52,8 @@ class ComplaintRulesTest(unittest.TestCase):
 
         self.assertEqual(stats["total_abiertas"], 2)
         self.assertEqual(stats["total_resueltas"], 1)
-        self.assertEqual(stats["por_equipo"]["cs"], 1)
-        self.assertEqual(stats["por_equipo"]["ops"], 1)
+        self.assertEqual(stats["por_equipo"]["cs"], 0)
+        self.assertEqual(stats["por_equipo"]["ops"], 2)
         self.assertEqual(stats["por_estado"]["en_gestion"], 1)
 
 

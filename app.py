@@ -204,24 +204,31 @@ def _request_events(rows):
 
 
 def _clientes_snapshot(snap):
+    metas = _meta_map()
     clientes = []
     for c in (snap or {}).get("clientes", []):
         email = (c.get("email_key") or c.get("email") or "").lower()
         if not email:
             continue
+        meta = metas.get(email)
         clientes.append({
             "email": email,
             "nombre": c.get("nombre") or c.get("email") or email,
+            "whatsapp": (meta.whatsapp if meta else "") or c.get("whatsapp") or "",
         })
     return sorted(clientes, key=lambda c: (c["nombre"] or "").lower())
 
 
 def _ticket_context(ticket):
+    status_key = complaint_rules.ticket_status_key(ticket)
+    team_key = complaint_rules.team_for_status(status_key)
     return {
         "age": complaint_rules.ticket_age(ticket),
         "duration": complaint_rules.ticket_duration(ticket),
         "status_class": complaint_rules.ticket_status_class(ticket),
-        "status_key": complaint_rules.ticket_status_key(ticket),
+        "status_key": status_key,
+        "team_key": team_key,
+        "team_label": complaint_rules.TEAM_LABELS.get(team_key, team_key),
         "importance_label": complaint_rules.IMPORTANCE_LABELS.get(
             getattr(ticket, "importancia", "") or "media",
             getattr(ticket, "importancia", "") or "Media",
@@ -513,13 +520,8 @@ def add_solicitud_directa():
     customer_email = (request.form.get("customer_email") or "").lower()
     texto = (request.form.get("texto") or "").strip()
     tipo = request.form.get("tipo") if request.form.get("tipo") in complaint_rules.REQUEST_TYPES else "solicitud"
-    pelota = request.form.get("pelota") or "cs"
-    pelota_map = {
-        "cs": ("cs", "abierta"),
-        "ops": ("ops", "en_gestion"),
-        "cliente": ("cs", "comunicar"),
-    }
-    equipo, estado_gestion = pelota_map.get(pelota, pelota_map["cs"])
+    estado_gestion = complaint_rules.normalize_status(request.form.get("estado_gestion", "abierta"))
+    equipo = complaint_rules.team_for_status(estado_gestion)
 
     if not clientes:
         flash("No hay clientes cargados para crear solicitudes", "error")
@@ -564,7 +566,7 @@ def reabrir_ticket(qid):
     if ticket and complaint_rules.is_customer_request(ticket):
         ticket.resuelta = False
         ticket.estado_gestion = "abierta"
-        ticket.equipo = "cs"
+        ticket.equipo = complaint_rules.team_for_status("abierta")
         ticket.resolved_at = None
         db.session.commit()
         flash("Ticket reabierto", "ok")
@@ -596,6 +598,17 @@ def set_queja_gestion(qid):
         db.session.commit()
         flash("Gestion actualizada", "ok")
     return redirect(request.referrer or url_for("quejas_list"))
+
+
+@app.route("/solicitudes/<int:qid>/eliminar", methods=["POST"])
+@login_required
+def eliminar_ticket(qid):
+    ticket = db.session.get(Interaccion, qid)
+    if ticket and complaint_rules.is_customer_request(ticket) and not ticket.resuelta:
+        db.session.delete(ticket)
+        db.session.commit()
+        flash("Ticket eliminado", "ok")
+    return redirect(url_for("quejas_list"))
 
 
 @app.route("/solicitudes/<int:qid>")
