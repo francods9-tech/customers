@@ -229,6 +229,9 @@ Verificacion HTTP local luego de ficha WhatsApp y tickets:
 
 - `/solicitudes` 200 con tickets numerados, selector de importancia y sin campo responsable en alta.
 - `/solicitudes/<id>` 200 con ficha de ticket, estado, importancia y comentarios.
+- PR #5 mergeado a `main`.
+- Railway deploy `7d1c9d69-c28d-4368-981a-f8d0b18cdc71` exitoso.
+- Produccion verificada: `/healthz` 200, `/login` 200, `/solicitudes` sin login redirige a login.
 
 Verificacion de import:
 
