@@ -227,6 +227,7 @@ class AppRoutesTest(unittest.TestCase):
             {**self.customer_row(nombre="Alta Mayo", email="alta-mayo@example.test"), "fecha_alta_raw": "2026-05-15T00:00:00+00:00"},
             {**self.customer_row(nombre="Alta Abril", email="alta-abril@example.test"), "fecha_alta_raw": "2026-04-10T00:00:00+00:00"},
             {**self.customer_row(nombre="Trial Mayo", email="trial-mayo@example.test"), "estado": "trial", "fecha_alta_raw": "2026-05-20T00:00:00+00:00"},
+            {**self.customer_row(nombre="Manual Mayo", email="manual-mayo@example.test"), "fecha_alta_raw": "2026-05-18T00:00:00+00:00"},
         ]
         with self.app.app_context():
             db.session.add(Snapshot(payload={
@@ -244,12 +245,14 @@ class AppRoutesTest(unittest.TestCase):
             db.session.add(CustomerMeta(email="alta-mayo@example.test", origen="instagram"))
             db.session.add(CustomerMeta(email="alta-abril@example.test", origen="telegram"))
             db.session.add(CustomerMeta(email="trial-mayo@example.test", origen="email"))
+            db.session.add(CustomerMeta(email="manual-mayo@example.test", origen="telegram"))
             db.session.commit()
 
         response = self.client.get("/?desde=2026-05-01&hasta=2026-05-31")
 
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
+        self.assertIn("Altas y trials por canal", body)
         self.assertIn('"labels": ["Email", "Instagram"]', body)
         self.assertIn('"valores": [1, 1]', body)
         self.assertNotIn('"Telegram"', body)
