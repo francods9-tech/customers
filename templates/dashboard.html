@@ -59,7 +59,7 @@
       <canvas id="chartSerie" height="120"></canvas>
     </section>
     <section class="panel">
-      <h2>Base actual por canal</h2>
+      <h2>{{ canales_titulo or "Base actual por canal" }}</h2>
       {% if canales %}
         <canvas id="chartCanal" height="160"></canvas>
       {% else %}

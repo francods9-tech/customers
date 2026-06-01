@@ -275,14 +275,6 @@ def _quejas_en(rango_desde, rango_hasta):
     return n
 
 
-def _customer_in_period(customer, desde, hasta, period_emails):
-    email = (customer.get("email_key") or customer.get("email") or "").lower()
-    fecha = metrics._parse_date(customer.get("fecha_alta_raw"))
-    if fecha:
-        return desde <= fecha < hasta
-    return email in period_emails
-
-
 @app.route("/")
 @login_required
 def index():
@@ -325,20 +317,18 @@ def index():
          "delta": metrics.delta_pct(len(altas_p) - len(bajas_p), len(altas_prev) - len(bajas_prev))},
     ]
 
-    clientes_canal = [
-        c for c in snap["clientes"]
-        if c.get("cuenta_activo_recurrente") or c.get("estado") == "trial"
-    ]
-    if request.args.get("preset") != "todo" or request.args.get("desde") or request.args.get("hasta"):
-        period_emails = {
-            (e.get("email") or "").lower()
-            for e in altas_p + trials_p
-            if e.get("email")
-        }
-        clientes_canal = [c for c in clientes_canal if _customer_in_period(c, desde, hasta, period_emails)]
-    if canal:
-        clientes_canal = [c for c in clientes_canal if origen_group_key(c.get("origen")) == canal]
-    canal_counts = Counter(origen_group_key(c.get("origen")) for c in clientes_canal)
+    if request.args.get("preset") == "todo" and not request.args.get("desde") and not request.args.get("hasta"):
+        clientes_canal = [
+            c for c in snap["clientes"]
+            if c.get("cuenta_activo_recurrente") or c.get("estado") == "trial"
+        ]
+        if canal:
+            clientes_canal = [c for c in clientes_canal if origen_group_key(c.get("origen")) == canal]
+        canal_counts = Counter(origen_group_key(c.get("origen")) for c in clientes_canal)
+        canales_titulo = "Base actual por canal"
+    else:
+        canal_counts = metrics.por_canal(altas_p + trials_p)
+        canales_titulo = "Altas y trials por canal"
     canales = [(ORIGEN_LABELS.get(k, k), canal_counts.get(k, 0)) for k, _ in ORIGENES_BASE if canal_counts.get(k, 0)]
     serie_altas = metrics.serie_temporal(altas_p, desde, hasta)
     serie_bajas = metrics.serie_temporal(bajas_p, desde, hasta)
@@ -353,7 +343,7 @@ def index():
 
     return render_template(
         "dashboard.html", snap=snap, origenes=ORIGENES_BASE, presets=metrics.PRESETS,
-        kpis=kpis, label=label, canal=canal, canales=canales, serie=serie,
+        kpis=kpis, label=label, canal=canal, canales=canales, canales_titulo=canales_titulo, serie=serie,
         desde=desde.strftime("%Y-%m-%d"), hasta=(hasta - dt.timedelta(days=1)).strftime("%Y-%m-%d"),
         estado={
             **estado_summary,
