@@ -221,11 +221,6 @@
       <option value="{{ cat.key }}">{{ cat.label }}</option>
       {% endfor %}
     </select>
-    <select name="equipo">
-      {% for key, label in equipos %}
-      <option value="{{ key }}">{{ label }}</option>
-      {% endfor %}
-    </select>
     <select name="estado_gestion">
       {% for key, label in estados_solicitud %}
       <option value="{{ key }}">{{ label }}</option>
@@ -252,7 +247,6 @@
         {% if i.tipo in ("queja", "solicitud") %}
           <a class="ticket-id" href="{{ url_for('ticket_detail', qid=i.id) }}">Ticket #{{ i.id }}</a>
           <span class="tag">{{ category_label(i.categoria, category_map) }}</span>
-          <span class="tag">{{ i.equipo|upper }}</span>
           <span class="tag">{{ i.estado_gestion.replace("_", " ") }}</span>
           <span class="tag">Importancia {{ i.importancia }}</span>
         {% endif %}

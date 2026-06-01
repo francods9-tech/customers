@@ -109,9 +109,9 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - KPIs de registradas, abiertas actuales, Customer Success, Operaciones y resueltas.
   - Grafico temporal de solicitudes por dia o semana.
 - Solicitudes permite alta directa desde `/solicitudes`:
-  - Formulario superior `Nueva solicitud` con cliente del ultimo snapshot, tipo, motivo/categoria, pelota, importancia y detalle obligatorio.
+  - Formulario superior `Nueva solicitud` con buscador de cliente por nombre/email/WhatsApp, tipo, motivo/categoria, estado inicial, importancia y detalle obligatorio.
   - Nueva ruta POST `/solicitudes/nueva`.
-  - Mapeo de pelota: Customer Success => `equipo=cs`/`estado_gestion=abierta`; Operaciones => `equipo=ops`/`estado_gestion=en_gestion`; Cliente => `equipo=cs`/`estado_gestion=comunicar`.
+  - El equipo no se selecciona al crear: se deriva del estado (`abierta`/`en_gestion` => Ops; `comunicar` => CS).
   - Si no hay clientes en snapshot, el formulario queda deshabilitado con mensaje operativo.
 - Se removio el scope financiero/CEO del dashboard de Customer Success:
   - No hay bloque MRR/cash/conciliacion en Inicio.
@@ -132,6 +132,8 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - Los tickets resueltos pueden reabrirse; vuelven a `abierta` con equipo CS.
   - Los comentarios internos no piden ni guardan autor.
   - Los estados tienen chips de color para diferenciar abierta, en gestion, comunicar y resuelta.
+  - Las abiertas pueden eliminarse desde la lista.
+  - En abiertas solo se actualizan estado e importancia; la categoria queda fija luego de crear el ticket.
 
 ## Verificacion
 
@@ -244,6 +246,23 @@ Verificacion HTTP local autenticada luego de pulir tickets:
 - PR #6 mergeado a `main`.
 - Railway deploy `4ea78907-f526-4952-8e1e-7d5bc44916b1` exitoso.
 - Produccion verificada: `/healthz` 200, `/login` 200, `/solicitudes` sin login redirige a login.
+
+Verificacion luego de simplificar acciones de abiertas y buscador de cliente:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+```
+
+Resultado: 45 tests OK; `imports ok 38`.
+
+Verificacion HTTP local autenticada:
+
+- `/solicitudes` 200.
+- Formulario con buscador por cliente/email/WhatsApp.
+- Alta sin campo `pelota`.
+- Ticket abierto con boton `Eliminar`, sin edicion de categoria en la fila.
+- Estado `abierta` mostrado como Operaciones derivado del estado.
 
 Verificacion HTTP local luego de ficha WhatsApp y tickets:
 

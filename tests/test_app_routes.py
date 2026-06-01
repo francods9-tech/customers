@@ -140,45 +140,51 @@ class AppRoutesTest(unittest.TestCase):
             self.assertEqual(row.texto, "Necesita bajar tres enlaces.")
             self.assertIsNone(row.agente)
             self.assertEqual(row.importancia, "alta")
-            self.assertEqual(row.equipo, "cs")
+            self.assertEqual(row.equipo, "ops")
             self.assertEqual(row.estado_gestion, "abierta")
             self.assertFalse(row.resuelta)
 
-    def test_solicitud_directa_mapea_pelota(self):
+    def test_solicitud_directa_deriva_equipo_desde_estado_inicial(self):
         from db.models import Interaccion
 
         self.login()
         self.add_snapshot([{
-            "nombre": "Cliente Pelota",
-            "email": "pelota@example.test",
-            "email_key": "pelota@example.test",
+            "nombre": "Cliente Estado",
+            "email": "estado@example.test",
+            "email_key": "estado@example.test",
         }])
 
         cases = [
-            ("cs", "cs", "abierta"),
-            ("ops", "ops", "en_gestion"),
-            ("cliente", "cs", "comunicar"),
+            ("abierta", "ops"),
+            ("en_gestion", "ops"),
+            ("comunicar", "cs"),
         ]
-        for pelota, equipo, estado in cases:
+        for estado, equipo in cases:
             response = self.client.post("/solicitudes/nueva", data={
-                "customer_email": "pelota@example.test",
+                "customer_email": "estado@example.test",
                 "tipo": "queja",
                 "categoria": "tiempos_gestion",
-                "pelota": pelota,
-                "texto": f"Detalle {pelota}",
+                "estado_gestion": estado,
+                "texto": f"Detalle {estado}",
             })
             self.assertEqual(response.status_code, 302)
 
         with self.app.app_context():
-            rows = Interaccion.query.filter_by(customer_email="pelota@example.test").order_by(Interaccion.id.asc()).all()
-            self.assertEqual([(r.equipo, r.estado_gestion) for r in rows], [(c[1], c[2]) for c in cases])
+            rows = Interaccion.query.filter_by(customer_email="estado@example.test").order_by(Interaccion.id.asc()).all()
+            self.assertEqual([(r.equipo, r.estado_gestion) for r in rows], [(c[1], c[0]) for c in cases])
 
     def test_solicitudes_muestra_formulario_con_clientes_ordenados(self):
+        from db import db
+        from db.models import CustomerMeta
+
         self.login()
         self.add_snapshot([
             {"nombre": "Zeta", "email": "zeta@example.test", "email_key": "zeta@example.test"},
             {"nombre": "Ana", "email": "ana@example.test", "email_key": "ana@example.test"},
         ])
+        with self.app.app_context():
+            db.session.add(CustomerMeta(email="ana@example.test", whatsapp="+54 9 11 5555 0000"))
+            db.session.commit()
 
         response = self.client.get("/solicitudes")
 
@@ -186,9 +192,63 @@ class AppRoutesTest(unittest.TestCase):
         body = response.get_data(as_text=True)
         self.assertIn("Nueva solicitud", body)
         self.assertIn("ana@example.test", body)
+        self.assertIn("+54 9 11 5555 0000", body)
+        self.assertIn('type="search"', body)
+        self.assertIn('data-customer-search', body)
         self.assertIn('name="importancia"', body)
+        self.assertIn('name="estado_gestion"', body)
+        self.assertNotIn('name="pelota"', body)
         self.assertNotIn('name="agente"', body)
         self.assertLess(body.index("Ana"), body.index("Zeta"))
+
+    def test_solicitudes_abiertas_actualizan_estado_importancia_y_se_pueden_eliminar(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="solicitud",
+                texto="Abrir para borrar",
+                categoria="envia_links",
+                equipo="cs",
+                estado_gestion="abierta",
+                importancia="media",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            )
+            db.session.add(ticket)
+            db.session.commit()
+            ticket_id = ticket.id
+
+        response = self.client.get("/solicitudes")
+        body = response.get_data(as_text=True)
+        ticket_row = body[body.index(f"Ticket #{ticket_id}"):]
+        ticket_row = ticket_row[:ticket_row.index("</li>")]
+        self.assertIn("OPERACIONES", ticket_row)
+        self.assertIn("Eliminar", ticket_row)
+        self.assertEqual(ticket_row.count("Actualizar"), 1)
+        self.assertNotIn('name="categoria"', ticket_row)
+
+        response = self.client.post(
+            f"/queja/{ticket_id}/gestion",
+            data={"estado_gestion": "en_gestion", "importancia": "alta"},
+        )
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            ticket = db.session.get(Interaccion, ticket_id)
+            self.assertEqual(ticket.estado_gestion, "en_gestion")
+            self.assertEqual(ticket.equipo, "ops")
+            self.assertEqual(ticket.importancia, "alta")
+            self.assertEqual(ticket.categoria, "envia_links")
+
+        response = self.client.post(f"/solicitudes/{ticket_id}/eliminar")
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            self.assertIsNone(db.session.get(Interaccion, ticket_id))
 
     def test_ticket_muestra_numero_aging_y_comentarios(self):
         import datetime as dt
@@ -283,7 +343,7 @@ class AppRoutesTest(unittest.TestCase):
             ticket = db.session.get(Interaccion, ticket_id)
             self.assertFalse(ticket.resuelta)
             self.assertEqual(ticket.estado_gestion, "abierta")
-            self.assertEqual(ticket.equipo, "cs")
+            self.assertEqual(ticket.equipo, "ops")
             self.assertIsNone(ticket.resolved_at)
 
     def test_ticket_aging_rojo_mas_de_catorce_dias(self):

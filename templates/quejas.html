@@ -35,11 +35,17 @@
   <h2>Nueva solicitud</h2>
   {% if clientes %}
   <form method="post" action="{{ url_for('add_solicitud_directa') }}" class="new-request-form">
-    <select name="customer_email" required>
+    <input type="search" data-customer-search data-target="new-request-customer" placeholder="Buscar cliente, email o WhatsApp">
+    <select id="new-request-customer" name="customer_email" required>
       {% for cliente in clientes %}
       <option value="{{ cliente.email }}">{{ cliente.nombre }} · {{ cliente.email }}</option>
       {% endfor %}
     </select>
+    <div class="customer-search-index" hidden>
+      {% for cliente in clientes %}
+      <span data-email="{{ cliente.email }}" data-search="{{ cliente.nombre }} {{ cliente.email }} {{ cliente.whatsapp }}">{{ cliente.whatsapp }}</span>
+      {% endfor %}
+    </div>
     <select name="tipo">
       <option value="solicitud">Solicitud</option>
       <option value="queja">Queja</option>
@@ -50,10 +56,10 @@
       <option value="{{ cat.key }}">{{ cat.label }}</option>
       {% endfor %}
     </select>
-    <select name="pelota">
-      <option value="cs">Customer Success</option>
-      <option value="ops">Operaciones</option>
-      <option value="cliente">Cliente</option>
+    <select name="estado_gestion">
+      {% for key, label in estados_solicitud %}
+      <option value="{{ key }}">{{ label }}</option>
+      {% endfor %}
     </select>
     <select name="importancia">
       {% for key, label in importancias %}
@@ -65,6 +71,7 @@
   </form>
   {% else %}
   <form class="new-request-form">
+    <input type="search" placeholder="Buscar cliente, email o WhatsApp" disabled>
     <select disabled>
       <option>No hay clientes cargados</option>
     </select>
@@ -75,7 +82,7 @@
       <option>Sin categoria</option>
     </select>
     <select disabled>
-      <option>Customer Success</option>
+      <option>Abierta</option>
     </select>
     <select disabled>
       <option>Media</option>
@@ -122,7 +129,7 @@
         <a href="{{ url_for('cliente', email=q.customer_email) }}">{{ nombres.get(q.customer_email, q.customer_email) }}</a>
         <span class="tag {{ 'tag-warn' if q.tipo == 'queja' }}">{{ q.tipo }}</span>
         <span class="tag">{{ category_label(q.categoria, category_map) }}</span>
-        <span class="tag team-pill team-{{ q.equipo }}">{{ team_labels.get(q.equipo, q.equipo)|upper }}</span>
+        <span class="tag team-pill team-{{ tctx.team_key }}">{{ tctx.team_label|upper }}</span>
         <span class="tag status-pill {{ tctx.status_class }}">{{ status_labels.get(q.estado_gestion, q.estado_gestion) }}</span>
         <span class="tag">Importancia {{ importance_labels.get(q.importancia, q.importancia or "Media") }}</span>
         <span class="tag {{ tctx.age.class }}">{{ tctx.age.dias }} dias</span>
@@ -143,17 +150,11 @@
           </select>
           <button class="btn-sync" type="submit">Actualizar</button>
         </form>
-        <form method="post" action="{{ url_for('set_queja_categoria', qid=q.id) }}" class="inline">
-          <select name="categoria">
-            <option value="">Sin categoria</option>
-            {% for cat in categorias %}
-            <option value="{{ cat.key }}" {{ "selected" if q.categoria == cat.key }}>{{ cat.label }}</option>
-            {% endfor %}
-          </select>
-          <button class="btn-sync" type="submit">Categoria</button>
-        </form>
         <form method="post" action="{{ url_for('resolver_queja', qid=q.id) }}" class="inline">
           <button type="submit">Marcar resuelta</button>
+        </form>
+        <form method="post" action="{{ url_for('eliminar_ticket', qid=q.id) }}" class="inline">
+          <button class="btn-danger" type="submit">Eliminar</button>
         </form>
       </div>
     </li>
@@ -217,4 +218,25 @@
   });
 </script>
 {% endif %}
+<script>
+  document.querySelectorAll("[data-customer-search]").forEach((input) => {
+    const select = document.getElementById(input.dataset.target);
+    if (!select) return;
+    const searchByEmail = new Map(
+      Array.from(document.querySelectorAll(".customer-search-index [data-email]"))
+        .map((row) => [row.dataset.email, (row.dataset.search || "").toLowerCase()])
+    );
+    input.addEventListener("input", () => {
+      const query = input.value.trim().toLowerCase();
+      let firstVisible = null;
+      Array.from(select.options).forEach((option) => {
+        const haystack = searchByEmail.get(option.value) || option.textContent.toLowerCase();
+        const matches = !query || haystack.includes(query);
+        option.hidden = !matches;
+        if (matches && !firstVisible) firstVisible = option;
+      });
+      if (firstVisible) select.value = firstVisible.value;
+    });
+  });
+</script>
 {% endblock %}
