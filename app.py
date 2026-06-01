@@ -317,7 +317,7 @@ def index():
          "delta": metrics.delta_pct(len(altas_p) - len(bajas_p), len(altas_prev) - len(bajas_prev))},
     ]
 
-    canal_counts = metrics.por_canal(altas_p)
+    canal_counts = metrics.por_canal(altas_p + trials_p)
     canales = [(ORIGEN_LABELS.get(k, k), canal_counts.get(k, 0)) for k, _ in ORIGENES_BASE if canal_counts.get(k, 0)]
     serie_altas = metrics.serie_temporal(altas_p, desde, hasta)
     serie_bajas = metrics.serie_temporal(bajas_p, desde, hasta)
