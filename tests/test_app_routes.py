@@ -308,7 +308,9 @@ class AppRoutesTest(unittest.TestCase):
                     "altas": [
                         {"email": "con-evento@example.test", "fecha": "2026-05-15T00:00:00+00:00"},
                     ],
-                    "bajas": [],
+                    "bajas": [
+                        {"email": "baja-sin-alta@example.test", "fecha": "2026-05-25T00:00:00+00:00"},
+                    ],
                 },
                 "resumen": {},
             }))
@@ -322,7 +324,13 @@ class AppRoutesTest(unittest.TestCase):
         body = response.get_data(as_text=True)
         altas_block = body[body.index('<span class="kpi-label">Altas</span>'):]
         altas_block = altas_block[:altas_block.index("</a>")]
-        self.assertIn('<span class="kpi-val">2</span>', altas_block)
+        self.assertIn('<span class="kpi-val">3</span>', altas_block)
+        bajas_block = body[body.index('<span class="kpi-label">Bajas</span>'):]
+        bajas_block = bajas_block[:bajas_block.index("</a>")]
+        self.assertIn('<span class="kpi-val">1</span>', bajas_block)
+        neto_block = body[body.index('<span class="kpi-label">Neto</span>'):]
+        neto_block = neto_block[:neto_block.index("</div>")]
+        self.assertIn('<span class="kpi-val">2</span>', neto_block)
         self.assertIn('"labels": ["Email", "Instagram"]', body)
         self.assertIn('"valores": [1, 1]', body)
 
