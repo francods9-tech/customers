@@ -107,6 +107,7 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 - Inicio agrupa `Instagram`, `Instagram ingles`, `Instagram español` e `Instagram portugues` como un solo canal `Instagram` para filtro y grafico de base actual por canal.
 - Inicio muestra el grafico lateral `Base actual por canal`, calculado sobre clientes activos recurrentes + trials actuales por canal de adquisicion.
 - El grafico lateral de canales muestra cantidad y porcentaje por canal en la leyenda y tooltip.
+- El grafico lateral de canales respeta el periodo seleccionado: para rangos filtrados cuenta solo clientes actuales recurrentes/trials cuya alta o trial cae en ese periodo; en `Todo` muestra toda la base actual.
 - Solicitudes ahora tiene dashboard por periodo:
   - Presets de tiempo, incluyendo `Todo`.
   - KPIs de registradas, abiertas actuales, Customer Success, Operaciones y resueltas.
@@ -221,6 +222,8 @@ Correccion posterior:
 - El grafico por canal ahora usa la base actual de activos recurrentes + trials actuales, no eventos historicos de altas/trials, para que `Sin asignar` no incluya clientes viejos fuera del snapshot vigente.
 - Verificacion: 50 tests OK; import Flask OK con 38 rutas.
 - Deploy Railway posterior: `ab1dfc74-c31f-40af-ab3d-b620a49dbdb9` SUCCESS; `/healthz` 200 y `/login` 200.
+- Correccion posterior: el grafico por canal respeta filtros de fecha y la leyenda se genera con una entrada por segmento del grafico.
+- Verificacion: 51 tests OK; import Flask OK con 38 rutas.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
