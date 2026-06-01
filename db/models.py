@@ -6,11 +6,15 @@ ORIGENES = [
     ("sin_asignar", "Sin asignar"),
     ("referido", "Referidos"),
     ("email", "Email"),
+    ("instagram", "Instagram"),
     ("ig_en", "Instagram inglés"),
     ("ig_es", "Instagram español"),
     ("ig_pt", "Instagram portugués"),
+    ("whatsapp", "WhatsApp"),
     ("telegram", "Telegram"),
     ("xbiz", "XBIZ"),
+    ("sky", "Sky"),
+    ("reactivacion", "Reactivacion"),
     ("directo", "No se sabe (directo)"),
 ]
 ORIGEN_LABELS = dict(ORIGENES)
