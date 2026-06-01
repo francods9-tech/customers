@@ -257,6 +257,40 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn('"valores": [1, 1]', body)
         self.assertNotIn('"Telegram"', body)
 
+    def test_dashboard_canales_periodo_ignora_eventos_sin_cliente_actual(self):
+        from db import db
+        from db.models import CustomerMeta, Snapshot
+
+        self.login()
+        clientes = [
+            {**self.customer_row(nombre="Alta Actual", email="alta-actual@example.test"), "fecha_alta_raw": "2026-05-15T00:00:00+00:00"},
+            {**self.customer_row(nombre="Trial Actual", email="trial-actual@example.test"), "estado": "trial", "fecha_alta_raw": "2026-05-20T00:00:00+00:00"},
+        ]
+        with self.app.app_context():
+            db.session.add(Snapshot(payload={
+                "test_marker": "solicitudes_directas",
+                "clientes": clientes,
+                "eventos": {
+                    "altas": [
+                        {"email": "alta-actual@example.test", "fecha": "2026-05-15T00:00:00+00:00"},
+                        {"email": "viejo-sin-meta@example.test", "fecha": "2026-05-16T00:00:00+00:00"},
+                    ],
+                    "bajas": [],
+                },
+                "resumen": {},
+            }))
+            db.session.add(CustomerMeta(email="alta-actual@example.test", origen="instagram"))
+            db.session.add(CustomerMeta(email="trial-actual@example.test", origen="email"))
+            db.session.commit()
+
+        response = self.client.get("/?desde=2026-05-01&hasta=2026-05-31")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn('"labels": ["Email", "Instagram"]', body)
+        self.assertIn('"valores": [1, 1]', body)
+        self.assertNotIn('"Sin asignar"', body)
+
     def test_solicitud_directa_requires_login(self):
         response = self.client.post("/solicitudes/nueva", data={"texto": "Alta manual"})
 

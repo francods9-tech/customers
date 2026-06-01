@@ -228,6 +228,8 @@ Correccion posterior:
 - Correccion posterior: en periodos filtrados el grafico por canal usa altas + trials del periodo para que el total coincida con los KPIs/serie; `Todo` conserva la lectura de base actual.
 - Verificacion: 51 tests OK; import Flask OK con 38 rutas.
 - Deploy Railway posterior: `4b80021c-1b43-49d0-b4c6-386fa90fdbc3` SUCCESS; `/healthz` 200 y `/login` 200.
+- Correccion posterior: en periodos filtrados el grafico por canal descarta eventos de emails fuera de la base actual recurrente/trial para no reintroducir `Sin asignar` historico.
+- Verificacion: 52 tests OK; import Flask OK con 38 rutas.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
