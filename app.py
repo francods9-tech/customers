@@ -3,7 +3,7 @@ from collections import Counter, defaultdict
 from functools import wraps
 
 from flask import (Flask, render_template, request, redirect, url_for,
-                   session, flash, abort)
+                   session, flash, abort, jsonify)
 from sqlalchemy import inspect, text
 
 import complaint_rules
@@ -16,11 +16,20 @@ from db.models import (ChurnReason, ColabCreator, ComplaintCategory, CustomerMet
                        Interaccion, MessageCategory, MessageTemplate, ORIGENES,
                        ORIGEN_LABELS)
 from sync import refrescar_snapshot, ultimo_snapshot
+from sync.finance import (
+    build_financial_summary,
+    fetch_mercury_month,
+    fetch_stripe_month,
+    load_monthly_snapshot,
+    saas_metrics_from_snapshot,
+    save_monthly_snapshot,
+)
 from sync.health import salud_de_cuentas
 
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
+FINANCE_REFRESH_CACHE = {}
 
 CHURN_REASON_OPTIONS = [
     ("", "Sin motivo"),
@@ -154,6 +163,79 @@ def healthz():
     return {"status": "ok"}
 
 
+def _current_month():
+    return dt.datetime.now(dt.timezone.utc).strftime("%Y-%m")
+
+
+def _finance_data_dir():
+    return app.config["FINANCE_DATA_DIR"]
+
+
+def _manual_adjustments_for_month(month):
+    stored = load_monthly_snapshot(_finance_data_dir(), month)
+    if not stored:
+        return 0
+    return stored.get("reconciliation", {}).get("manual_adjustments", 0)
+
+
+def refresh_financial_summary(month=None):
+    month = month or _current_month()
+    mercury = fetch_mercury_month(month)
+    stripe_financials = fetch_stripe_month(month)
+    saas = saas_metrics_from_snapshot(ultimo_snapshot())
+    stripe_payload = stripe_financials | {
+        "mrr": saas.get("mrr", 0),
+        "active_customers": saas.get("active_customers", 0),
+        "source_status": stripe_financials.get("source_status") or saas.get("source_status"),
+    }
+    return build_financial_summary(
+        month=month,
+        mercury=mercury,
+        stripe=stripe_payload,
+        manual_adjustments=_manual_adjustments_for_month(month),
+    )
+
+
+def get_financial_summary(month=None):
+    month = month or _current_month()
+    if month in FINANCE_REFRESH_CACHE:
+        return FINANCE_REFRESH_CACHE[month]
+    stored = load_monthly_snapshot(_finance_data_dir(), month)
+    if stored:
+        return stored
+    saas = saas_metrics_from_snapshot(ultimo_snapshot())
+    return build_financial_summary(
+        month=month,
+        mercury={"source_status": "missing", "mercury_cash_income": 0},
+        stripe=saas,
+    )
+
+
+@app.route("/api/summary")
+@login_required
+def api_summary():
+    return jsonify(get_financial_summary(request.args.get("month") or _current_month()))
+
+
+@app.route("/api/refresh", methods=["POST"])
+@login_required
+def api_refresh():
+    payload = request.get_json(silent=True) or {}
+    summary = refresh_financial_summary(payload.get("month") or request.args.get("month") or _current_month())
+    FINANCE_REFRESH_CACHE[summary["month"]] = summary
+    return jsonify(summary)
+
+
+@app.route("/api/snapshot", methods=["POST"])
+@login_required
+def api_snapshot():
+    payload = request.get_json(silent=True) or {}
+    month = payload.get("month") or request.args.get("month") or _current_month()
+    summary = get_financial_summary(month)
+    path = save_monthly_snapshot(_finance_data_dir(), summary)
+    return jsonify({"status": "ok", "snapshot": str(path), "summary": summary})
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def _meta_map():
     return {m.email: m for m in CustomerMeta.query.all()}
@@ -199,6 +281,19 @@ def _request_events(rows):
     return eventos
 
 
+def _clientes_snapshot(snap):
+    clientes = []
+    for c in (snap or {}).get("clientes", []):
+        email = (c.get("email_key") or c.get("email") or "").lower()
+        if not email:
+            continue
+        clientes.append({
+            "email": email,
+            "nombre": c.get("nombre") or c.get("email") or email,
+        })
+    return sorted(clientes, key=lambda c: (c["nombre"] or "").lower())
+
+
 def _clientes_enriquecidos():
     """Snapshot de producto + origen del AM, cruzado por email."""
     snap = ultimo_snapshot()
@@ -238,9 +333,10 @@ def _quejas_en(rango_desde, rango_hasta):
 @login_required
 def index():
     snap, _ = _clientes_enriquecidos()
+    financial_summary = get_financial_summary(request.args.get("month") or _current_month())
     if not snap or not snap.get("eventos"):
         return render_template("dashboard.html", snap=snap, origenes=ORIGENES,
-                               presets=metrics.PRESETS)
+                               presets=metrics.PRESETS, finance=financial_summary)
     metas = _meta_map()
     canal = request.args.get("canal") or None
 
@@ -292,12 +388,20 @@ def index():
     return render_template(
         "dashboard.html", snap=snap, origenes=ORIGENES, presets=metrics.PRESETS,
         kpis=kpis, label=label, canal=canal, canales=canales, serie=serie,
+        finance=financial_summary,
         desde=desde.strftime("%Y-%m-%d"), hasta=(hasta - dt.timedelta(days=1)).strftime("%Y-%m-%d"),
         estado={
             **estado_summary,
             "activos": estado_summary["activos_recurrentes"],
         },
     )
+
+
+@app.route("/gastos")
+@login_required
+def gastos_list():
+    finance = get_financial_summary(request.args.get("month") or _current_month())
+    return render_template("gastos.html", finance=finance)
 
 
 @app.route("/clientes")
@@ -449,6 +553,7 @@ def quejas_list():
                  .order_by(Interaccion.created_at.desc()).limit(50).all())
     snap = ultimo_snapshot() or {}
     nombre_por_email = {c["email_key"]: c["nombre"] for c in snap.get("clientes", [])}
+    clientes = _clientes_snapshot(snap)
     categorias = _complaint_categories()
     category_map = _complaint_category_map()
     stats = complaint_rules.complaint_stats(abiertas + resueltas)
@@ -461,12 +566,52 @@ def quejas_list():
                            request_stats=request_stats,
                            period_stats=period_stats,
                            serie_solicitudes=serie_solicitudes,
+                           clientes=clientes,
                            presets=metrics.PRESETS, label=label,
                            equipos=complaint_rules.TEAM_OPTIONS,
                            estados_solicitud=complaint_rules.REQUEST_STATUS_OPTIONS,
                            team_labels=complaint_rules.TEAM_LABELS,
                            status_labels=complaint_rules.REQUEST_STATUS_LABELS,
                            category_label=complaint_rules.category_label)
+
+
+@app.route("/solicitudes/nueva", methods=["POST"])
+@login_required
+def add_solicitud_directa():
+    snap = ultimo_snapshot() or {}
+    clientes = _clientes_snapshot(snap)
+    valid_emails = {c["email"] for c in clientes}
+    customer_email = (request.form.get("customer_email") or "").lower()
+    texto = (request.form.get("texto") or "").strip()
+    tipo = request.form.get("tipo") if request.form.get("tipo") in complaint_rules.REQUEST_TYPES else "solicitud"
+    pelota = request.form.get("pelota") or "cs"
+    pelota_map = {
+        "cs": ("cs", "abierta"),
+        "ops": ("ops", "abierta"),
+        "cliente": ("cs", "esperando"),
+    }
+    equipo, estado_gestion = pelota_map.get(pelota, pelota_map["cs"])
+
+    if not clientes:
+        flash("No hay clientes cargados para crear solicitudes", "error")
+    elif customer_email not in valid_emails:
+        flash("Selecciona un cliente valido", "error")
+    elif not texto:
+        flash("El detalle es obligatorio", "error")
+    else:
+        db.session.add(Interaccion(
+            customer_email=customer_email,
+            tipo=tipo,
+            texto=texto,
+            agente=(request.form.get("agente") or "").strip() or None,
+            categoria=request.form.get("categoria", ""),
+            equipo=equipo,
+            estado_gestion=estado_gestion,
+            resuelta=False,
+        ))
+        db.session.commit()
+        flash("Solicitud creada", "ok")
+    return redirect(url_for("quejas_list"))
 
 
 @app.route("/queja/<int:qid>/resolver", methods=["POST"])

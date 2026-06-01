@@ -1,6 +1,6 @@
 # Estado Traqeer AM Dashboard Codex
 
-Fecha: 2026-05-27.
+Fecha: 2026-06-01.
 
 Carpeta de trabajo aislada:
 
@@ -108,6 +108,24 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - Presets de tiempo, incluyendo `Todo`.
   - KPIs de registradas, abiertas actuales, Customer Success, Operaciones y resueltas.
   - Grafico temporal de solicitudes por dia o semana.
+- Solicitudes permite alta directa desde `/solicitudes`:
+  - Formulario superior `Nueva solicitud` con cliente del ultimo snapshot, tipo, motivo/categoria, pelota, responsable y detalle obligatorio.
+  - Nueva ruta POST `/solicitudes/nueva`.
+  - Mapeo de pelota sin migracion: Customer Success => `equipo=cs`/`estado_gestion=abierta`; Operaciones => `equipo=ops`/`estado_gestion=abierta`; Cliente => `equipo=cs`/`estado_gestion=esperando`.
+  - Si no hay clientes en snapshot, el formulario queda deshabilitado con mensaje operativo.
+- Inicio ahora tiene lectura CEO cash-based:
+  - `Ingresos cash` usa entradas positivas Mercury conciliadas + ajustes manuales explicitos.
+  - MRR y clientes activos quedan como metricas SaaS separadas, no se suman a caja.
+  - Panel `Conciliacion Stripe - Mercury` muestra Stripe bruto, fees, neto, payouts, entradas Mercury y gap.
+  - Badges de fuente muestran `ok`, `missing`, `estimate` o `stale`.
+- Backend financiero agregado:
+  - Nuevo modulo `sync/finance.py`.
+  - `GET /api/summary?month=YYYY-MM` devuelve `totals`, `saas`, `reconciliation`, `details` y `sources`.
+  - `POST /api/refresh` calcula Mercury + Stripe + SaaS sin crear snapshot mensual.
+  - `POST /api/snapshot` persiste `data/income_YYYY-MM.json` con el resumen conciliado.
+  - Mercury excluye cuentas `Sky Reputation`, transferencias internas y no inventa ingresos si la fuente falta.
+  - Stripe se usa para conciliacion (gross/fees/net/payouts), no como source of truth de ingresos.
+- Pantalla `/gastos` agregada para auditar gastos externos Mercury del mes.
 
 ## Verificacion
 
@@ -165,6 +183,38 @@ Ultima verificacion luego de ajustar Inicio con northstar por periodo y barras d
 
 Resultado: 34 tests OK.
 
+Verificacion focal luego de alta directa de solicitudes:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes -v
+```
+
+Resultado: 9 tests OK.
+
+Verificacion completa luego de alta directa de solicitudes:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Resultado historico intermedio: hubo una falla en `tests/test_finance.py` por definicion de gap. Corregido en la iteracion cash-based; ver verificacion final abajo.
+
+Verificacion focal financiera:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_finance -v
+```
+
+Resultado: 8 tests OK.
+
+Verificacion completa final:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Resultado: 47 tests OK.
+
 Verificacion de import:
 
 ```powershell
@@ -187,7 +237,7 @@ Ultima verificacion de import:
 .\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
 ```
 
-Resultado: `imports ok 32`.
+Resultado: `imports ok 37`.
 
 Ultima verificacion de import:
 
@@ -195,7 +245,7 @@ Ultima verificacion de import:
 .\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
 ```
 
-Resultado: `imports ok 32`.
+Resultado: `imports ok 37`.
 
 Verificacion HTTP local:
 
@@ -213,6 +263,10 @@ Verificacion HTTP local:
 - `/colabs` 200 con pipeline de creadores y formulario de alta
 - `/bajas?preset=todo` 200 con motivos de baja editables
 - `/solicitudes?preset=todo` 200 con dashboard y grafico temporal
+- `/solicitudes` 200 autenticado con formulario `Nueva solicitud` y accion `/solicitudes/nueva`.
+- `/` 200 autenticado con panel `Conciliacion Stripe - Mercury`.
+- `/gastos` 200 autenticado con pantalla de gastos Mercury.
+- `/api/summary?month=2026-05` 200 autenticado con `reconciliation`.
 - `/?preset=todo` 200 con preset Todo
 - `/mensajes` 200 con wiki editable de mensajes
 - `/mensajes?q=checkpoint` 200 con plantillas del pack WhatsApp
