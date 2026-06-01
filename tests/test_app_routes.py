@@ -74,17 +74,20 @@ class AppRoutesTest(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login", response.location)
 
-    def test_ficha_permita_guardar_whatsapp(self):
+    def test_ficha_permita_guardar_contacto_whatsapp_y_usuario(self):
         self.login()
         self.add_snapshot([self.customer_row()])
 
         response = self.client.get("/cliente/cliente-z@example.test")
         self.assertEqual(response.status_code, 200)
-        self.assertIn('name="whatsapp"', response.get_data(as_text=True))
+        body = response.get_data(as_text=True)
+        self.assertIn('name="whatsapp"', body)
+        self.assertIn('name="usuario"', body)
+        self.assertIn("customer-profile-grid", body)
 
         response = self.client.post(
             "/cliente/cliente-z@example.test/contacto",
-            data={"whatsapp": "+54 9 11 2222 3333"},
+            data={"whatsapp": "+54 9 11 2222 3333", "usuario": "@clientez"},
         )
 
         self.assertEqual(response.status_code, 302)
@@ -92,6 +95,7 @@ class AppRoutesTest(unittest.TestCase):
             from db.models import CustomerMeta
             meta = CustomerMeta.query.filter_by(email="cliente-z@example.test").one()
             self.assertEqual(meta.whatsapp, "+54 9 11 2222 3333")
+            self.assertEqual(meta.usuario, "@clientez")
 
     def test_dashboard_no_muestra_finanzas_ni_gastos(self):
         self.login()
@@ -178,7 +182,7 @@ class AppRoutesTest(unittest.TestCase):
             {"nombre": "Ana", "email": "ana@example.test", "email_key": "ana@example.test"},
         ])
         with self.app.app_context():
-            db.session.add(CustomerMeta(email="ana@example.test", whatsapp="+54 9 11 5555 0000"))
+            db.session.add(CustomerMeta(email="ana@example.test", whatsapp="+54 9 11 5555 0000", usuario="@ana-user"))
             db.session.commit()
 
         response = self.client.get("/solicitudes")
@@ -186,8 +190,12 @@ class AppRoutesTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
         self.assertIn("Nueva solicitud", body)
+        self.assertNotIn("Nueva categoria", body)
+        self.assertNotIn("Categorias</h2>", body)
+        self.assertNotIn("/quejas/categorias", body)
         self.assertIn("ana@example.test", body)
         self.assertIn("+54 9 11 5555 0000", body)
+        self.assertIn("@ana-user", body)
         self.assertIn('type="search"', body)
         self.assertIn('data-customer-search', body)
         self.assertIn('name="importancia"', body)

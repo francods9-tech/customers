@@ -69,7 +69,7 @@
   {% endif %}
 </section>
 
-<div class="ficha-grid ficha-grid-main">
+<div class="customer-profile-grid">
   <section class="panel">
     <h2>Suscripcion</h2>
     <dl>
@@ -99,7 +99,7 @@
     {% endif %}
   </section>
 
-  <section class="panel manual-panel">
+  <section class="panel manual-panel profile-span-2">
     <h2>Ajuste manual</h2>
     <form method="post" action="{{ url_for('set_suscripcion', email=c.email_key) }}" class="manual-form">
       <div>
@@ -146,14 +146,17 @@
     </form>
     <p class="muted">One time payment y Free por colab no suman como activos recurrentes. Colab con descuento si suma si esta activo.</p>
   </section>
-</div>
-
-<div class="ficha-grid">
   <section class="panel">
     <h2>Contacto</h2>
-    <form method="post" action="{{ url_for('set_contacto_cliente', email=c.email_key) }}" class="stack-form">
-      <label>WhatsApp</label>
-      <input type="text" name="whatsapp" value="{{ meta.whatsapp or '' }}" placeholder="+54 9 11 ...">
+    <form method="post" action="{{ url_for('set_contacto_cliente', email=c.email_key) }}" class="compact-form">
+      <div>
+        <label>WhatsApp</label>
+        <input type="text" name="whatsapp" value="{{ meta.whatsapp or '' }}" placeholder="+54 9 11 ...">
+      </div>
+      <div>
+        <label>Usuario</label>
+        <input type="text" name="usuario" value="{{ meta.usuario or '' }}" placeholder="@usuario, handle o alias">
+      </div>
       <button type="submit">Guardar contacto</button>
     </form>
   </section>
