@@ -275,6 +275,14 @@ def _quejas_en(rango_desde, rango_hasta):
     return n
 
 
+def _emails_base_actual(clientes):
+    return {
+        (c.get("email_key") or c.get("email") or "").lower()
+        for c in clientes
+        if c.get("cuenta_activo_recurrente") or c.get("estado") == "trial"
+    }
+
+
 @app.route("/")
 @login_required
 def index():
@@ -327,7 +335,12 @@ def index():
         canal_counts = Counter(origen_group_key(c.get("origen")) for c in clientes_canal)
         canales_titulo = "Base actual por canal"
     else:
-        canal_counts = metrics.por_canal(altas_p + trials_p)
+        emails_actuales = _emails_base_actual(snap["clientes"])
+        eventos_canal = [
+            e for e in altas_p + trials_p
+            if (e.get("email") or "").lower() in emails_actuales
+        ]
+        canal_counts = metrics.por_canal(eventos_canal)
         canales_titulo = "Altas y trials por canal"
     canales = [(ORIGEN_LABELS.get(k, k), canal_counts.get(k, 0)) for k, _ in ORIGENES_BASE if canal_counts.get(k, 0)]
     serie_altas = metrics.serie_temporal(altas_p, desde, hasta)
