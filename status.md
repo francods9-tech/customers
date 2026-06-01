@@ -233,6 +233,7 @@ Correccion posterior:
 - Deploy Railway posterior: `3f56b3fe-cea0-49ac-9e19-8dac27ec4c35` SUCCESS; `/healthz` 200 y `/login` 200.
 - Correccion posterior: en preset `Todo`, el KPI Altas completa eventos faltantes con clientes recurrentes actuales que no tienen alta historica registrada, para evitar que Altas quede por debajo de Activos recurrentes.
 - Verificacion: 53 tests OK; import Flask OK con 38 rutas.
+- Deploy Railway posterior: `838040de-2ed2-49df-9784-ad25770889f4` SUCCESS; `/healthz` 200 y `/login` 200.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
