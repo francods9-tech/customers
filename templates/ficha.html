@@ -42,6 +42,16 @@
       <a href="{{ url_for('quejas_list') }}">Gestionar</a>
     </div>
   {% endif %}
+  {% if atencion.churn or atencion.churn_manual %}
+    <div class="attention-card warn">
+      <span>Riesgo de churn</span>
+      <strong>{{ atencion.churn.label if atencion.churn else "Marcado manualmente" }}</strong>
+      {% if atencion.churn and atencion.churn.dias is not none %}
+      <small>{% if atencion.churn.dias < 0 %}vencio hace {{ -atencion.churn.dias }} dias{% else %}faltan {{ atencion.churn.dias }} dias{% endif %}</small>
+      {% endif %}
+      {% if atencion.churn_manual %}<small>{{ atencion.churn_manual }} marca{{ "" if atencion.churn_manual == 1 else "s" }} manual{{ "" if atencion.churn_manual == 1 else "es" }}</small>{% endif %}
+    </div>
+  {% endif %}
   {% if atencion.trial %}
     <div class="attention-card warn">
       <span>Trial</span>
@@ -64,7 +74,7 @@
       <strong>Pendiente</strong>
     </div>
   {% endif %}
-  {% if not atencion.impago and not atencion.quejas_abiertas and not atencion.trial and not atencion.onboarding_pendiente %}
+  {% if not atencion.impago and not atencion.quejas_abiertas and not atencion.churn and not atencion.churn_manual and not atencion.trial and not atencion.onboarding_pendiente %}
     <div class="attention-card ok">
       <span>Estado operativo</span>
       <strong>Sin pendientes</strong>

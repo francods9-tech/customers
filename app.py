@@ -256,7 +256,44 @@ def _clientes_enriquecidos():
         c["onboarding_hecho"] = bool(m and m.onboarding_hecho)
         if c["estado"] in customer_rules.UNPAID_STATES:
             c["impago"] = customer_rules.unpaid_summary(c)
+        c["churn_risk"] = customer_rules.churn_risk_summary(c)
     return snap, metas
+
+
+def _churn_risk_rows(clientes):
+    rows_by_email = {}
+    for c in clientes:
+        risk = customer_rules.churn_risk_summary(c)
+        if risk.get("activo"):
+            row = dict(c)
+            row["churn_risk"] = risk
+            rows_by_email[c["email_key"]] = row
+
+    manuales = (Interaccion.query
+                .filter_by(tipo="churn", resuelta=False)
+                .order_by(Interaccion.created_at.desc())
+                .all())
+    clientes_by_email = {c["email_key"]: c for c in clientes}
+    for risk in manuales:
+        email = (risk.customer_email or "").lower()
+        customer = clientes_by_email.get(email)
+        if not customer:
+            continue
+        row = rows_by_email.get(email) or dict(customer)
+        manual_summary = {
+            "activo": True,
+            "tipo": row.get("churn_risk", {}).get("tipo") or "manual",
+            "label": row.get("churn_risk", {}).get("label") or "riesgo marcado manualmente",
+            "dias": row.get("churn_risk", {}).get("dias"),
+            "fecha": row.get("churn_risk", {}).get("fecha", ""),
+            "fecha_raw": row.get("churn_risk", {}).get("fecha_raw", ""),
+            "manual_texto": risk.texto,
+            "created_at_raw": risk.created_at.isoformat() if risk.created_at else "",
+        }
+        row["churn_risk"] = manual_summary
+        rows_by_email[email] = row
+
+    return customer_rules.sort_churn_risk_priority(rows_by_email.values())
 
 
 # ── Vistas ──────────────────────────────────────────────────────────────────
@@ -906,7 +943,7 @@ def update_colab_creator(cid):
 @login_required
 def bandeja():
     snap, _ = _clientes_enriquecidos()
-    pendientes = {"onboarding": [], "impago": [], "trial": []}
+    pendientes = {"onboarding": [], "impago": [], "trial": [], "churn": []}
     if snap:
         for c in snap["clientes"]:
             if c["estado"] in customer_rules.UNPAID_STATES:
@@ -915,6 +952,7 @@ def bandeja():
                 pendientes["trial"].append(c)
             if c["estado"] in ("activo", "trial") and not c["onboarding_hecho"]:
                 pendientes["onboarding"].append(c)
+        pendientes["churn"] = _churn_risk_rows(snap["clientes"])
     pendientes["impago"] = customer_rules.sort_unpaid_priority(pendientes["impago"])
     pendientes["trial"] = sorted(
         pendientes["trial"],
@@ -967,6 +1005,7 @@ def cliente(email):
         m = metas.get(row["email_key"])
         row.update(customer_rules.enrich_customer(row, m))
         row["reactivacion"] = customer_rules.reactivation_summary(row, bajas)
+        row["churn_risk"] = customer_rules.churn_risk_summary(row)
     c = next((x for x in snap["clientes"] if x["email_key"] == email_key), None)
     if not c:
         abort(404)
@@ -976,9 +1015,12 @@ def cliente(email):
                      .filter_by(customer_email=email_key)
                      .order_by(Interaccion.created_at.desc()).all())
     quejas_abiertas = [i for i in interacciones if complaint_rules.is_customer_request(i) and not i.resuelta]
+    churn_abiertos = [i for i in interacciones if i.tipo == "churn" and not i.resuelta]
     atencion = {
         "impago": customer_rules.unpaid_summary(c) if c.get("estado") in customer_rules.UNPAID_STATES else None,
         "quejas_abiertas": len(quejas_abiertas),
+        "churn": c.get("churn_risk") if (c.get("churn_risk") or {}).get("activo") else None,
+        "churn_manual": len(churn_abiertos),
         "trial": c.get("trial") if c.get("estado") == "trial" else None,
         "onboarding_pendiente": c.get("estado") in ("activo", "trial") and not meta.onboarding_hecho,
     }

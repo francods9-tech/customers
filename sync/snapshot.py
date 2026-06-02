@@ -119,6 +119,24 @@ def _pending_invoice_infos(customer_id, now):
     return invoices
 
 
+def _scheduled_cancellation_info(sub, now):
+    sd = sub.to_dict() if hasattr(sub, "to_dict") else dict(sub)
+    cancel_ts = sd.get("cancel_at") or 0
+    if not cancel_ts and sd.get("cancel_at_period_end"):
+        cancel_ts = sd.get("current_period_end") or 0
+    if not cancel_ts:
+        return {}
+    cancel_dt = dt.datetime.fromtimestamp(cancel_ts, tz=dt.timezone.utc)
+    if cancel_dt <= now:
+        return {}
+    return {
+        "cancelacion_programada": True,
+        "cancelacion_fecha": _fmt_fecha(cancel_dt),
+        "cancelacion_fecha_raw": cancel_dt.isoformat(),
+        "cancelacion_dias": (cancel_dt.date() - now.date()).days,
+    }
+
+
 def build_snapshot() -> dict:
     mongo_uri = os.environ["MONGO_URI"]
     stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
@@ -192,7 +210,15 @@ def build_snapshot() -> dict:
         anual = any(i["price"]["recurring"]["interval"] == "year" for i in items)
         info = db_info(email)
         plan = PLAN_OVERRIDE_EMAILS.get(email) or _plan_label(info["plan"])
-        clientes.append(_row(name, cus.email, plan, info["fecha_alta"], "activo", anual))
+        clientes.append(_row(
+            name,
+            cus.email,
+            plan,
+            info["fecha_alta"],
+            "activo",
+            anual,
+            extra=_scheduled_cancellation_info(sub, now),
+        ))
 
     # ── Mongo: activos externos (provider=external) ──────────────────────────
     pipeline = [

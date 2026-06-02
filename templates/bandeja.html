@@ -20,6 +20,33 @@
 
 <section class="panel">
   <div class="bandeja-head">
+    <h2>Riesgo de churn ({{ pendientes.churn|length }})</h2>
+  </div>
+  {% if pendientes.churn %}
+  <ul class="bandeja-list bandeja-list-detail">
+    {% for c in pendientes.churn %}
+    <li>
+      <div>
+        <a href="{{ url_for('cliente', email=c.email_key) }}">{{ c.nombre }}</a>
+        <span class="sub">{{ c.email }}</span>
+      </div>
+      <div class="attention-meta">
+        <span class="tag tag-warn">{{ c.churn_risk.label }}</span>
+        {% if c.churn_risk.dias is not none %}
+          <span class="sub">{% if c.churn_risk.dias < 0 %}vencio hace {{ -c.churn_risk.dias }} dias{% else %}faltan {{ c.churn_risk.dias }} dias{% endif %}</span>
+        {% endif %}
+        {% if c.churn_risk.manual_texto %}
+          <span class="sub">{{ c.churn_risk.manual_texto }}</span>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="muted">Nada pendiente aca.</p>{% endif %}
+</section>
+
+<section class="panel">
+  <div class="bandeja-head">
     <h2>Impagos ({{ pendientes.impago|length }})</h2>
     <a class="chip" href="{{ url_for('clientes_list', estado='impago') }}">Ver clientes</a>
   </div>
