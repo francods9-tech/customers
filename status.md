@@ -27,6 +27,10 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 - Diagnostico de activos recurrentes:
   - Se agrego `python -m scripts.active_recurrent_diff` para comparar los dos ultimos snapshots reales, ignorando snapshots de tests.
   - Diff local de los ultimos snapshots reales: activos recurrentes `77 -> 76`; salio `Estefania sol giuliano <estefaniasolgiuliano@gmail.com>` por pasar de `activo` a `impago`.
+- Impagos con factura rechazada:
+  - `refrescar_snapshot()` ahora construye el snapshot completo y despues cruza `collect_unpaid_from_stripe()`/`merge_unpaid_details()`.
+  - Esto cubre clientes cuya suscripcion sigue `active` pero cuya ultima factura Stripe quedo `open`/rechazada con saldo pendiente.
+  - El resumen persistido se recalcula despues del merge para que `activos` baje e `impago` suba en el mismo snapshot.
 - Clientes ahora tiene buscador por nombre/email.
 - Origen incluye `XBIZ`, `Instagram`, `WhatsApp`, `Sky` y `Reactivacion` como canales seleccionables y filtrables.
 - Clientes tiene filtros por activos recurrentes, activos, trial, impagos, inactivos, one time y free colab.
@@ -158,6 +162,15 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - La administracion visual de categorias se oculto de `/solicitudes`; las categorias se manejan internamente.
 
 ## Verificacion
+
+Ultima verificacion luego de conectar facturas rechazadas al refresh completo:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+```
+
+Resultado: 62 tests OK; import Flask OK con 38 rutas.
 
 Ultima verificacion luego de agregar canales de adquisicion para bulk:
 

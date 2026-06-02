@@ -23,6 +23,47 @@ class JobsTest(unittest.TestCase):
         self.assertIn("refresh ok", out.getvalue())
         self.assertIn("activos=1", out.getvalue())
 
+    def test_refrescar_snapshot_marks_active_customer_with_rejected_invoice_as_unpaid(self):
+        import sync
+
+        payload = {
+            "clientes": [
+                {
+                    "nombre": "Claudia Balt",
+                    "email": "claudia@example.test",
+                    "email_key": "claudia@example.test",
+                    "estado": "activo",
+                    "plan": "Starter",
+                }
+            ],
+            "resumen": {"activos": 1, "trial": 0, "impago": 0},
+        }
+        unpaid = {
+            "claudia@example.test": {
+                "facturas_pendientes": [
+                    {
+                        "fecha_raw": "2026-06-02T00:00:00+00:00",
+                        "url": "https://stripe.test/inv",
+                        "monto_pendiente": 99.0,
+                        "estado": "open",
+                    }
+                ]
+            }
+        }
+
+        with patch.object(sync, "build_snapshot", return_value=payload):
+            with patch("sync.stripe_unpaid.collect_unpaid_from_stripe", return_value=unpaid):
+                with patch.object(sync.db.session, "add") as add:
+                    with patch.object(sync.db.session, "commit"):
+                        result = sync.refrescar_snapshot()
+
+        customer = result["clientes"][0]
+        self.assertEqual(customer["estado"], "impago")
+        self.assertEqual(customer["ultima_factura_url"], "https://stripe.test/inv")
+        self.assertEqual(result["resumen"]["activos"], 0)
+        self.assertEqual(result["resumen"]["impago"], 1)
+        add.assert_called_once()
+
     def test_active_recurrent_diff_reports_removed_customer(self):
         from scripts.active_recurrent_diff import diff_recurrent_customers
 
