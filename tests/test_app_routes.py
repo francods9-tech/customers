@@ -138,6 +138,40 @@ class AppRoutesTest(unittest.TestCase):
         self.assertNotIn("Stripe", body)
         self.assertNotIn("Mercury", body)
 
+    def test_bandeja_muestra_cancelaciones_programadas_y_riesgos_manuales_de_churn(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import Interaccion
+
+        self.login()
+        scheduled = {
+            **self.customer_row(nombre="Cancelacion Programada", email="scheduled@example.test"),
+            "cancelacion_programada": True,
+            "cancelacion_fecha": "10/06/2026",
+            "cancelacion_fecha_raw": "2026-06-10T00:00:00+00:00",
+        }
+        manual = self.customer_row(nombre="Riesgo Manual", email="manual@example.test")
+        self.add_snapshot([scheduled, manual])
+        with self.app.app_context():
+            db.session.add(Interaccion(
+                customer_email="manual@example.test",
+                tipo="churn",
+                texto="Pidio cancelar si no mejora el soporte",
+                created_at=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=1),
+            ))
+            db.session.commit()
+
+        response = self.client.get("/bandeja")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn("Riesgo de churn (2)", body)
+        self.assertIn("Cancelacion Programada", body)
+        self.assertIn("cancelacion programada", body)
+        self.assertIn("Riesgo Manual", body)
+        self.assertIn("Pidio cancelar si no mejora el soporte", body)
+
     def test_dashboard_agrupa_variantes_de_instagram(self):
         from db import db
         from db.models import CustomerMeta, Snapshot

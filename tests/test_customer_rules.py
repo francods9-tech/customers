@@ -274,6 +274,41 @@ class CustomerRulesTest(unittest.TestCase):
 
         self.assertEqual([b["email"] for b in filtered], ["bruno@example.com"])
 
+    def test_scheduled_cancellation_is_churn_risk_but_stays_recurrent(self):
+        from customer_rules import churn_risk_summary, enrich_customer
+
+        customer = {
+            "nombre": "Ana",
+            "email": "ana@example.com",
+            "email_key": "ana@example.com",
+            "plan": "Premium",
+            "estado": "activo",
+            "cancelacion_programada": True,
+            "cancelacion_fecha_raw": "2026-06-10T00:00:00+00:00",
+        }
+
+        enriched = enrich_customer(customer)
+        risk = churn_risk_summary(enriched, today=dt.datetime(2026, 6, 2, tzinfo=dt.timezone.utc))
+
+        self.assertTrue(enriched["cuenta_activo_recurrente"])
+        self.assertTrue(risk["activo"])
+        self.assertEqual(risk["tipo"], "cancelacion_programada")
+        self.assertEqual(risk["dias"], 8)
+        self.assertIn("10/06/2026", risk["label"])
+
+    def test_sort_churn_risk_priority_orders_scheduled_before_manual(self):
+        from customer_rules import sort_churn_risk_priority
+
+        rows = [
+            {"nombre": "Manual", "churn_risk": {"tipo": "manual", "dias": None, "created_at_raw": "2026-06-01T00:00:00+00:00"}},
+            {"nombre": "Lejana", "churn_risk": {"tipo": "cancelacion_programada", "dias": 20}},
+            {"nombre": "Cercana", "churn_risk": {"tipo": "cancelacion_programada", "dias": 2}},
+        ]
+
+        sorted_rows = sort_churn_risk_priority(rows)
+
+        self.assertEqual([r["nombre"] for r in sorted_rows], ["Cercana", "Lejana", "Manual"])
+
 
 if __name__ == "__main__":
     unittest.main()

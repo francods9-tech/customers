@@ -126,6 +126,24 @@ def remove_reactivated_cancellations(bajas, customers):
     return [b for b in bajas if (b.get("email") or "").lower() not in active_emails]
 
 
+def churn_risk_summary(customer, today=None):
+    today = today or dt.datetime.now(dt.timezone.utc)
+    if isinstance(today, dt.date) and not isinstance(today, dt.datetime):
+        today = dt.datetime.combine(today, dt.time.min, tzinfo=dt.timezone.utc)
+    cancel_dt = _parse_dt(customer.get("cancelacion_fecha_raw") or customer.get("cancelacion_fecha"))
+    if not customer.get("cancelacion_programada") or not cancel_dt:
+        return {"activo": False, "tipo": "", "fecha": "", "fecha_raw": "", "dias": None, "label": ""}
+    days = (cancel_dt.date() - today.date()).days
+    return {
+        "activo": True,
+        "tipo": "cancelacion_programada",
+        "fecha": cancel_dt.strftime("%d/%m/%Y"),
+        "fecha_raw": cancel_dt.isoformat(),
+        "dias": days,
+        "label": f"cancelacion programada para {cancel_dt.strftime('%d/%m/%Y')}",
+    }
+
+
 def enrich_customer(customer, meta=None):
     """Apply AM manual overrides to one customer row without mutating input."""
     out = dict(customer)
@@ -282,6 +300,19 @@ def sort_unpaid_priority(customers):
         if days is None:
             return (1, 0, (customer.get("nombre") or "").lower())
         return (0, -days, (customer.get("nombre") or "").lower())
+
+    return sorted(customers, key=key)
+
+
+def sort_churn_risk_priority(customers):
+    def key(customer):
+        risk = customer.get("churn_risk") or {}
+        if risk.get("tipo") == "cancelacion_programada":
+            days = risk.get("dias")
+            return (0, days if days is not None else 99999, (customer.get("nombre") or "").lower())
+        created = _parse_dt(risk.get("created_at_raw"))
+        created_ts = -created.timestamp() if created else 0
+        return (1, created_ts, (customer.get("nombre") or "").lower())
 
     return sorted(customers, key=key)
 

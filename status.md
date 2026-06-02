@@ -1,6 +1,6 @@
 # Estado Traqeer AM Dashboard Codex
 
-Fecha: 2026-06-01.
+Fecha: 2026-06-02.
 
 Carpeta de trabajo aislada:
 
@@ -16,6 +16,17 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 
 ## Hecho
 
+- Riesgo de churn:
+  - El snapshot guarda cancelaciones programadas de Stripe en clientes activos con `cancelacion_programada`, `cancelacion_fecha_raw`, `cancelacion_fecha` y `cancelacion_dias`.
+  - Los clientes con cancelacion programada siguen contando como activos recurrentes hasta la fecha efectiva.
+  - Bandeja tiene seccion `Riesgo de churn`, combinando cancelaciones programadas y marcas manuales tipo `churn` creadas desde la ficha.
+  - La ficha muestra una tarjeta de atencion cuando existe cancelacion programada o riesgo de churn manual.
+- Refresh automatico:
+  - Se agrego `python -m sync.refresh_job` para ejecutar `refrescar_snapshot()` con app context y cerrar conexiones al terminar.
+  - `RAILWAY.md` documenta crear un segundo servicio Railway con cron `0 4 * * *` UTC para 06:00 Madrid durante CEST.
+- Diagnostico de activos recurrentes:
+  - Se agrego `python -m scripts.active_recurrent_diff` para comparar los dos ultimos snapshots reales, ignorando snapshots de tests.
+  - Diff local de los ultimos snapshots reales: activos recurrentes `77 -> 76`; salio `Estefania sol giuliano <estefaniasolgiuliano@gmail.com>` por pasar de `activo` a `impago`.
 - Clientes ahora tiene buscador por nombre/email.
 - Origen incluye `XBIZ`, `Instagram`, `WhatsApp`, `Sky` y `Reactivacion` como canales seleccionables y filtrables.
 - Clientes tiene filtros por activos recurrentes, activos, trial, impagos, inactivos, one time y free colab.
