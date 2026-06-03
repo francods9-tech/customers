@@ -765,26 +765,65 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("8 dias", body)
         self.assertIn("age-warn", body)
         self.assertIn("Alta", body)
+        self.assertIn("0 comentarios", body)
         self.assertIn(f'/solicitudes/{ticket_id}', body)
+
+        response = self.client.get(f"/solicitudes/{ticket_id}")
+        body = response.get_data(as_text=True)
+        self.assertIn('name="agente"', body)
+        for agente in ("Luis", "Dalila", "Nicky", "Frank"):
+            self.assertIn(f'value="{agente}"', body)
 
         response = self.client.post(
             f"/solicitudes/{ticket_id}/comentarios",
-            data={"texto": "Ops confirma que lo toma hoy."},
+            data={"agente": "Dalila", "texto": "Ops confirma que lo toma hoy."},
         )
         self.assertEqual(response.status_code, 302)
+
+        response = self.client.get("/solicitudes")
+        body = response.get_data(as_text=True)
+        self.assertIn("1 comentario", body)
 
         response = self.client.get(f"/solicitudes/{ticket_id}")
         body = response.get_data(as_text=True)
         self.assertIn(f"Ticket #{ticket_id}", body)
         self.assertIn("Ops confirma que lo toma hoy.", body)
+        self.assertIn("Dalila", body)
         self.assertIn("En gestion", body)
         self.assertIn("status-en_gestion", body)
-        self.assertNotIn('name="agente"', body)
-        self.assertNotIn("Autor", body)
 
         with self.app.app_context():
             comment = TicketComment.query.filter_by(interaccion_id=ticket_id).one()
-            self.assertIsNone(comment.agente)
+            self.assertEqual(comment.agente, "Dalila")
+
+    def test_ticket_comentario_requiere_autor_valido(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import Interaccion, TicketComment
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="solicitud",
+                texto="Validar autor",
+                estado_gestion="abierta",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            )
+            db.session.add(ticket)
+            db.session.commit()
+            ticket_id = ticket.id
+
+        response = self.client.post(
+            f"/solicitudes/{ticket_id}/comentarios",
+            data={"agente": "Otro", "texto": "No deberia guardarse."},
+        )
+        self.assertEqual(response.status_code, 302)
+
+        with self.app.app_context():
+            self.assertEqual(TicketComment.query.filter_by(interaccion_id=ticket_id).count(), 0)
 
     def test_ticket_resuelto_muestra_dias_abierto_y_permite_reabrir(self):
         import datetime as dt

@@ -268,9 +268,11 @@ def _clientes_snapshot(snap):
 def _ticket_context(ticket):
     status_key = complaint_rules.ticket_status_key(ticket)
     team_key = complaint_rules.team_for_status(status_key)
+    comments_count = ticket.comentarios.count() if getattr(ticket, "comentarios", None) is not None else 0
     return {
         "age": complaint_rules.ticket_age(ticket),
         "duration": complaint_rules.ticket_duration(ticket),
+        "comments_count": comments_count,
         "status_class": complaint_rules.ticket_status_class(ticket),
         "status_key": status_key,
         "team_key": team_key,
@@ -799,6 +801,7 @@ def ticket_detail(qid):
         status_labels=complaint_rules.REQUEST_STATUS_LABELS,
         importancias=complaint_rules.IMPORTANCE_OPTIONS,
         importance_labels=complaint_rules.IMPORTANCE_LABELS,
+        comment_authors=complaint_rules.COMMENT_AUTHOR_OPTIONS,
         ctx=_ticket_context(ticket),
         team_labels=complaint_rules.TEAM_LABELS,
     )
@@ -809,11 +812,16 @@ def ticket_detail(qid):
 def add_ticket_comment(qid):
     ticket = db.session.get(Interaccion, qid)
     texto = (request.form.get("texto") or "").strip()
-    if ticket and complaint_rules.is_customer_request(ticket) and texto:
+    agente = request.form.get("agente") or ""
+    if not ticket or not complaint_rules.is_customer_request(ticket):
+        abort(404)
+    if agente not in complaint_rules.COMMENT_AUTHOR_VALUES:
+        flash("Selecciona quien deja el comentario", "error")
+    elif texto:
         db.session.add(TicketComment(
             interaccion_id=ticket.id,
             texto=texto,
-            agente=None,
+            agente=agente,
         ))
         db.session.commit()
         flash("Comentario agregado", "ok")

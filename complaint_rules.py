@@ -34,6 +34,14 @@ IMPORTANCE_OPTIONS = [
 ]
 IMPORTANCE_LABELS = dict(IMPORTANCE_OPTIONS)
 
+COMMENT_AUTHOR_OPTIONS = [
+    ("Luis", "Luis"),
+    ("Dalila", "Dalila"),
+    ("Nicky", "Nicky"),
+    ("Frank", "Frank"),
+]
+COMMENT_AUTHOR_VALUES = {key for key, _ in COMMENT_AUTHOR_OPTIONS}
+
 STATUS_TEAM = {
     "abierta": "ops",
     "en_gestion": "ops",

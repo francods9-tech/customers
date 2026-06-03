@@ -102,6 +102,7 @@
         <span class="tag status-pill {{ tctx.status_class }}">{{ status_labels.get(q.estado_gestion, q.estado_gestion) }}</span>
         <span class="tag">Importancia {{ importance_labels.get(q.importancia, q.importancia or "Media") }}</span>
         <span class="tag {{ tctx.age.class }}">{{ tctx.age.dias }} dias</span>
+        <span class="tag">{{ tctx.comments_count }} comentario{{ "s" if tctx.comments_count != 1 }}</span>
         <span class="muted">{{ q.created_at.strftime("%d/%m/%Y") }}{% if q.agente %} &middot; {{ q.agente }}{% endif %}</span>
       </div>
       <p>{{ q.texto }}</p>
@@ -148,6 +149,7 @@
         <span class="tag">{{ category_label(q.categoria, category_map) }}</span>
         <span class="tag status-pill {{ tctx.status_class }}">Resuelta</span>
         <span class="tag {{ tctx.duration.class }}">{{ tctx.duration.dias }} dias abierto</span>
+        <span class="tag">{{ tctx.comments_count }} comentario{{ "s" if tctx.comments_count != 1 }}</span>
         <span class="muted">{{ q.created_at.strftime("%d/%m/%Y") }}</span>
       </div>
       <p>{{ q.texto }}</p>
