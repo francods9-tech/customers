@@ -177,8 +177,25 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - Se adopto el shell base con sidebar desktop, topbar con busqueda global hacia `/clientes` y navegacion responsive simple en mobile.
   - `/clientes` queda como pantalla piloto del nuevo sistema visual: filtros compactos, tabla densa con headers sticky y cards mobile.
   - El prototipo React de diseno se uso como referencia, sin incorporarlo al runtime Flask ni agregar dependencias frontend.
+- Redisenio UI/UX V2:
+  - `/solicitudes` adopta una vista operativa tipo tabla/lista, manteniendo abiertas y resueltas separadas.
+  - La carga de `Nueva solicitud` queda como panel compacto visible, sin cambiar rutas ni schema.
+  - Las solicitudes abiertas y resueltas tienen tablas desktop y cards mobile; las acciones rapidas siguen disponibles en la lista.
+  - La ficha `/solicitudes/<id>` se reorganiza como conversacion interna + sidebar de propiedades/gestion.
+  - No se incorporo runtime React/Tailwind ni dependencias frontend del prototipo; se porto como Jinja/CSS.
 
 ## Verificacion
+
+Ultima verificacion luego de redisenar Solicitudes y ficha de Ticket:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes.AppRoutesTest.test_solicitudes_abiertas_actualizan_estado_importancia_y_se_pueden_eliminar tests.test_app_routes.AppRoutesTest.test_ticket_muestra_numero_aging_y_comentarios tests.test_app_routes.AppRoutesTest.test_ticket_resuelto_muestra_dias_abierto_y_permite_reabrir -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+git diff --check
+```
+
+Resultado: tests focales OK; 69 tests OK; import Flask OK con 40 rutas; `git diff --check` sin errores reales, solo avisos CRLF de Windows. Verificacion visual local con Playwright en 1440px y 390px para `/solicitudes` y `/solicitudes/2`: sin overflow horizontal; tabla/lista desktop OK, cards mobile de abiertas/resueltas OK y ficha de ticket OK.
 
 Ultima verificacion luego de aplicar redisenio V1 shell + Clientes:
 

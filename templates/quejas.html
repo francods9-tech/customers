@@ -2,9 +2,13 @@
 {% block title %}Solicitudes{% endblock %}
 {% block content %}
 
-<a class="back" href="{{ url_for('bandeja') }}">&larr; Bandeja</a>
-<h1>Solicitudes de clientes</h1>
-<p class="muted">Hoja operativa compartida entre Customer Success y Operaciones.</p>
+<div class="page-head">
+  <div>
+    <div class="crumb"><a href="{{ url_for('bandeja') }}">Bandeja</a> / Solicitudes</div>
+    <h1>Solicitudes de clientes</h1>
+    <p class="muted">Hoja operativa compartida entre Customer Success y Operaciones.</p>
+  </div>
+</div>
 
 <form method="get" class="periodo-bar">
   <div class="presets">
@@ -31,8 +35,11 @@
   {% endif %}
 </section>
 
-<section class="panel">
-  <h2>Nueva solicitud</h2>
+<section class="request-form-panel panel">
+  <div class="panel-head">
+    <h2>Nueva solicitud</h2>
+    <span class="muted">Carga rapida desde cliente existente</span>
+  </div>
   {% if clientes %}
   <form method="post" action="{{ url_for('add_solicitud_directa') }}" class="new-request-form">
     <input type="search" data-customer-search data-target="new-request-customer" placeholder="Buscar cliente, email o WhatsApp">
@@ -87,26 +94,49 @@
 </section>
 
 <section class="panel request-board">
-  <h2>Abiertas ({{ abiertas|length }})</h2>
+  <div class="panel-head">
+    <h2>Abiertas ({{ abiertas|length }})</h2>
+    <span class="muted">Ordenadas por antiguedad</span>
+  </div>
   {% if abiertas %}
-  <ul class="timeline clean-timeline">
+  <div class="table-wrap requests-table-wrap">
+    <table class="requests-table open-requests-table">
+      <thead>
+        <tr>
+          <th>Ticket</th>
+          <th>Cliente</th>
+          <th>Tipo</th>
+          <th>Estado</th>
+          <th>Importancia</th>
+          <th>Aging</th>
+          <th>Comentarios</th>
+          <th>Fecha</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
     {% for q in abiertas %}
     {% set tctx = ticket_context(q) %}
-    <li>
-      <div class="timeline-head">
+    <tr>
+      <td>
         <a class="ticket-id" href="{{ url_for('ticket_detail', qid=q.id) }}">Ticket #{{ q.id }}</a>
-        <a href="{{ url_for('cliente', email=q.customer_email) }}">{{ nombres.get(q.customer_email, q.customer_email) }}</a>
+        <div class="sub request-text">{{ q.texto }}</div>
+      </td>
+      <td><a href="{{ url_for('cliente', email=q.customer_email) }}">{{ nombres.get(q.customer_email, q.customer_email) }}</a></td>
+      <td>
         <span class="tag {{ 'tag-warn' if q.tipo == 'queja' }}">{{ q.tipo }}</span>
-        <span class="tag">{{ category_label(q.categoria, category_map) }}</span>
-        <span class="tag team-pill team-{{ tctx.team_key }}">{{ tctx.team_label|upper }}</span>
+        <div class="sub">{{ category_label(q.categoria, category_map) }}</div>
+      </td>
+      <td>
         <span class="tag status-pill {{ tctx.status_class }}">{{ status_labels.get(q.estado_gestion, q.estado_gestion) }}</span>
-        <span class="tag">Importancia {{ importance_labels.get(q.importancia, q.importancia or "Media") }}</span>
-        <span class="tag {{ tctx.age.class }}">{{ tctx.age.dias }} dias</span>
-        <span class="tag">{{ tctx.comments_count }} comentario{{ "s" if tctx.comments_count != 1 }}</span>
-        <span class="muted">{{ q.created_at.strftime("%d/%m/%Y") }}{% if q.agente %} &middot; {{ q.agente }}{% endif %}</span>
-      </div>
-      <p>{{ q.texto }}</p>
-      <div class="ticket-list-actions">
+        <div class="sub">{{ tctx.team_label|upper }}</div>
+      </td>
+      <td><span class="tag">Importancia {{ importance_labels.get(q.importancia, q.importancia or "Media") }}</span></td>
+      <td><span class="tag {{ tctx.age.class }}">{{ tctx.age.dias }} dias</span></td>
+      <td><span class="tag">{{ tctx.comments_count }} comentario{{ "s" if tctx.comments_count != 1 }}</span></td>
+      <td><span class="muted">{{ q.created_at.strftime("%d/%m/%Y") }}{% if q.agente %}<br>{{ q.agente }}{% endif %}</span></td>
+      <td>
+        <div class="ticket-list-actions">
         <form method="post" action="{{ url_for('set_queja_gestion', qid=q.id) }}" class="inline">
           <select name="estado_gestion">
             {% for key, label in estados_solicitud %}
@@ -126,10 +156,31 @@
         <form method="post" action="{{ url_for('eliminar_ticket', qid=q.id) }}" class="inline">
           <button class="btn-danger" type="submit">Eliminar</button>
         </form>
-      </div>
-    </li>
+        </div>
+      </td>
+    </tr>
     {% endfor %}
-  </ul>
+      </tbody>
+    </table>
+  </div>
+  <div class="requests-mobile-list">
+    {% for q in abiertas %}
+    {% set tctx = ticket_context(q) %}
+    <article class="request-card">
+      <div class="request-card-head">
+        <a class="ticket-id" href="{{ url_for('ticket_detail', qid=q.id) }}">Ticket #{{ q.id }}</a>
+        <span class="tag {{ tctx.age.class }}">{{ tctx.age.dias }} dias</span>
+      </div>
+      <strong>{{ nombres.get(q.customer_email, q.customer_email) }}</strong>
+      <p>{{ q.texto }}</p>
+      <div class="request-card-tags">
+        <span class="tag status-pill {{ tctx.status_class }}">{{ status_labels.get(q.estado_gestion, q.estado_gestion) }}</span>
+        <span class="tag">{{ importance_labels.get(q.importancia, q.importancia or "Media") }}</span>
+        <span class="tag">{{ tctx.comments_count }} comentario{{ "s" if tctx.comments_count != 1 }}</span>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
   {% else %}
     <p class="muted">No hay solicitudes abiertas.</p>
   {% endif %}
@@ -137,30 +188,77 @@
 
 {% if resueltas %}
 <section class="panel">
-  <h2>Resueltas (ultimas {{ resueltas|length }})</h2>
-  <ul class="timeline clean-timeline">
+  <div class="panel-head">
+    <h2>Resueltas (ultimas {{ resueltas|length }})</h2>
+    <span class="muted">Historial reciente</span>
+  </div>
+  <div class="table-wrap requests-table-wrap">
+    <table class="requests-table resolved-requests-table">
+      <thead>
+        <tr>
+          <th>Ticket</th>
+          <th>Cliente</th>
+          <th>Tipo</th>
+          <th>Duracion</th>
+          <th>Comentarios</th>
+          <th>Fecha</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
     {% for q in resueltas %}
     {% set tctx = ticket_context(q) %}
-    <li>
-      <div class="timeline-head">
+    <tr>
+      <td>
         <a class="ticket-id" href="{{ url_for('ticket_detail', qid=q.id) }}">Ticket #{{ q.id }}</a>
-        <a href="{{ url_for('cliente', email=q.customer_email) }}">{{ nombres.get(q.customer_email, q.customer_email) }}</a>
+        <div class="sub request-text">{{ q.texto }}</div>
+      </td>
+      <td><a href="{{ url_for('cliente', email=q.customer_email) }}">{{ nombres.get(q.customer_email, q.customer_email) }}</a></td>
+      <td>
         <span class="tag">{{ q.tipo }}</span>
-        <span class="tag">{{ category_label(q.categoria, category_map) }}</span>
+        <div class="sub">{{ category_label(q.categoria, category_map) }}</div>
+      </td>
+      <td>
         <span class="tag status-pill {{ tctx.status_class }}">Resuelta</span>
         <span class="tag {{ tctx.duration.class }}">{{ tctx.duration.dias }} dias abierto</span>
-        <span class="tag">{{ tctx.comments_count }} comentario{{ "s" if tctx.comments_count != 1 }}</span>
-        <span class="muted">{{ q.created_at.strftime("%d/%m/%Y") }}</span>
+      </td>
+      <td><span class="tag">{{ tctx.comments_count }} comentario{{ "s" if tctx.comments_count != 1 }}</span></td>
+      <td><span class="muted">{{ q.created_at.strftime("%d/%m/%Y") }}</span></td>
+      <td>
+        <div class="ticket-list-actions">
+        <form method="post" action="{{ url_for('reabrir_ticket', qid=q.id) }}" class="inline">
+          <button class="btn-sync" type="submit">Reabrir</button>
+        </form>
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="requests-mobile-list">
+    {% for q in resueltas %}
+    {% set tctx = ticket_context(q) %}
+    <article class="request-card">
+      <div class="request-card-head">
+        <a class="ticket-id" href="{{ url_for('ticket_detail', qid=q.id) }}">Ticket #{{ q.id }}</a>
+        <span class="tag {{ tctx.duration.class }}">{{ tctx.duration.dias }} dias abierto</span>
       </div>
+      <strong>{{ nombres.get(q.customer_email, q.customer_email) }}</strong>
       <p>{{ q.texto }}</p>
+      <div class="request-card-tags">
+        <span class="tag status-pill {{ tctx.status_class }}">Resuelta</span>
+        <span class="tag">{{ category_label(q.categoria, category_map) }}</span>
+        <span class="tag">{{ tctx.comments_count }} comentario{{ "s" if tctx.comments_count != 1 }}</span>
+      </div>
       <div class="ticket-list-actions">
         <form method="post" action="{{ url_for('reabrir_ticket', qid=q.id) }}" class="inline">
           <button class="btn-sync" type="submit">Reabrir</button>
         </form>
       </div>
-    </li>
+    </article>
     {% endfor %}
-  </ul>
+  </div>
 </section>
 {% endif %}
 
