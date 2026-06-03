@@ -31,6 +31,7 @@ class AppRoutesTest(unittest.TestCase):
         with self.app.app_context():
             db.session.add(Snapshot(payload={
                 "test_marker": "solicitudes_directas",
+                "generado": "2026-06-03T00:00:00+00:00",
                 "clientes": clientes,
                 "eventos": {"altas": [], "bajas": []},
                 "resumen": {},
@@ -100,6 +101,61 @@ class AppRoutesTest(unittest.TestCase):
             meta = CustomerMeta.query.filter_by(email="cliente-z@example.test").one()
             self.assertEqual(meta.whatsapp, "+54 9 11 2222 3333")
             self.assertEqual(meta.usuario, "@clientez")
+
+    def test_clientes_busca_por_usuario_y_whatsapp_con_placeholder_simple(self):
+        from db import db
+        from db.models import CustomerMeta
+
+        self.login()
+        self.add_snapshot([
+            self.customer_row(nombre="Ana", email="ana@example.test"),
+            self.customer_row(nombre="Mia", email="mia@example.test"),
+        ])
+        with self.app.app_context():
+            db.session.add(CustomerMeta(email="ana@example.test", whatsapp="+54 9 11 5555 0000", usuario="@ana-user"))
+            db.session.commit()
+
+        response = self.client.get("/clientes?q=ana-user")
+        body = response.get_data(as_text=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('placeholder="Buscar cliente"', body)
+        self.assertIn("Ana", body)
+        self.assertNotIn("Mia", body)
+
+        response = self.client.get("/clientes?q=5555")
+        body = response.get_data(as_text=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Ana", body)
+        self.assertNotIn("Mia", body)
+
+    def test_clientes_ordena_por_columnas_y_preserva_filtros(self):
+        self.login()
+        self.add_snapshot([
+            {**self.customer_row(nombre="Beta", email="beta@example.test"), "fecha_alta": "03/06/2026", "fecha_alta_raw": "2026-06-03T00:00:00+00:00"},
+            {**self.customer_row(nombre="Ana", email="ana@example.test"), "fecha_alta": "01/06/2026", "fecha_alta_raw": "2026-06-01T00:00:00+00:00"},
+        ])
+
+        response = self.client.get("/clientes?sort=alta&dir=desc&q=example")
+        body = response.get_data(as_text=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertLess(body.index("Beta"), body.index("Ana"))
+        self.assertIn("sort=cliente", body)
+        self.assertIn("sort=tipo", body)
+        self.assertIn("sort=plan", body)
+        self.assertIn("sort=estado", body)
+        self.assertIn("sort=atencion", body)
+        self.assertIn("sort=origen", body)
+        self.assertIn("sort=alta", body)
+        self.assertIn("q=example", body)
+
+        response = self.client.get("/clientes?sort=cliente&dir=asc")
+        body = response.get_data(as_text=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertLess(body.index("Ana"), body.index("Beta"))
 
     def test_ficha_origen_instagram_permita_elegir_idioma(self):
         self.login()
