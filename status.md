@@ -1,6 +1,6 @@
 # Estado Traqeer AM Dashboard Codex
 
-Fecha: 2026-06-02.
+Fecha: 2026-06-03.
 
 Carpeta de trabajo aislada:
 
@@ -160,7 +160,8 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - Se muestra aging en dias; amarillo si supera 7 dias, rojo si supera 14.
   - Los tickets resueltos muestran los dias que estuvieron abiertos y ya no muestran equipo CS/Ops.
   - Los tickets resueltos pueden reabrirse; vuelven a `abierta` con equipo CS.
-  - Los comentarios internos no piden ni guardan autor.
+  - Las filas de Solicitudes muestran contador de comentarios por ticket.
+  - Los comentarios internos permiten elegir autor entre Luis, Dalila, Nicky y Frank, y validan que el autor sea uno de esos valores.
   - Los estados tienen chips de color para diferenciar abierta, en gestion, comunicar y resuelta.
   - Las abiertas pueden eliminarse desde la lista.
   - En abiertas solo se actualizan estado e importancia; la categoria queda fija luego de crear el ticket.
@@ -171,6 +172,17 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - Los recordatorios completados salen de Bandeja y quedan visibles como completados recientes en la ficha.
 
 ## Verificacion
+
+Ultima verificacion luego de agregar contador y autores de comentarios en tickets:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes.AppRoutesTest.test_ticket_muestra_numero_aging_y_comentarios tests.test_app_routes.AppRoutesTest.test_ticket_comentario_requiere_autor_valido -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+git diff --check
+```
+
+Resultado: tests focales OK; 69 tests OK; import Flask OK con 40 rutas; `git diff --check` sin errores reales, solo avisos CRLF de Windows. Verificacion renderizada local autenticada de `/solicitudes` y `/solicitudes/<id>`: contador pasa de `0 comentarios` a `1 comentario`, selector muestra Luis/Dalila/Nicky/Frank y el comentario guardado se renderiza con autor.
 
 Ultima verificacion luego de ordenar la tabla de clientes y ampliar busqueda:
 

@@ -62,6 +62,11 @@
   <section class="panel">
     <h2>Comentarios</h2>
     <form method="post" action="{{ url_for('add_ticket_comment', qid=ticket.id) }}" class="comment-form">
+      <select name="agente" required>
+        {% for key, label in comment_authors %}
+        <option value="{{ key }}">{{ label }}</option>
+        {% endfor %}
+      </select>
       <textarea name="texto" placeholder="Agregar comentario interno" required></textarea>
       <button type="submit">Agregar comentario</button>
     </form>
