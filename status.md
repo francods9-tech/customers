@@ -183,6 +183,7 @@ git diff --check
 ```
 
 Resultado: tests focales OK; 69 tests OK; import Flask OK con 40 rutas; `git diff --check` sin errores reales, solo avisos CRLF de Windows. Verificacion renderizada local autenticada de `/solicitudes` y `/solicitudes/<id>`: contador pasa de `0 comentarios` a `1 comentario`, selector muestra Luis/Dalila/Nicky/Frank y el comentario guardado se renderiza con autor.
+Deploy Railway posterior: `e763a911-149e-41b2-9e49-4e499a872f7c` SUCCESS; produccion verificada con `/healthz` 200, `/login` 200 y `/solicitudes` redirigiendo a login.
 
 Ultima verificacion luego de ordenar la tabla de clientes y ampliar busqueda:
 
