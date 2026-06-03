@@ -181,6 +181,7 @@ Ultima verificacion luego de ordenar la tabla de clientes y ampliar busqueda:
 ```
 
 Resultado: tests focales OK; import Flask OK con 40 rutas; 68 tests OK. Verificacion HTTP local autenticada de `/clientes`: busqueda por usuario/telefono 200 y orden `sort=alta&dir=desc` 200.
+Deploy Railway posterior: `cf7df728-eeee-4148-9466-e2ce2549ab35` SUCCESS; produccion verificada con `/healthz` 200 y `/login` 200.
 
 Ultima verificacion luego de agregar recordatorios por cliente:
 
