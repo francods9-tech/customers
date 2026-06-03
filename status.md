@@ -173,6 +173,7 @@ Ultima verificacion luego de incluir impagos recurrentes en activos recurrentes:
 ```
 
 Resultado: test focal OK; import Flask OK con 38 rutas; 63 tests OK.
+Deploy Railway posterior: `6594ae09-27da-402a-ac36-4f4ca59edea9` SUCCESS; produccion verificada con `/healthz` 200 y `/login` 200.
 
 Ultima verificacion luego de conectar facturas rechazadas al refresh completo:
 
