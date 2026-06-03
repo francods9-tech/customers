@@ -190,6 +190,7 @@ git diff --check
 ```
 
 Resultado: tests focales OK; 69 tests OK; import Flask OK con 40 rutas; `git diff --check` sin errores reales, solo avisos CRLF de Windows. Verificacion visual local con Playwright en 1440px y 390px para `/`, `/clientes`, `/cliente/<email>` y `/solicitudes`: sin overflow horizontal; Clientes desktop/mobile y Solicitudes desktop revisadas visualmente.
+Deploy Railway posterior: `088748e4-a7a9-4699-b1ac-7932dac5edd3` SUCCESS; produccion verificada con `/healthz` 200, `/login` 200 y `/clientes` redirigiendo a login.
 
 Ultima verificacion luego de preparar handoff de diseno:
 
