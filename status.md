@@ -173,8 +173,23 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 - Handoff de diseno:
   - Se agrego `design-handoff.md` con contexto de producto, rutas, restricciones, prompt para Claude/tool de diseno y criterios para traer el diseno de vuelta a Codex.
   - Se generaron screenshots locales en `design-screenshots/` para adjuntar manualmente al pedido de diseno. No se versionan porque pueden contener nombres/emails reales de clientes.
+- Redisenio UI/UX V1:
+  - Se adopto el shell base con sidebar desktop, topbar con busqueda global hacia `/clientes` y navegacion responsive simple en mobile.
+  - `/clientes` queda como pantalla piloto del nuevo sistema visual: filtros compactos, tabla densa con headers sticky y cards mobile.
+  - El prototipo React de diseno se uso como referencia, sin incorporarlo al runtime Flask ni agregar dependencias frontend.
 
 ## Verificacion
+
+Ultima verificacion luego de aplicar redisenio V1 shell + Clientes:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes.AppRoutesTest.test_clientes_busca_por_usuario_y_whatsapp_con_placeholder_simple tests.test_app_routes.AppRoutesTest.test_clientes_ordena_por_columnas_y_preserva_filtros -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+git diff --check
+```
+
+Resultado: tests focales OK; 69 tests OK; import Flask OK con 40 rutas; `git diff --check` sin errores reales, solo avisos CRLF de Windows. Verificacion visual local con Playwright en 1440px y 390px para `/`, `/clientes`, `/cliente/<email>` y `/solicitudes`: sin overflow horizontal; Clientes desktop/mobile y Solicitudes desktop revisadas visualmente.
 
 Ultima verificacion luego de preparar handoff de diseno:
 

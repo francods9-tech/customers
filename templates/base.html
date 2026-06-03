@@ -8,28 +8,49 @@
 </head>
 <body>
 {% if session.auth %}
-<header class="topbar">
-  <a class="brand" href="{{ url_for('index') }}">
-    <img src="{{ url_for('static', filename='traqeer-logo.png') }}" alt="Traqeer">
-    <span>Customers Dashboard</span>
-  </a>
-  <nav>
-    <a href="{{ url_for('index') }}">Inicio</a>
-    <a href="{{ url_for('clientes_list') }}">Clientes</a>
-    <a href="{{ url_for('bajas_list') }}">Bajas</a>
-    <a href="{{ url_for('bandeja') }}">Bandeja</a>
-    <a href="{{ url_for('quejas_list') }}">Solicitudes</a>
-    <a href="{{ url_for('colabs_list') }}">Colabs</a>
-    <a href="{{ url_for('mensajes_list') }}">Mensajes</a>
-    <form method="post" action="{{ url_for('sync') }}" class="inline">
-      <button class="btn-sync" type="submit">Actualizar datos</button>
-    </form>
-    <a class="logout" href="{{ url_for('logout') }}">Salir</a>
-  </nav>
-</header>
+{% set active = request.endpoint %}
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="sidebar-brand" href="{{ url_for('index') }}">
+      <img src="{{ url_for('static', filename='traqeer-logo.png') }}" alt="Traqeer">
+      <span>Customers Dashboard</span>
+    </a>
+    <nav class="sidebar-nav" aria-label="Navegacion principal">
+      <div class="sidebar-section">Operacion</div>
+      <a class="nav-item {{ 'active' if active == 'index' }}" href="{{ url_for('index') }}">Inicio</a>
+      <a class="nav-item {{ 'active' if active in ('clientes_list', 'cliente') }}" href="{{ url_for('clientes_list') }}">Clientes</a>
+      <a class="nav-item {{ 'active' if active == 'bandeja' }}" href="{{ url_for('bandeja') }}">Bandeja</a>
+      <a class="nav-item {{ 'active' if active in ('quejas_list', 'ticket_detail') }}" href="{{ url_for('quejas_list') }}">Solicitudes</a>
+      <div class="sidebar-section">Administracion</div>
+      <a class="nav-item {{ 'active' if active == 'colabs_list' }}" href="{{ url_for('colabs_list') }}">Colabs</a>
+      <a class="nav-item {{ 'active' if active == 'bajas_list' }}" href="{{ url_for('bajas_list') }}">Bajas</a>
+      <a class="nav-item {{ 'active' if active == 'mensajes_list' }}" href="{{ url_for('mensajes_list') }}">Mensajes</a>
+    </nav>
+    <div class="sidebar-user">
+      <span class="avatar">CS</span>
+      <div>
+        <strong>Equipo</strong>
+        <span>Customer Success</span>
+      </div>
+    </div>
+  </aside>
+  <div class="app-main">
+    <header class="topbar">
+      <form method="get" action="{{ url_for('clientes_list') }}" class="global-search">
+        <input type="search" name="q" placeholder="Buscar cliente, email, usuario o WhatsApp" value="{{ request.args.get('q', '') if active == 'clientes_list' else '' }}">
+        <button class="btn-sync" type="submit">Buscar</button>
+      </form>
+      <div class="topbar-actions">
+        <form method="post" action="{{ url_for('sync') }}" class="inline">
+          <button class="btn-sync" type="submit">Actualizar datos</button>
+        </form>
+        <a class="logout" href="{{ url_for('logout') }}">Salir</a>
+      </div>
+    </header>
+    <main class="content">
+{% else %}
+<main class="content login-content">
 {% endif %}
-
-<main>
   {% with msgs = get_flashed_messages(with_categories=true) %}
     {% for cat, msg in msgs %}
       <div class="flash flash-{{ cat }}">{{ msg }}</div>
@@ -37,5 +58,9 @@
   {% endwith %}
   {% block content %}{% endblock %}
 </main>
+{% if session.auth %}
+  </div>
+</div>
+{% endif %}
 </body>
 </html>
