@@ -71,22 +71,24 @@ class JobsTest(unittest.TestCase):
             "clientes": [
                 {"email_key": "ana@example.test", "nombre": "Ana", "estado": "activo", "plan": "Premium"},
                 {"email_key": "bruno@example.test", "nombre": "Bruno", "estado": "activo", "plan": "Premium"},
+                {"email_key": "carla@example.test", "nombre": "Carla", "estado": "activo", "plan": "Premium"},
             ]
         }
         after = {
             "clientes": [
                 {"email_key": "ana@example.test", "nombre": "Ana", "estado": "activo", "plan": "Premium"},
                 {"email_key": "bruno@example.test", "nombre": "Bruno", "estado": "impago", "plan": "Premium"},
+                {"email_key": "carla@example.test", "nombre": "Carla", "estado": "inactivo", "plan": "Premium"},
             ]
         }
 
         diff = diff_recurrent_customers(before, after)
 
-        self.assertEqual(diff["before_count"], 2)
-        self.assertEqual(diff["after_count"], 1)
+        self.assertEqual(diff["before_count"], 3)
+        self.assertEqual(diff["after_count"], 2)
         self.assertEqual(diff["delta"], -1)
-        self.assertEqual(diff["removed"][0]["email"], "bruno@example.test")
-        self.assertEqual(diff["removed"][0]["after_estado"], "impago")
+        self.assertEqual(diff["removed"][0]["email"], "carla@example.test")
+        self.assertEqual(diff["removed"][0]["after_estado"], "inactivo")
 
     def test_active_recurrent_diff_ignores_test_snapshots(self):
         from scripts.active_recurrent_diff import latest_real_payloads

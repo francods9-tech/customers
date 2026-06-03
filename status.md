@@ -117,6 +117,7 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 - Dashboard ahora incluye preset `Todo` y la linea temporal toma el primer evento real de altas/bajas como inicio.
 - El KPI de Bajas del dashboard abre la pantalla de bajas con motivos.
 - Inicio muestra la northstar `Activos recurrentes` como primer KPI superior, comparada contra el periodo anterior seleccionado y con link a Clientes filtrado por recurrentes.
+- Los estados de impago (`impago`, `pausado_impago`, `inactivo_impago`) cuentan dentro de `Activos recurrentes` si el cliente es de tipo recurrente. Siguen excluidos `One time payment` y `Free por colab`.
 - Inicio ya no muestra KPI de Solicitudes; esa lectura vive en `/solicitudes`.
 - El grafico principal de Inicio es de barras y combina Altas, Bajas y Trials por dia/semana segun el periodo.
 - Inicio agrupa `Instagram`, `Instagram ingles`, `Instagram español` e `Instagram portugues` como un solo canal `Instagram` para filtro y grafico de base actual por canal.
@@ -162,6 +163,16 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - La administracion visual de categorias se oculto de `/solicitudes`; las categorias se manejan internamente.
 
 ## Verificacion
+
+Ultima verificacion luego de incluir impagos recurrentes en activos recurrentes:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_customer_rules.CustomerRulesTest.test_unpaid_recurrent_customer_counts_as_recurrent_active -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Resultado: test focal OK; import Flask OK con 38 rutas; 63 tests OK.
 
 Ultima verificacion luego de conectar facturas rechazadas al refresh completo:
 
