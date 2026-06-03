@@ -118,4 +118,30 @@
   {% else %}<p class="muted">Nada pendiente aca.</p>{% endif %}
 </section>
 
+<section class="panel">
+  <div class="bandeja-head">
+    <h2>Recordatorios ({{ recordatorios|length }})</h2>
+  </div>
+  {% if recordatorios %}
+  <ul class="bandeja-list bandeja-list-detail">
+    {% for r in recordatorios %}
+    <li>
+      <div>
+        <a href="{{ url_for('cliente', email=r.customer_email) }}">{{ r.customer_name }}</a>
+        <span class="sub">{{ r.customer_email }}</span>
+      </div>
+      <div class="attention-meta">
+        <span class="tag {{ 'tag-warn' if r.days is not none and r.days <= 0 }}">{{ r.due_label }}</span>
+        <span class="sub">{{ r.timing }}</span>
+        <span class="sub">{{ r.texto }}</span>
+        <form method="post" action="{{ url_for('complete_recordatorio', reminder_id=r.id) }}" class="inline">
+          <button class="btn-sync" type="submit">Completar</button>
+        </form>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="muted">Nada pendiente aca.</p>{% endif %}
+</section>
+
 {% endblock %}

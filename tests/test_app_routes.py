@@ -10,11 +10,12 @@ class AppRoutesTest(unittest.TestCase):
 
     def tearDown(self):
         from db import db
-        from db.models import CustomerMeta, Interaccion, Snapshot, TicketComment
+        from db.models import CustomerMeta, CustomerReminder, Interaccion, Snapshot, TicketComment
 
         with self.app.app_context():
             TicketComment.query.filter(TicketComment.ticket.has(Interaccion.customer_email.like("%@example.test"))).delete(synchronize_session=False)
             Interaccion.query.filter(Interaccion.customer_email.like("%@example.test")).delete(synchronize_session=False)
+            CustomerReminder.query.filter(CustomerReminder.customer_email.like("%@example.test")).delete(synchronize_session=False)
             CustomerMeta.query.filter(CustomerMeta.email.like("%@example.test")).delete(synchronize_session=False)
             Snapshot.query.filter(Snapshot.payload["test_marker"].as_string() == "solicitudes_directas").delete(synchronize_session=False)
             db.session.commit()
@@ -171,6 +172,83 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("cancelacion programada", body)
         self.assertIn("Riesgo Manual", body)
         self.assertIn("Pidio cancelar si no mejora el soporte", body)
+
+    def test_ficha_crea_recordatorio_con_fecha_y_texto(self):
+        from db.models import CustomerReminder
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+
+        response = self.client.get("/cliente/cliente-z@example.test")
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn("Recordatorios", body)
+        self.assertIn('name="due_date"', body)
+
+        response = self.client.post(
+            "/cliente/cliente-z@example.test/recordatorios",
+            data={"due_date": "2026-06-15", "texto": "Escribirle para revisar avance"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            reminder = CustomerReminder.query.filter_by(customer_email="cliente-z@example.test").one()
+            self.assertEqual(reminder.due_date, "2026-06-15")
+            self.assertEqual(reminder.texto, "Escribirle para revisar avance")
+            self.assertIsNone(reminder.completed_at)
+
+    def test_bandeja_muestra_recordatorios_activos_y_permite_completarlos(self):
+        from db import db
+        from db.models import CustomerReminder
+
+        self.login()
+        self.add_snapshot([self.customer_row(nombre="Cliente Recordado")])
+        with self.app.app_context():
+            reminder = CustomerReminder(
+                customer_email="cliente-z@example.test",
+                due_date="2026-06-15",
+                texto="Mandar seguimiento de WhatsApp",
+            )
+            db.session.add(reminder)
+            db.session.commit()
+            reminder_id = reminder.id
+
+        response = self.client.get("/bandeja")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn("Recordatorios (1)", body)
+        self.assertIn("Cliente Recordado", body)
+        self.assertIn("Mandar seguimiento de WhatsApp", body)
+        self.assertIn("15/06/2026", body)
+        self.assertIn("Completar", body)
+
+        response = self.client.post(f"/recordatorios/{reminder_id}/completar")
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            reminder = db.session.get(CustomerReminder, reminder_id)
+            self.assertIsNotNone(reminder.completed_at)
+
+        response = self.client.get("/bandeja")
+        body = response.get_data(as_text=True)
+        self.assertIn("Recordatorios (0)", body)
+        self.assertNotIn("Mandar seguimiento de WhatsApp", body)
+
+    def test_recordatorio_requiere_fecha_y_texto(self):
+        from db.models import CustomerReminder
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+
+        response = self.client.post(
+            "/cliente/cliente-z@example.test/recordatorios",
+            data={"due_date": "", "texto": "   "},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            self.assertEqual(CustomerReminder.query.filter_by(customer_email="cliente-z@example.test").count(), 0)
 
     def test_dashboard_agrupa_variantes_de_instagram(self):
         from db import db
