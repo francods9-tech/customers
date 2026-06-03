@@ -119,6 +119,10 @@ class AppRoutesTest(unittest.TestCase):
         body = response.get_data(as_text=True)
 
         self.assertEqual(response.status_code, 200)
+        self.assertIn('class="app-shell"', body)
+        self.assertIn('class="sidebar"', body)
+        self.assertIn('action="/clientes"', body)
+        self.assertIn('name="q"', body)
         self.assertIn('placeholder="Buscar cliente"', body)
         self.assertIn("Ana", body)
         self.assertNotIn("Mia", body)
@@ -150,6 +154,7 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("sort=origen", body)
         self.assertIn("sort=alta", body)
         self.assertIn("q=example", body)
+        self.assertIn('class="clientes-mobile-list"', body)
 
         response = self.client.get("/clientes?sort=cliente&dir=asc")
         body = response.get_data(as_text=True)

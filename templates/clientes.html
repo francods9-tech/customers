@@ -2,7 +2,15 @@
 {% block title %}{{ titulo or "Clientes" }}{% endblock %}
 {% block content %}
 
-<h1>{{ titulo or "Clientes" }}</h1>
+<div class="page-head">
+  <div>
+    <div class="crumb">Operacion / Clientes</div>
+    <h1>{{ titulo or "Clientes" }}</h1>
+    {% if snap %}
+      <p class="muted">{{ snap.clientes|length }} clientes en esta vista · actualizado {{ snap.generado[:16].replace("T", " ") }} UTC</p>
+    {% endif %}
+  </div>
+</div>
 
 {% if not snap %}
   <div class="empty">
@@ -12,8 +20,8 @@
     </form>
   </div>
 {% else %}
-  <div class="periodo-bar">
-    <div class="presets">
+  <div class="client-toolbar">
+    <div class="segmented-filter">
       <a class="chip {{ 'chip-on' if not estado and not tipo and not recurrente }}" href="{{ url_for('clientes_list', origen=origen, q=q) }}">Todos</a>
       <a class="chip {{ 'chip-on' if recurrente }}" href="{{ url_for('clientes_list', recurrente=1, origen=origen, q=q) }}">Activos recurrentes</a>
       <a class="chip {{ 'chip-on' if estado == 'activo' and not recurrente }}" href="{{ url_for('clientes_list', estado='activo', origen=origen, tipo=tipo, q=q) }}">Activos</a>
@@ -26,7 +34,7 @@
       <a class="chip {{ 'chip-on' if tipo == 'free_colab' }}" href="{{ url_for('clientes_list', tipo='free_colab', origen=origen, q=q) }}">Free colab</a>
       <a class="chip {{ 'chip-on' if tipo == 'colab_descuento' }}" href="{{ url_for('clientes_list', tipo='colab_descuento', origen=origen, q=q) }}">Colab descuento</a>
     </div>
-    <form method="get" class="periodo-custom">
+    <form method="get" class="client-filters">
       {% if estado %}<input type="hidden" name="estado" value="{{ estado }}">{% endif %}
       {% if recurrente %}<input type="hidden" name="recurrente" value="1">{% endif %}
       <input type="hidden" name="sort" value="{{ sort }}">
@@ -57,10 +65,8 @@
     <div><strong>{{ resumen.colabs_revision_pendiente }}</strong><span>Colabs a revisar</span></div>
   </div>
 
-  <p class="muted">{{ snap.clientes|length }} clientes en esta vista · actualizado {{ snap.generado[:16].replace("T", " ") }} UTC</p>
-
-  <div class="table-wrap">
-    <table class="grid">
+  <div class="table-wrap clientes-table-wrap">
+    <table class="grid clientes-grid">
       <thead>
         <tr>
           <th><a href="{{ sort_links.cliente }}">Cliente</a></th>
@@ -75,8 +81,8 @@
       <tbody>
         {% for c in snap.clientes %}
         <tr>
-          <td><a href="{{ url_for('cliente', email=c.email_key) }}">{{ c.nombre }}</a>
-              <div class="sub">{{ c.email }}</div></td>
+          <td><a class="client-name" href="{{ url_for('cliente', email=c.email_key) }}">{{ c.nombre }}</a>
+              <div class="sub mono">{{ c.email }}</div></td>
           <td>{{ c.tipo_cliente }}
             {% if c.colab.revision_pendiente %}<div class="sub warn">revision vencida</div>{% endif %}
           </td>
@@ -115,6 +121,36 @@
         {% endfor %}
       </tbody>
     </table>
+  </div>
+
+  <div class="clientes-mobile-list">
+    {% for c in snap.clientes %}
+    <a class="cliente-card" href="{{ url_for('cliente', email=c.email_key) }}">
+      <div class="cliente-card-head">
+        <div>
+          <strong>{{ c.nombre }}</strong>
+          <span>{{ c.email }}</span>
+        </div>
+        <span class="badge badge-{{ c.estado }}">{{ c.estado }}</span>
+      </div>
+      <div class="cliente-card-meta">
+        <span>{{ c.tipo_cliente }}</span>
+        <span>{{ c.plan }}</span>
+        <span>{{ c.origen_label }}</span>
+      </div>
+      <div class="cliente-card-attention">
+        {% if c.impago %}
+          {{ c.impago.label }} · {{ c.impago.facturas_count }} factura{{ "" if c.impago.facturas_count == 1 else "s" }}
+        {% elif c.trial %}
+          Trial {{ c.trial.fecha or "sin fecha" }}
+        {% elif c.reactivacion.reactivado %}
+          Reactivado
+        {% else %}
+          Sin pendientes
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
   </div>
 {% endif %}
 {% endblock %}
