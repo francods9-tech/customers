@@ -170,8 +170,19 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - La ficha permite crear recordatorios con fecha limite y texto libre.
   - Bandeja muestra todos los recordatorios activos al final, ordenados por fecha, con boton `Completar`.
   - Los recordatorios completados salen de Bandeja y quedan visibles como completados recientes en la ficha.
+- Handoff de diseno:
+  - Se agrego `design-handoff.md` con contexto de producto, rutas, restricciones, prompt para Claude/tool de diseno y criterios para traer el diseno de vuelta a Codex.
+  - Se generaron screenshots locales en `design-screenshots/` para adjuntar manualmente al pedido de diseno. No se versionan porque pueden contener nombres/emails reales de clientes.
 
 ## Verificacion
+
+Ultima verificacion luego de preparar handoff de diseno:
+
+```powershell
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+```
+
+Resultado: import Flask OK con 40 rutas. Capturas locales generadas con Playwright contra `http://127.0.0.1:5001`: 9 desktop y 3 mobile en `design-screenshots/`; revision visual manual OK en Clientes desktop y Solicitudes mobile.
 
 Ultima verificacion luego de agregar contador y autores de comentarios en tickets:
 
