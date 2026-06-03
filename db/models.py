@@ -93,6 +93,18 @@ class Interaccion(db.Model):
     resolved_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
 
+class CustomerReminder(db.Model):
+    """Recordatorio operativo con fecha limite para contactar o accionar sobre un cliente."""
+    __tablename__ = "customer_reminders"
+
+    id = db.Column(db.Integer, primary_key=True)
+    customer_email = db.Column(db.String(320), nullable=False, index=True)
+    texto = db.Column(db.Text, nullable=False)
+    due_date = db.Column(db.String(10), nullable=False, index=True)
+    completed_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    created_at = db.Column(db.DateTime(timezone=True), default=_now)
+
+
 class TicketComment(db.Model):
     """Comentario interno dentro de una solicitud/queja operativa."""
     __tablename__ = "ticket_comments"

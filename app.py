@@ -1,6 +1,7 @@
 import datetime as dt
 from collections import Counter, defaultdict
 from functools import wraps
+from zoneinfo import ZoneInfo
 
 from flask import (Flask, render_template, request, redirect, url_for,
                    session, flash, abort)
@@ -13,7 +14,7 @@ import metrics
 from config import Config
 from db import db
 from db.models import (ChurnReason, ColabCreator, ComplaintCategory, CustomerMeta,
-                       Interaccion, INSTAGRAM_ORIGEN_KEYS, INSTAGRAM_VARIANTS,
+                       CustomerReminder, Interaccion, INSTAGRAM_ORIGEN_KEYS, INSTAGRAM_VARIANTS,
                        MessageCategory, MessageTemplate, ORIGENES, ORIGENES_BASE,
                        TicketComment,
                        ORIGEN_LABELS, origen_group_key)
@@ -51,6 +52,7 @@ COLAB_CREATOR_TYPES = [
     ("intercambio", "Intercambio"),
 ]
 COLAB_CREATOR_TYPE_LABELS = dict(COLAB_CREATOR_TYPES)
+MADRID_TZ = ZoneInfo("Europe/Madrid")
 
 
 def _ensure_local_schema():
@@ -185,6 +187,46 @@ def _complaint_categories(active_only=True):
 
 def _complaint_category_map():
     return {c.key: c.label for c in ComplaintCategory.query.all()}
+
+
+def _parse_iso_date(value):
+    try:
+        return dt.date.fromisoformat((value or "").strip())
+    except ValueError:
+        return None
+
+
+def _reminder_view(row, nombre_por_email=None):
+    due = _parse_iso_date(row.due_date)
+    today = dt.datetime.now(MADRID_TZ).date()
+    days = (due - today).days if due else None
+    if days is None:
+        timing = "sin fecha"
+    elif days < 0:
+        timing = f"vencio hace {-days} dias"
+    elif days == 0:
+        timing = "hoy"
+    else:
+        timing = f"faltan {days} dias"
+    return {
+        "id": row.id,
+        "customer_email": row.customer_email,
+        "customer_name": (nombre_por_email or {}).get(row.customer_email, row.customer_email),
+        "texto": row.texto,
+        "due_date": row.due_date,
+        "due_label": due.strftime("%d/%m/%Y") if due else row.due_date,
+        "days": days,
+        "timing": timing,
+        "completed_at": row.completed_at,
+    }
+
+
+def _active_reminders(nombre_por_email=None):
+    rows = (CustomerReminder.query
+            .filter(CustomerReminder.completed_at.is_(None))
+            .order_by(CustomerReminder.due_date.asc(), CustomerReminder.created_at.asc())
+            .all())
+    return [_reminder_view(row, nombre_por_email) for row in rows]
 
 
 def _churn_key(email, fecha):
@@ -959,8 +1001,10 @@ def bandeja():
         key=lambda c: (((c.get("trial") or {}).get("fecha_raw") or "9999"), (c.get("nombre") or "").lower()),
     )
     nombre_por_email = {c["email_key"]: c["nombre"] for c in (snap["clientes"] if snap else [])}
+    recordatorios = _active_reminders(nombre_por_email)
     return render_template("bandeja.html", pendientes=pendientes,
-                           nombres=nombre_por_email)
+                           nombres=nombre_por_email,
+                           recordatorios=recordatorios)
 
 
 @app.route("/clientes/marcar-bienvenidos", methods=["POST"])
@@ -1014,6 +1058,13 @@ def cliente(email):
     interacciones = (Interaccion.query
                      .filter_by(customer_email=email_key)
                      .order_by(Interaccion.created_at.desc()).all())
+    recordatorios_activos = (CustomerReminder.query
+                             .filter_by(customer_email=email_key, completed_at=None)
+                             .order_by(CustomerReminder.due_date.asc(), CustomerReminder.created_at.asc()).all())
+    recordatorios_completados = (CustomerReminder.query
+                                 .filter(CustomerReminder.customer_email == email_key,
+                                         CustomerReminder.completed_at.is_not(None))
+                                 .order_by(CustomerReminder.completed_at.desc()).limit(5).all())
     quejas_abiertas = [i for i in interacciones if complaint_rules.is_customer_request(i) and not i.resuelta]
     churn_abiertos = [i for i in interacciones if i.tipo == "churn" and not i.resuelta]
     atencion = {
@@ -1039,7 +1090,9 @@ def cliente(email):
                            estados_solicitud=complaint_rules.REQUEST_STATUS_OPTIONS,
                            importancias=complaint_rules.IMPORTANCE_OPTIONS,
                            category_map=_complaint_category_map(),
-                           category_label=complaint_rules.category_label)
+                           category_label=complaint_rules.category_label,
+                           recordatorios_activos=[_reminder_view(r) for r in recordatorios_activos],
+                           recordatorios_completados=[_reminder_view(r) for r in recordatorios_completados])
 
 
 @app.route("/cliente/<path:email>/origen", methods=["POST"])
@@ -1105,6 +1158,38 @@ def add_interaccion(email):
         db.session.commit()
         flash("Nota agregada", "ok")
     return redirect(url_for("cliente", email=email))
+
+
+@app.route("/cliente/<path:email>/recordatorios", methods=["POST"])
+@login_required
+def add_recordatorio(email):
+    email_key = email.lower()
+    texto = (request.form.get("texto") or "").strip()
+    due = _parse_iso_date(request.form.get("due_date"))
+    if not texto or not due:
+        flash("Completa fecha y detalle del recordatorio", "error")
+        return redirect(url_for("cliente", email=email_key))
+    db.session.add(CustomerReminder(
+        customer_email=email_key,
+        texto=texto,
+        due_date=due.isoformat(),
+    ))
+    db.session.commit()
+    flash("Recordatorio creado", "ok")
+    return redirect(url_for("cliente", email=email_key))
+
+
+@app.route("/recordatorios/<int:reminder_id>/completar", methods=["POST"])
+@login_required
+def complete_recordatorio(reminder_id):
+    reminder = db.session.get(CustomerReminder, reminder_id)
+    if not reminder:
+        abort(404)
+    if not reminder.completed_at:
+        reminder.completed_at = dt.datetime.now(dt.timezone.utc)
+        db.session.commit()
+        flash("Recordatorio completado", "ok")
+    return redirect(request.referrer or url_for("bandeja"))
 
 
 @app.route("/cliente/<path:email>/onboarding", methods=["POST"])

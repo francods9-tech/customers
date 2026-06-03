@@ -161,8 +161,22 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - Las abiertas pueden eliminarse desde la lista.
   - En abiertas solo se actualizan estado e importancia; la categoria queda fija luego de crear el ticket.
   - La administracion visual de categorias se oculto de `/solicitudes`; las categorias se manejan internamente.
+- Recordatorios por cliente:
+  - La ficha permite crear recordatorios con fecha limite y texto libre.
+  - Bandeja muestra todos los recordatorios activos al final, ordenados por fecha, con boton `Completar`.
+  - Los recordatorios completados salen de Bandeja y quedan visibles como completados recientes en la ficha.
 
 ## Verificacion
+
+Ultima verificacion luego de agregar recordatorios por cliente:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes.AppRoutesTest.test_ficha_crea_recordatorio_con_fecha_y_texto tests.test_app_routes.AppRoutesTest.test_bandeja_muestra_recordatorios_activos_y_permite_completarlos tests.test_app_routes.AppRoutesTest.test_recordatorio_requiere_fecha_y_texto -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Resultado: tests focales OK; import Flask OK con 40 rutas; 66 tests OK. Verificacion HTTP local autenticada de `/cliente/<email>` y `/bandeja`: 200 con Recordatorios, texto y boton Completar renderizados.
 
 Ultima verificacion luego de incluir impagos recurrentes en activos recurrentes:
 

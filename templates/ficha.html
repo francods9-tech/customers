@@ -294,6 +294,59 @@
 </section>
 
 <section class="panel">
+  <div class="bandeja-head">
+    <h2>Recordatorios</h2>
+  </div>
+  <form method="post" action="{{ url_for('add_recordatorio', email=c.email_key) }}" class="nota-form client-action-form">
+    <div>
+      <label>Fecha limite</label>
+      <input type="date" name="due_date" required>
+    </div>
+    <div class="action-detail">
+      <label>Que hay que hacer</label>
+      <textarea name="texto" placeholder="Ej: escribirle para revisar avance, enviar propuesta, confirmar pago..." required></textarea>
+    </div>
+    <button type="submit">Crear recordatorio</button>
+  </form>
+
+  {% if recordatorios_activos %}
+  <ul class="timeline clean-timeline reminder-list">
+    {% for r in recordatorios_activos %}
+    <li>
+      <div class="timeline-head">
+        <span class="tag {{ 'tag-warn' if r.days is not none and r.days <= 0 }}">{{ r.due_label }}</span>
+        <span class="muted">{{ r.timing }}</span>
+        <form method="post" action="{{ url_for('complete_recordatorio', reminder_id=r.id) }}" class="inline">
+          <button class="btn-sync" type="submit">Completar</button>
+        </form>
+      </div>
+      <p>{{ r.texto }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Sin recordatorios activos.</p>
+  {% endif %}
+
+  {% if recordatorios_completados %}
+  <details class="collab-details reminder-completed">
+    <summary>Completados recientes</summary>
+    <ul class="timeline clean-timeline">
+      {% for r in recordatorios_completados %}
+      <li>
+        <div class="timeline-head">
+          <span class="tag">{{ r.due_label }}</span>
+          <span class="muted">completado</span>
+        </div>
+        <p>{{ r.texto }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</section>
+
+<section class="panel">
   <h2>Historial</h2>
   {% if interacciones %}
   <ul class="timeline clean-timeline">
