@@ -177,6 +177,7 @@ Ultima verificacion luego de agregar recordatorios por cliente:
 ```
 
 Resultado: tests focales OK; import Flask OK con 40 rutas; 66 tests OK. Verificacion HTTP local autenticada de `/cliente/<email>` y `/bandeja`: 200 con Recordatorios, texto y boton Completar renderizados.
+Deploy Railway posterior: `7edbd231-5f7d-4bb5-bdac-bd7685422853` SUCCESS; produccion verificada con `/healthz` 200 y `/login` 200.
 
 Ultima verificacion luego de incluir impagos recurrentes en activos recurrentes:
 
