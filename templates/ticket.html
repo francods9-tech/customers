@@ -2,13 +2,11 @@
 {% block title %}Ticket #{{ ticket.id }}{% endblock %}
 {% block content %}
 
-<a class="back" href="{{ url_for('quejas_list') }}">&larr; Solicitudes</a>
-
-<section class="ticket-hero">
+<div class="page-head ticket-page-head">
   <div>
-    <div class="profile-eyebrow">Ticket #{{ ticket.id }}</div>
+    <div class="crumb"><a href="{{ url_for('quejas_list') }}">Solicitudes</a> / Ticket #{{ ticket.id }}</div>
     <h1>{{ nombre }}</h1>
-    <p class="muted">{{ ticket.customer_email }}</p>
+    <p class="muted">Ticket #{{ ticket.id }} · {{ ticket.customer_email }}</p>
   </div>
   <div class="profile-badges">
     <span class="tag">{{ ticket.tipo }}</span>
@@ -23,20 +21,85 @@
     {% endif %}
     <span class="tag">Importancia {{ importance_labels.get(ticket.importancia, ticket.importancia or "Media") }}</span>
   </div>
-</section>
+</div>
 
 <div class="ticket-layout">
-  <section class="panel">
-    <h2>Detalle</h2>
-    <p>{{ ticket.texto }}</p>
+  <section class="panel ticket-thread">
+    <div class="panel-head">
+      <h2>Conversacion interna</h2>
+      <span class="muted">{{ comments|length }} comentario{{ "s" if comments|length != 1 }}</span>
+    </div>
+    <div class="ticket-thread-body">
+      <article class="ticket-message ticket-message-origin">
+        <div class="comment-avatar">TK</div>
+        <div class="comment-body">
+          <div class="comment-meta">
+            <strong>Detalle inicial</strong>
+            <span>{{ ticket.created_at.strftime("%d/%m/%Y %H:%M") }}</span>
+          </div>
+          <div class="comment-bubble">{{ ticket.texto }}</div>
+        </div>
+      </article>
 
-    {% if ticket.resuelta %}
-      <form method="post" action="{{ url_for('reabrir_ticket', qid=ticket.id) }}" class="ticket-action-row">
-        <span>Este ticket estuvo abierto {{ ctx.duration.dias }} dias.</span>
-        <button type="submit">Reabrir ticket</button>
+      {% if comments %}
+        {% for comment in comments %}
+        <article class="ticket-message">
+          <div class="comment-avatar">{{ (comment.agente or "CS")[:2] }}</div>
+          <div class="comment-body">
+            <div class="comment-meta">
+              <strong>{{ comment.agente or "Equipo" }}</strong>
+              <span>{{ comment.created_at.strftime("%d/%m/%Y %H:%M") }}</span>
+            </div>
+            <div class="comment-bubble">{{ comment.texto }}</div>
+          </div>
+        </article>
+        {% endfor %}
+      {% else %}
+      <p class="muted">Sin comentarios todavia.</p>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('add_ticket_comment', qid=ticket.id) }}" class="ticket-comment-form">
+        <select name="agente" required>
+          {% for key, label in comment_authors %}
+          <option value="{{ key }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+        <textarea name="texto" placeholder="Agregar comentario interno" required></textarea>
+        <button type="submit">Agregar comentario</button>
       </form>
-    {% else %}
-      <form method="post" action="{{ url_for('set_queja_gestion', qid=ticket.id) }}" class="ticket-form">
+    </div>
+  </section>
+
+  <aside class="ticket-sidebar">
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Propiedades</h2>
+      </div>
+      <dl>
+        <dt>Cliente</dt><dd><a href="{{ url_for('cliente', email=ticket.customer_email) }}">{{ nombre }}</a></dd>
+        <dt>Email</dt><dd class="mono">{{ ticket.customer_email }}</dd>
+        <dt>Tipo</dt><dd>{{ ticket.tipo }}</dd>
+        <dt>Categoria</dt><dd>{{ category_label(ticket.categoria, category_map) }}</dd>
+        {% if ticket.resuelta %}
+        <dt>Duracion</dt><dd>{{ ctx.duration.dias }} dias abierto</dd>
+        {% else %}
+        <dt>Aging</dt><dd>{{ ctx.age.dias }} dias</dd>
+        <dt>Equipo</dt><dd>{{ ctx.team_label }}</dd>
+        {% endif %}
+      </dl>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Gestion</h2>
+      </div>
+      {% if ticket.resuelta %}
+        <form method="post" action="{{ url_for('reabrir_ticket', qid=ticket.id) }}" class="ticket-action-row">
+          <span>Este ticket estuvo abierto {{ ctx.duration.dias }} dias.</span>
+          <button type="submit">Reabrir ticket</button>
+        </form>
+      {% else %}
+        <form method="post" action="{{ url_for('set_queja_gestion', qid=ticket.id) }}" class="ticket-form">
         <label>Estado</label>
         <select name="estado_gestion">
           {% for key, label in estados_solicitud %}
@@ -50,42 +113,15 @@
           {% endfor %}
         </select>
         <button type="submit">Actualizar ticket</button>
-      </form>
+        </form>
 
-      <form method="post" action="{{ url_for('resolver_queja', qid=ticket.id) }}" class="ticket-action-row">
-        <span>Cuando ya no quede accion pendiente, pasalo a resueltas.</span>
-        <button type="submit">Marcar resuelto</button>
-      </form>
-    {% endif %}
-  </section>
-
-  <section class="panel">
-    <h2>Comentarios</h2>
-    <form method="post" action="{{ url_for('add_ticket_comment', qid=ticket.id) }}" class="comment-form">
-      <select name="agente" required>
-        {% for key, label in comment_authors %}
-        <option value="{{ key }}">{{ label }}</option>
-        {% endfor %}
-      </select>
-      <textarea name="texto" placeholder="Agregar comentario interno" required></textarea>
-      <button type="submit">Agregar comentario</button>
-    </form>
-
-    {% if comments %}
-    <ul class="timeline clean-timeline">
-      {% for comment in comments %}
-      <li>
-        <div class="timeline-head">
-          <span class="muted">{{ comment.created_at.strftime("%d/%m/%Y %H:%M") }}{% if comment.agente %} &middot; {{ comment.agente }}{% endif %}</span>
-        </div>
-        <p>{{ comment.texto }}</p>
-      </li>
-      {% endfor %}
-    </ul>
-    {% else %}
-    <p class="muted">Sin comentarios todavia.</p>
-    {% endif %}
-  </section>
+        <form method="post" action="{{ url_for('resolver_queja', qid=ticket.id) }}" class="ticket-action-row">
+          <span>Cuando ya no quede accion pendiente, pasalo a resueltas.</span>
+          <button type="submit">Marcar resuelto</button>
+        </form>
+      {% endif %}
+    </section>
+  </aside>
 </div>
 
 {% endblock %}
