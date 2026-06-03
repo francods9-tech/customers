@@ -110,6 +110,23 @@ class CustomerRulesTest(unittest.TestCase):
         self.assertEqual(enriched["tipo_cliente"], "Colab con descuento")
         self.assertTrue(enriched["cuenta_activo_recurrente"])
 
+    def test_unpaid_recurrent_customer_counts_as_recurrent_active(self):
+        from customer_rules import enrich_customer
+
+        customer = {
+            "nombre": "Mia",
+            "email": "mia@example.com",
+            "email_key": "mia@example.com",
+            "plan": "Premium",
+            "estado": "impago",
+            "ultima_factura_fecha_raw": "2026-06-01T00:00:00+00:00",
+        }
+
+        enriched = enrich_customer(customer)
+
+        self.assertEqual(enriched["estado"], "impago")
+        self.assertTrue(enriched["cuenta_activo_recurrente"])
+
     def test_colab_summary_marks_due_reviews(self):
         from customer_rules import colab_summary
 

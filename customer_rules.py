@@ -181,8 +181,10 @@ def enrich_customer(customer, meta=None):
     out["tipo_cliente"] = TYPE_LABELS.get(tipo_key, "Individual")
     out["colab"] = colab_summary(meta)
     out["trial"] = trial_summary(out) if out["estado"] == "trial" else None
+    is_recurrent_type = tipo_key not in ("one_time", "free_colab")
+    is_active_or_unpaid = out["estado"] == "activo" or out["estado"] in UNPAID_STATES
     out["cuenta_activo_recurrente"] = (
-        out["estado"] == "activo" and tipo_key not in ("one_time", "free_colab")
+        is_active_or_unpaid and is_recurrent_type
     )
     return out
 
