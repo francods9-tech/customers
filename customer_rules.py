@@ -189,6 +189,38 @@ def enrich_customer(customer, meta=None):
     return out
 
 
+def _attention_sort_rank(customer):
+    if customer.get("impago"):
+        days = (customer.get("impago") or {}).get("dias")
+        return (0, -(days if days is not None else -1))
+    if customer.get("trial"):
+        days = (customer.get("trial") or {}).get("dias")
+        return (1, days if days is not None else 99999)
+    if (customer.get("reactivacion") or {}).get("reactivado"):
+        return (2, 0)
+    return (3, 0)
+
+
+def sort_customers(customers, sort_key="cliente", direction="asc"):
+    rows = list(customers)
+    reverse = direction == "desc"
+
+    def text(value):
+        return (value or "").strip().lower()
+
+    key_funcs = {
+        "cliente": lambda c: text(c.get("nombre")),
+        "tipo": lambda c: text(c.get("tipo_cliente")),
+        "plan": lambda c: text(c.get("plan")),
+        "estado": lambda c: text(c.get("estado")),
+        "atencion": _attention_sort_rank,
+        "origen": lambda c: text(c.get("origen_label") or c.get("origen")),
+        "alta": lambda c: c.get("fecha_alta_raw") or c.get("fecha_alta") or "",
+    }
+    key_func = key_funcs.get(sort_key) or key_funcs["cliente"]
+    return sorted(rows, key=lambda c: (key_func(c), text(c.get("nombre"))), reverse=reverse)
+
+
 def filter_customers(customers, estado=None, origen=None, tipo=None, q=None, recurrente=False):
     rows = list(customers)
     if recurrente:
@@ -204,10 +236,14 @@ def filter_customers(customers, estado=None, origen=None, tipo=None, q=None, rec
         rows = [c for c in rows if c.get("tipo_cliente_key") == tipo]
     if q:
         needle = q.strip().lower()
+        needle_digits = "".join(ch for ch in needle if ch.isdigit())
         rows = [
             c for c in rows
             if needle in (c.get("nombre") or "").lower()
             or needle in (c.get("email") or "").lower()
+            or needle in (c.get("usuario") or "").lower()
+            or needle in (c.get("whatsapp") or "").lower()
+            or (needle_digits and needle_digits in "".join(ch for ch in (c.get("whatsapp") or "") if ch.isdigit()))
         ]
     return rows
 

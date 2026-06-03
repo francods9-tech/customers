@@ -29,7 +29,9 @@
     <form method="get" class="periodo-custom">
       {% if estado %}<input type="hidden" name="estado" value="{{ estado }}">{% endif %}
       {% if recurrente %}<input type="hidden" name="recurrente" value="1">{% endif %}
-      <input type="search" name="q" placeholder="Buscar cliente o email" value="{{ q or '' }}">
+      <input type="hidden" name="sort" value="{{ sort }}">
+      <input type="hidden" name="dir" value="{{ dir }}">
+      <input type="search" name="q" placeholder="Buscar cliente" value="{{ q or '' }}">
       <select name="origen" onchange="this.form.submit()">
         <option value="">Todos los origenes</option>
         {% for k, label in origenes %}
@@ -61,8 +63,13 @@
     <table class="grid">
       <thead>
         <tr>
-          <th>Cliente</th><th>Tipo</th><th>Plan</th><th>Estado</th><th>Atencion</th>
-          <th>Origen</th><th>Alta</th>
+          <th><a href="{{ sort_links.cliente }}">Cliente</a></th>
+          <th><a href="{{ sort_links.tipo }}">Tipo</a></th>
+          <th><a href="{{ sort_links.plan }}">Plan</a></th>
+          <th><a href="{{ sort_links.estado }}">Estado</a></th>
+          <th><a href="{{ sort_links.atencion }}">Atencion</a></th>
+          <th><a href="{{ sort_links.origen }}">Origen</a></th>
+          <th><a href="{{ sort_links.alta }}">Alta</a></th>
         </tr>
       </thead>
       <tbody>

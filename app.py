@@ -296,6 +296,8 @@ def _clientes_enriquecidos():
         c["origen"] = m.origen if m else "sin_asignar"
         c["origen_label"] = ORIGEN_LABELS.get(c["origen"], c["origen"])
         c["onboarding_hecho"] = bool(m and m.onboarding_hecho)
+        c["whatsapp"] = (m.whatsapp if m else "") or c.get("whatsapp") or ""
+        c["usuario"] = (m.usuario if m else "") or c.get("usuario") or ""
         if c["estado"] in customer_rules.UNPAID_STATES:
             c["impago"] = customer_rules.unpaid_summary(c)
         c["churn_risk"] = customer_rules.churn_risk_summary(c)
@@ -488,6 +490,10 @@ def clientes_list():
     tipo = request.args.get("tipo") or None
     recurrente = request.args.get("recurrente") == "1"
     q = (request.args.get("q") or "").strip()
+    sort_key = request.args.get("sort") or "cliente"
+    if sort_key not in {"cliente", "tipo", "plan", "estado", "atencion", "origen", "alta"}:
+        sort_key = "cliente"
+    sort_dir = "desc" if request.args.get("dir") == "desc" else "asc"
     titulo = "Clientes"
     if snap:
         snap = dict(snap)
@@ -495,6 +501,7 @@ def clientes_list():
             snap["clientes"], estado=estado, origen=origen, tipo=tipo, q=q,
             recurrente=recurrente,
         )
+        clientes = customer_rules.sort_customers(clientes, sort_key=sort_key, direction=sort_dir)
         if recurrente:
             titulo = "Clientes activos recurrentes"
         if estado:
@@ -509,10 +516,28 @@ def clientes_list():
             titulo = "Clientes sin origen asignado"
         snap["clientes"] = clientes
     resumen = customer_rules.customer_summary(snap["clientes"]) if snap else {}
+    base_args = {
+        "estado": estado,
+        "origen": origen,
+        "tipo": tipo,
+        "q": q,
+        "sort": sort_key,
+        "dir": sort_dir,
+    }
+    if recurrente:
+        base_args["recurrente"] = 1
+    base_args = {k: v for k, v in base_args.items() if v not in (None, "", False)}
+    sort_links = {}
+    for key in ("cliente", "tipo", "plan", "estado", "atencion", "origen", "alta"):
+        args = dict(base_args)
+        args["sort"] = key
+        args["dir"] = "desc" if sort_key == key and sort_dir == "asc" else "asc"
+        sort_links[key] = url_for("clientes_list", **args)
     return render_template("clientes.html", snap=snap, origenes=ORIGENES,
                            tipos=customer_rules.TYPE_OPTIONS, resumen=resumen,
                            titulo=titulo, estado=estado, origen=origen,
-                           tipo=tipo, q=q, recurrente=recurrente)
+                           tipo=tipo, q=q, recurrente=recurrente,
+                           sort=sort_key, dir=sort_dir, sort_links=sort_links)
 
 
 @app.route("/eventos")

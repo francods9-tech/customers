@@ -146,6 +146,10 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - Los campos avanzados de colab dentro de `Ajuste manual` quedan plegados salvo que ya existan datos de colab.
   - `Nuevo contacto o solicitud` usa formulario en dos lineas para evitar campos comprimidos.
   - En `Origen y bienvenida`, Instagram se elige como canal base y abre un selector de idioma (`Sin idioma`, `Ingles`, `Español`, `Portugues`) guardando la variante en `CustomerMeta.origen`.
+- Clientes:
+  - La busqueda usa nombre, email, usuario y WhatsApp; la leyenda del input queda como `Buscar cliente`.
+  - La tabla permite ordenar por Cliente, Tipo, Plan, Estado, Atencion, Origen y Alta con links en los encabezados.
+  - El orden vive en URL (`sort`/`dir`) y preserva filtros/busqueda.
 - Solicitudes/tickets:
   - Cada solicitud se muestra como `Ticket #ID`.
   - La creacion ya no pide responsable.
@@ -167,6 +171,16 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - Los recordatorios completados salen de Bandeja y quedan visibles como completados recientes en la ficha.
 
 ## Verificacion
+
+Ultima verificacion luego de ordenar la tabla de clientes y ampliar busqueda:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes.AppRoutesTest.test_clientes_busca_por_usuario_y_whatsapp_con_placeholder_simple tests.test_app_routes.AppRoutesTest.test_clientes_ordena_por_columnas_y_preserva_filtros -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Resultado: tests focales OK; import Flask OK con 40 rutas; 68 tests OK. Verificacion HTTP local autenticada de `/clientes`: busqueda por usuario/telefono 200 y orden `sort=alta&dir=desc` 200.
 
 Ultima verificacion luego de agregar recordatorios por cliente:
 
