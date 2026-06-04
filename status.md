@@ -841,3 +841,50 @@ Deploy Railway posterior:
   - Con fixture temporal `deploy-qa-bienvenida@example.test`: 200, contiene `Bienvenida pendiente` y `Deploy QA Bienvenida`, no contiene `Onboarding pendiente`.
   - Fixture temporal limpiado despues del smoke.
 - Verificacion pre-deploy: `.\.venv\Scripts\python.exe -m unittest discover -s tests -v` -> 83 tests OK; `git diff --check` sin salida.
+
+## Iteracion 2026-06-04 - Edicion inline de tareas en Bandeja
+
+Implementado en rama `codex/bandeja-edicion-tareas-v2`:
+
+- Nueva ruta autenticada `POST /recordatorios/<id>/editar`.
+- Tareas manuales editables desde Bandeja: titulo, fecha limite, asignado y cliente opcional.
+- Tareas manuales pueden quedar como `Sin cliente` guardando `customer_email=""`.
+- Tareas automaticas de onboarding solo permiten reasignar responsable; conservan texto `Bienvenida pendiente`, fecha, cliente y `source="onboarding"`.
+- Tareas completadas no se editan y redirigen con flash operativo.
+- La UI de Bandeja agrega `Editar` plegado por tarea activa, manteniendo `Completar`.
+
+Archivos tocados:
+
+- `app.py`
+- `templates/bandeja.html`
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes.AppRoutesTest.test_bandeja_renderiza_edicion_plegada_para_tareas_activas tests.test_app_routes.AppRoutesTest.test_editar_tarea_manual_cambia_titulo_fecha_asignado_y_cliente tests.test_app_routes.AppRoutesTest.test_editar_tarea_manual_permite_quitar_cliente tests.test_app_routes.AppRoutesTest.test_editar_tarea_manual_rechaza_asignado_invalido_sin_persistir tests.test_app_routes.AppRoutesTest.test_editar_tarea_manual_rechaza_cliente_invalido_sin_persistir tests.test_app_routes.AppRoutesTest.test_editar_tarea_onboarding_solo_reasigna_responsable tests.test_app_routes.AppRoutesTest.test_editar_tarea_completada_no_persiste_cambios -v
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests focales OK.
+- `tests.test_app_routes`: 51 tests OK.
+- Suite completa: 90 tests OK.
+- `git diff --check` con codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local autenticado por test client:
+  - `/bandeja?date=2026-06-04` -> 200 y contiene `Editar`.
+  - Crear tarea manual -> 302.
+  - Editar tarea manual -> 302 a referrer, persiste titulo, fecha, asignado y `customer_email=""`.
+  - Reasignar onboarding -> 302.
+  - Completar onboarding -> 302 y deja `CustomerMeta.onboarding_hecho=True`.
+- Servidor local levantado en `http://127.0.0.1:5024` con `/healthz` 200.
+- Verificacion Browser in-app no ejecutada: el conector no expuso herramienta Node REPL usable en esta sesion.
+
+PR/deploy:
+
+- Pendiente en esta foto.

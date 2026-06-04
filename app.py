@@ -346,6 +346,10 @@ def _ensure_onboarding_tasks(clientes):
         db.session.commit()
 
 
+def _bandeja_redirect_target():
+    return request.referrer or url_for("bandeja")
+
+
 def _churn_key(email, fecha):
     return (email or "").lower(), (fecha or "")[:10]
 
@@ -1401,6 +1405,50 @@ def complete_recordatorio(reminder_id):
         db.session.commit()
         flash("Tarea completada", "ok")
     return redirect(request.referrer or url_for("bandeja"))
+
+
+@app.route("/recordatorios/<int:reminder_id>/editar", methods=["POST"])
+@login_required
+def edit_recordatorio(reminder_id):
+    reminder = db.session.get(CustomerReminder, reminder_id)
+    if not reminder:
+        abort(404)
+    redirect_target = _bandeja_redirect_target()
+    if reminder.completed_at:
+        flash("La tarea completada no se puede editar", "error")
+        return redirect(redirect_target)
+
+    assignee = (request.form.get("assignee") or "").strip()
+    if assignee and assignee not in TASK_ASSIGNEE_VALUES:
+        flash("El asignado no es valido", "error")
+        return redirect(redirect_target)
+
+    if reminder.source == ONBOARDING_TASK_SOURCE:
+        reminder.assignee = assignee
+        db.session.commit()
+        flash("Responsable actualizado", "ok")
+        return redirect(redirect_target)
+
+    snap = ultimo_snapshot()
+    valid_customers = {c.get("email_key") for c in snap.get("clientes", [])} if snap else set()
+    customer_email = (request.form.get("customer_email") or "").strip().lower()
+    if customer_email and customer_email not in valid_customers:
+        flash("El cliente elegido no es valido", "error")
+        return redirect(redirect_target)
+
+    texto = (request.form.get("texto") or "").strip()
+    due = _parse_iso_date(request.form.get("due_date"))
+    if not texto or not due:
+        flash("Completa titulo y fecha de la tarea", "error")
+        return redirect(redirect_target)
+
+    reminder.texto = texto
+    reminder.due_date = due.isoformat()
+    reminder.assignee = assignee
+    reminder.customer_email = customer_email
+    db.session.commit()
+    flash("Tarea actualizada", "ok")
+    return redirect(redirect_target)
 
 
 @app.route("/cliente/<path:email>/onboarding", methods=["POST"])

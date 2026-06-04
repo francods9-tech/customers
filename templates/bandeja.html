@@ -46,6 +46,51 @@
               <span class="tag {{ 'tag-warn' if r.days is not none and r.days <= 0 }}">{{ r.due_label }}</span>
               <span class="tag">{{ r.assignee_label }}</span>
               {% if not r.completed_at %}
+                <details class="task-edit-details">
+                  <summary>Editar</summary>
+                  <form method="post" action="{{ url_for('edit_recordatorio', reminder_id=r.id) }}" class="task-edit-form">
+                    {% if r.source == 'onboarding' %}
+                      <p class="muted">Bienvenida automática</p>
+                      <label>
+                        Asignado
+                        <select name="assignee">
+                          <option value="" {% if not r.assignee %}selected{% endif %}>Sin asignar</option>
+                          {% for value, label in task_assignees %}
+                            <option value="{{ value }}" {% if r.assignee == value %}selected{% endif %}>{{ label }}</option>
+                          {% endfor %}
+                        </select>
+                      </label>
+                    {% else %}
+                      <label>
+                        Titulo
+                        <input type="text" name="texto" value="{{ r.texto }}" required>
+                      </label>
+                      <label>
+                        Fecha limite
+                        <input type="date" name="due_date" value="{{ r.due_date }}" required>
+                      </label>
+                      <label>
+                        Asignado
+                        <select name="assignee">
+                          <option value="" {% if not r.assignee %}selected{% endif %}>Sin asignar</option>
+                          {% for value, label in task_assignees %}
+                            <option value="{{ value }}" {% if r.assignee == value %}selected{% endif %}>{{ label }}</option>
+                          {% endfor %}
+                        </select>
+                      </label>
+                      <label>
+                        Cliente
+                        <select name="customer_email">
+                          <option value="" {% if not r.customer_email %}selected{% endif %}>Sin cliente</option>
+                          {% for email, name in task_customer_options %}
+                            <option value="{{ email }}" {% if r.customer_email == email %}selected{% endif %}>{{ name }} · {{ email }}</option>
+                          {% endfor %}
+                        </select>
+                      </label>
+                    {% endif %}
+                    <button class="btn-sync" type="submit">Guardar</button>
+                  </form>
+                </details>
                 <form method="post" action="{{ url_for('complete_recordatorio', reminder_id=r.id) }}" class="inline">
                   <button class="btn-sync" type="submit">Completar</button>
                 </form>
