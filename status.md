@@ -792,3 +792,36 @@ Resultado:
 - 82 tests OK.
 - `git diff --check` sin errores; solo avisos esperados de normalizacion CRLF en Windows.
 - HTTP local por test client: `/bandeja` 200 y `/bandeja?assignee=Nicky&date=2026-06-04` 200.
+
+## Iteracion 2026-06-04 - Pulido premium de Bandeja
+
+Implementado en rama `codex/bandeja-premium-polish`:
+
+- `Nueva tarea` queda como accion compacta colapsada; el form mantiene titulo, fecha, asignado y cliente opcional, y sigue posteando a `/tareas`.
+- Tareas queda como primer bloque y se ordena visualmente en `Vencidas`, `Hoy` y `Proximas`; `Vencidas` tiene mayor peso de alerta.
+- Las filas de tareas son mas compactas: cliente/titulo a la izquierda y estado/fecha/asignado/accion a la derecha.
+- El bloque separado `Onboarding pendiente` ya no renderiza en Bandeja; las bienvenidas viven solo como tareas `Bienvenida pendiente` y se completan desde la tarea.
+- Churn, Impagos y Trials quedan debajo como paneles secundarios; los estados vacios usan copy corto `Sin pendientes.`.
+- Se agrego cobertura de ruta para el contrato de Bandeja premium y se ajusto el contrato visual existente de Impagos.
+
+Fuera de alcance por ahora:
+
+- Edicion/reasignacion inline de tareas.
+- Crear tareas desde tickets.
+- Cambios de modelo de datos.
+
+Verificacion:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes.AppRoutesTest.test_bandeja_premium_colapsa_nueva_tarea_y_no_duplica_onboarding -v
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Test focal OK; rutas OK; suite completa 83 tests OK.
+- `git diff --check` sin errores; solo avisos esperados de normalizacion CRLF en Windows.
+- HTTP local autenticado en `http://127.0.0.1:5021/bandeja?date=2026-06-04` -> 200; contiene `Nueva tarea` y `Hoy`, no contiene `Onboarding pendiente`.
+- Capturas Chrome headless desktop/mobile generadas en `design-screenshots/bandeja-premium/`; desktop sin solapes evidentes, mobile mejorado en cuerpo de Bandeja. La navegacion movil del shell conserva su scroll horizontal existente.

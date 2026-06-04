@@ -17,7 +17,7 @@
   </div>
 
   {% macro empty_state() %}
-    <div class="inbox-empty muted">Nada pendiente aca.</div>
+    <div class="inbox-empty muted">Sin pendientes.</div>
   {% endmacro %}
 
   {% macro customer_identity(c) %}
@@ -35,17 +35,16 @@
             <div class="inbox-primary">
               {% if r.is_generic %}
                 <span class="client-name">Sin cliente</span>
-                <span class="sub">General</span>
+                <span class="{{ 'tag tag-warn' if r.source == 'onboarding' else 'sub' }}">{{ r.texto }}</span>
               {% else %}
                 <a class="client-name" href="{{ url_for('cliente', email=r.customer_email) }}">{{ r.customer_name }}</a>
-                <span class="sub">{{ r.customer_email }}</span>
+                <span class="{{ 'tag tag-warn' if r.source == 'onboarding' else 'sub' }}">{{ r.texto }}</span>
               {% endif %}
             </div>
             <div class="inbox-meta">
               <span class="tag {{ r.status_class }}">{{ r.status_label }}</span>
-              <span class="tag">{{ r.assignee_label }}</span>
               <span class="tag {{ 'tag-warn' if r.days is not none and r.days <= 0 }}">{{ r.due_label }}</span>
-              <span class="{{ 'tag tag-warn' if r.source == 'onboarding' else 'sub' }}">{{ r.texto }}</span>
+              <span class="tag">{{ r.assignee_label }}</span>
               {% if not r.completed_at %}
                 <form method="post" action="{{ url_for('complete_recordatorio', reminder_id=r.id) }}" class="inline">
                   <button class="btn-sync" type="submit">Completar</button>
@@ -60,10 +59,10 @@
     {% endif %}
   {% endmacro %}
 
-  <section class="panel task-command-panel">
-    <div class="panel-head">
-      <h2>Nueva tarea</h2>
-    </div>
+  <details class="task-command-panel compact-task-command">
+    <summary>
+      <span class="btn-primary">Nueva tarea</span>
+    </summary>
     <form method="post" action="{{ url_for('add_tarea') }}" class="task-create-form">
       <div>
         <label>Titulo</label>
@@ -93,7 +92,7 @@
       </div>
       <button type="submit">Crear tarea</button>
     </form>
-  </section>
+  </details>
 
   <section class="panel task-filter-panel">
     <form method="get" action="{{ url_for('bandeja') }}" class="filters-form task-filters">
@@ -129,20 +128,20 @@
         <h2>Tareas ({{ task_total }})</h2>
       </div>
       <div class="task-group-stack">
-        <div>
+        <div class="task-group task-group-overdue">
           <h3>Vencidas ({{ task_groups.overdue|length }})</h3>
           {{ task_list(task_groups.overdue) }}
         </div>
-        <div>
-          <h3>Para la fecha ({{ task_groups.today|length }})</h3>
+        <div class="task-group task-group-today">
+          <h3>Hoy ({{ task_groups.today|length }})</h3>
           {{ task_list(task_groups.today) }}
         </div>
-        <div>
+        <div class="task-group task-group-upcoming">
           <h3>Proximas ({{ task_groups.upcoming|length }})</h3>
           {{ task_list(task_groups.upcoming) }}
         </div>
         {% if task_groups.completed %}
-          <div>
+          <div class="task-group task-group-completed">
             <h3>Completadas ({{ task_groups.completed|length }})</h3>
             {{ task_list(task_groups.completed) }}
           </div>
@@ -150,7 +149,7 @@
       </div>
     </section>
 
-    <section class="inbox-panel panel tone-warning">
+    <section class="inbox-panel panel secondary-panel tone-warning">
       <div class="panel-head">
         <h2>Riesgo de churn ({{ pendientes.churn|length }})</h2>
       </div>
@@ -176,7 +175,7 @@
       {% endif %}
     </section>
 
-    <section class="inbox-panel panel tone-danger">
+    <section class="inbox-panel panel secondary-panel tone-danger">
       <div class="panel-head">
         <h2>Impagos ({{ pendientes.impago|length }})</h2>
         <a class="chip" href="{{ url_for('clientes_list', estado='impago') }}">Ver clientes</a>
@@ -209,6 +208,7 @@
       {% endif %}
     </section>
 
+    {#
     <section class="inbox-panel panel tone-neutral">
       <div class="panel-head">
         <h2>Onboarding pendiente ({{ pendientes.onboarding|length }})</h2>
@@ -235,7 +235,8 @@
       {% endif %}
     </section>
 
-    <section class="inbox-panel panel tone-warning">
+    #}
+    <section class="inbox-panel panel secondary-panel tone-warning">
       <div class="panel-head">
         <h2>En trial ({{ pendientes.trial|length }})</h2>
         <a class="chip" href="{{ url_for('clientes_list', estado='trial') }}">Ver clientes</a>
