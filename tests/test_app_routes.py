@@ -200,6 +200,29 @@ class AppRoutesTest(unittest.TestCase):
         self.assertNotIn("Stripe", body)
         self.assertNotIn("Mercury", body)
 
+    def test_dashboard_usa_layout_core_redisenado(self):
+        self.login()
+        self.add_snapshot([
+            self.customer_row(nombre="Cliente Activo", email="activo@example.test"),
+            {**self.customer_row(nombre="Cliente Trial", email="trial@example.test"), "estado": "trial"},
+            {**self.customer_row(nombre="Cliente Impago", email="impago@example.test"), "estado": "impago"},
+        ])
+
+        response = self.client.get("/?preset=todo")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn('class="dashboard-page page"', body)
+        self.assertIn('class="page-head dashboard-head"', body)
+        self.assertIn('class="dashboard-kpi-strip"', body)
+        self.assertIn('class="dashboard-main-grid"', body)
+        self.assertIn('class="dashboard-action-panel panel"', body)
+        self.assertIn("Requiere accion", body)
+        self.assertIn('href="/bandeja"', body)
+        self.assertIn('href="/clientes?estado=impago"', body)
+        self.assertIn('href="/clientes?estado=trial"', body)
+        self.assertIn('class="base-state-grid"', body)
+
     def test_bandeja_muestra_cancelaciones_programadas_y_riesgos_manuales_de_churn(self):
         import datetime as dt
 
@@ -234,6 +257,37 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("Riesgo Manual", body)
         self.assertIn("Pidio cancelar si no mejora el soporte", body)
 
+    def test_bandeja_usa_layout_operativo_redisenado(self):
+        from db import db
+        from db.models import CustomerReminder
+
+        self.login()
+        self.add_snapshot([
+            {**self.customer_row(nombre="Cliente Impago", email="impago@example.test"), "estado": "impago"},
+            {**self.customer_row(nombre="Cliente Trial", email="trial@example.test"), "estado": "trial"},
+        ])
+        with self.app.app_context():
+            db.session.add(CustomerReminder(
+                customer_email="trial@example.test",
+                due_date="2026-06-15",
+                texto="Revisar trial antes del cierre",
+            ))
+            db.session.commit()
+
+        response = self.client.get("/bandeja")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn('class="inbox-page page"', body)
+        self.assertIn('class="page-head inbox-head"', body)
+        self.assertIn('class="inbox-buckets"', body)
+        self.assertIn('class="inbox-panel panel tone-danger"', body)
+        self.assertIn('class="inbox-row"', body)
+        self.assertIn("Bandeja operativa", body)
+        self.assertIn("Cliente Impago", body)
+        self.assertIn("Cliente Trial", body)
+        self.assertIn("Completar", body)
+
     def test_ficha_crea_recordatorio_con_fecha_y_texto(self):
         from db.models import CustomerReminder
 
@@ -257,6 +311,25 @@ class AppRoutesTest(unittest.TestCase):
             self.assertEqual(reminder.due_date, "2026-06-15")
             self.assertEqual(reminder.texto, "Escribirle para revisar avance")
             self.assertIsNone(reminder.completed_at)
+
+    def test_ficha_usa_layout_core_en_columnas(self):
+        self.login()
+        self.add_snapshot([self.customer_row()])
+
+        response = self.client.get("/cliente/cliente-z@example.test")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn('class="customer-page page"', body)
+        self.assertIn('class="page-head customer-head"', body)
+        self.assertIn('class="customer-health-strip"', body)
+        self.assertIn('class="customer-command-grid"', body)
+        self.assertIn('class="customer-main-column"', body)
+        self.assertIn('class="customer-side-column"', body)
+        self.assertIn('action="/cliente/cliente-z@example.test/suscripcion"', body)
+        self.assertIn('action="/cliente/cliente-z@example.test/contacto"', body)
+        self.assertIn('action="/cliente/cliente-z@example.test/interaccion"', body)
+        self.assertIn('action="/cliente/cliente-z@example.test/recordatorios"', body)
 
     def test_bandeja_muestra_recordatorios_activos_y_permite_completarlos(self):
         from db import db

@@ -183,8 +183,24 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - Las solicitudes abiertas y resueltas tienen tablas desktop y cards mobile; las acciones rapidas siguen disponibles en la lista.
   - La ficha `/solicitudes/<id>` se reorganiza como conversacion interna + sidebar de propiedades/gestion.
   - No se incorporo runtime React/Tailwind ni dependencias frontend del prototipo; se porto como Jinja/CSS.
+- Redisenio UI/UX V3 core:
+  - `/` adopta el sistema visual nuevo: page head, KPIs densos, grafico principal, panel `Requiere accion`, grafico de canales y grilla de estado actual.
+  - `/bandeja` adopta buckets operativos densos para churn, impagos, onboarding, trials y recordatorios, preservando acciones POST existentes.
+  - `/cliente/<email>` adopta ficha en columnas: cabecera, strip de atencion, columna principal de suscripcion/contacto/salud/historial y columna lateral de ajustes/contactos/recordatorios.
+  - Se mantiene Flask/Jinja/CSS sin React/Tailwind ni cambios de schema/rutas.
 
 ## Verificacion
+
+Ultima verificacion luego de redisenar Inicio, Bandeja y Ficha de cliente:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes.AppRoutesTest.test_dashboard_usa_layout_core_redisenado tests.test_app_routes.AppRoutesTest.test_bandeja_usa_layout_operativo_redisenado tests.test_app_routes.AppRoutesTest.test_ficha_usa_layout_core_en_columnas -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+git diff --check
+```
+
+Resultado: tests focales OK; 72 tests OK; import Flask OK con 40 rutas; `git diff --check` sin errores reales, solo avisos CRLF de Windows. Verificacion visual local con Playwright en 1440px y 390px para `/`, `/bandeja` y `/cliente/<email>`: sin overflow horizontal; las tres pantallas renderizan con las clases core nuevas.
 
 Ultima verificacion luego de redisenar Solicitudes y ficha de Ticket:
 

@@ -2,146 +2,171 @@
 {% block title %}Bandeja{% endblock %}
 {% block content %}
 
-<h1>Bandeja de atencion</h1>
-<p class="muted">Lo que necesita accion hoy.</p>
-
-{% macro lista_clientes(items) %}
-  {% if items %}
-  <ul class="bandeja-list">
-    {% for c in items %}
-    <li>
-      <a href="{{ url_for('cliente', email=c.email_key) }}">{{ c.nombre }}</a>
-      <span class="sub">{{ c.plan }} · {{ c.origen_label }}</span>
-    </li>
-    {% endfor %}
-  </ul>
-  {% else %}<p class="muted">Nada pendiente aca.</p>{% endif %}
-{% endmacro %}
-
-<section class="panel">
-  <div class="bandeja-head">
-    <h2>Riesgo de churn ({{ pendientes.churn|length }})</h2>
+<div class="inbox-page page">
+  <div class="page-head inbox-head">
+    <div>
+      <div class="crumb">Operacion / Bandeja</div>
+      <h1>Bandeja operativa</h1>
+      <p class="muted">Todo lo que requiere accion, agrupado por prioridad.</p>
+    </div>
+    <div class="inbox-summary">
+      <span class="tag tag-warn">{{ pendientes.impago|length }} impagos</span>
+      <span class="tag">{{ pendientes.trial|length }} trials</span>
+      <span class="tag">{{ recordatorios|length }} recordatorios</span>
+    </div>
   </div>
-  {% if pendientes.churn %}
-  <ul class="bandeja-list bandeja-list-detail">
-    {% for c in pendientes.churn %}
-    <li>
-      <div>
-        <a href="{{ url_for('cliente', email=c.email_key) }}">{{ c.nombre }}</a>
-        <span class="sub">{{ c.email }}</span>
-      </div>
-      <div class="attention-meta">
-        <span class="tag tag-warn">{{ c.churn_risk.label }}</span>
-        {% if c.churn_risk.dias is not none %}
-          <span class="sub">{% if c.churn_risk.dias < 0 %}vencio hace {{ -c.churn_risk.dias }} dias{% else %}faltan {{ c.churn_risk.dias }} dias{% endif %}</span>
-        {% endif %}
-        {% if c.churn_risk.manual_texto %}
-          <span class="sub">{{ c.churn_risk.manual_texto }}</span>
-        {% endif %}
-      </div>
-    </li>
-    {% endfor %}
-  </ul>
-  {% else %}<p class="muted">Nada pendiente aca.</p>{% endif %}
-</section>
 
-<section class="panel">
-  <div class="bandeja-head">
-    <h2>Impagos ({{ pendientes.impago|length }})</h2>
-    <a class="chip" href="{{ url_for('clientes_list', estado='impago') }}">Ver clientes</a>
-  </div>
-  {% if pendientes.impago %}
-  <ul class="bandeja-list bandeja-list-detail">
-    {% for c in pendientes.impago %}
-    <li>
-      <div>
-        <a href="{{ url_for('cliente', email=c.email_key) }}">{{ c.nombre }}</a>
-        <span class="sub">{{ c.email }}</span>
+  {% macro empty_state() %}
+    <div class="inbox-empty muted">Nada pendiente aca.</div>
+  {% endmacro %}
+
+  {% macro customer_identity(c) %}
+    <div class="inbox-primary">
+      <a class="client-name" href="{{ url_for('cliente', email=c.email_key) }}">{{ c.nombre }}</a>
+      <span class="sub">{{ c.email or c.plan ~ " · " ~ c.origen_label }}</span>
+    </div>
+  {% endmacro %}
+
+  <div class="inbox-buckets">
+    <section class="inbox-panel panel tone-warning">
+      <div class="panel-head">
+        <h2>Riesgo de churn ({{ pendientes.churn|length }})</h2>
       </div>
-      <div class="attention-meta">
-        <span class="tag tag-warn">{{ c.impago.label }}</span>
-        <span class="sub">{{ c.impago.estado_label }} · {{ c.impago.facturas_count }} factura{{ "" if c.impago.facturas_count == 1 else "s" }}</span>
-        {% if c.impago.acceso_free %}<span class="sub warn">acceso free por impago</span>{% endif %}
-        {% if c.impago.monto is not none %}<span class="sub">${{ "%.2f"|format(c.impago.monto) }} pendiente</span>{% endif %}
-        {% if c.impago.factura_url %}
-          {% for factura in c.impago.facturas %}
-            <a class="chip" href="{{ factura.url }}" target="_blank" rel="noopener">Factura {{ loop.index }}</a>
-          {% else %}
-            <a class="chip" href="{{ c.impago.factura_url }}" target="_blank" rel="noopener">Factura</a>
+      {% if pendientes.churn %}
+        <div class="inbox-list">
+          {% for c in pendientes.churn %}
+            <div class="inbox-row">
+              {{ customer_identity(c) }}
+              <div class="inbox-meta">
+                <span class="tag tag-warn">{{ c.churn_risk.label }}</span>
+                {% if c.churn_risk.dias is not none %}
+                  <span class="sub">{% if c.churn_risk.dias < 0 %}vencio hace {{ -c.churn_risk.dias }} dias{% else %}faltan {{ c.churn_risk.dias }} dias{% endif %}</span>
+                {% endif %}
+                {% if c.churn_risk.manual_texto %}
+                  <span class="sub">{{ c.churn_risk.manual_texto }}</span>
+                {% endif %}
+              </div>
+            </div>
           {% endfor %}
-        {% else %}
-          <span class="sub">sin link de factura</span>
+        </div>
+      {% else %}
+        {{ empty_state() }}
+      {% endif %}
+    </section>
+
+    <section class="inbox-panel panel tone-danger">
+      <div class="panel-head">
+        <h2>Impagos ({{ pendientes.impago|length }})</h2>
+        <a class="chip" href="{{ url_for('clientes_list', estado='impago') }}">Ver clientes</a>
+      </div>
+      {% if pendientes.impago %}
+        <div class="inbox-list">
+          {% for c in pendientes.impago %}
+            <div class="inbox-row">
+              {{ customer_identity(c) }}
+              <div class="inbox-meta">
+                <span class="tag tag-warn">{{ c.impago.label }}</span>
+                <span class="sub">{{ c.impago.estado_label }} · {{ c.impago.facturas_count }} factura{{ "" if c.impago.facturas_count == 1 else "s" }}</span>
+                {% if c.impago.acceso_free %}<span class="sub warn">acceso free por impago</span>{% endif %}
+                {% if c.impago.monto is not none %}<span class="sub">${{ "%.2f"|format(c.impago.monto) }} pendiente</span>{% endif %}
+                {% if c.impago.factura_url %}
+                  {% for factura in c.impago.facturas %}
+                    <a class="chip" href="{{ factura.url }}" target="_blank" rel="noopener">Factura {{ loop.index }}</a>
+                  {% else %}
+                    <a class="chip" href="{{ c.impago.factura_url }}" target="_blank" rel="noopener">Factura</a>
+                  {% endfor %}
+                {% else %}
+                  <span class="sub">sin link de factura</span>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        {{ empty_state() }}
+      {% endif %}
+    </section>
+
+    <section class="inbox-panel panel tone-neutral">
+      <div class="panel-head">
+        <h2>Onboarding pendiente ({{ pendientes.onboarding|length }})</h2>
+        {% if pendientes.onboarding %}
+          <form method="post" action="{{ url_for('marcar_bienvenidos') }}" class="inline">
+            <button class="btn-sync" type="submit">Marcar a todos como bienvenidos</button>
+          </form>
         {% endif %}
       </div>
-    </li>
-    {% endfor %}
-  </ul>
-  {% else %}<p class="muted">Nada pendiente aca.</p>{% endif %}
-</section>
+      {% if pendientes.onboarding %}
+        <div class="inbox-list">
+          {% for c in pendientes.onboarding %}
+            <div class="inbox-row">
+              {{ customer_identity(c) }}
+              <div class="inbox-meta">
+                <span class="tag">Bienvenida pendiente</span>
+                <span class="sub">{{ c.plan }} · {{ c.origen_label }}</span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        {{ empty_state() }}
+      {% endif %}
+    </section>
 
-<section class="panel">
-  <div class="bandeja-head">
-    <h2>Onboarding pendiente ({{ pendientes.onboarding|length }})</h2>
-    {% if pendientes.onboarding %}
-    <form method="post" action="{{ url_for('marcar_bienvenidos') }}" class="inline">
-      <button class="btn-sync" type="submit">Marcar a todos como bienvenidos</button>
-    </form>
-    {% endif %}
-  </div>
-  {{ lista_clientes(pendientes.onboarding) }}
-</section>
+    <section class="inbox-panel panel tone-warning">
+      <div class="panel-head">
+        <h2>En trial ({{ pendientes.trial|length }})</h2>
+        <a class="chip" href="{{ url_for('clientes_list', estado='trial') }}">Ver clientes</a>
+      </div>
+      {% if pendientes.trial %}
+        <div class="inbox-list">
+          {% for c in pendientes.trial %}
+            <div class="inbox-row">
+              {{ customer_identity(c) }}
+              <div class="inbox-meta">
+                {% if c.trial %}
+                  <span class="tag {{ 'tag-warn' if c.trial.por_vencer }}">{{ c.trial.fecha or "sin fecha" }}</span>
+                  {% if c.trial.dias is not none %}
+                    <span class="sub">{% if c.trial.vencido %}vencido hace {{ -c.trial.dias }} dias{% else %}faltan {{ c.trial.dias }} dias{% endif %}</span>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        {{ empty_state() }}
+      {% endif %}
+    </section>
 
-<section class="panel">
-  <div class="bandeja-head">
-    <h2>En trial ({{ pendientes.trial|length }})</h2>
-    <a class="chip" href="{{ url_for('clientes_list', estado='trial') }}">Ver clientes</a>
+    <section class="inbox-panel panel tone-neutral">
+      <div class="panel-head">
+        <h2>Recordatorios ({{ recordatorios|length }})</h2>
+      </div>
+      {% if recordatorios %}
+        <div class="inbox-list">
+          {% for r in recordatorios %}
+            <div class="inbox-row">
+              <div class="inbox-primary">
+                <a class="client-name" href="{{ url_for('cliente', email=r.customer_email) }}">{{ r.customer_name }}</a>
+                <span class="sub">{{ r.customer_email }}</span>
+              </div>
+              <div class="inbox-meta">
+                <span class="tag {{ 'tag-warn' if r.days is not none and r.days <= 0 }}">{{ r.due_label }}</span>
+                <span class="sub">{{ r.timing }}</span>
+                <span class="sub">{{ r.texto }}</span>
+                <form method="post" action="{{ url_for('complete_recordatorio', reminder_id=r.id) }}" class="inline">
+                  <button class="btn-sync" type="submit">Completar</button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        {{ empty_state() }}
+      {% endif %}
+    </section>
   </div>
-  {% if pendientes.trial %}
-  <ul class="bandeja-list bandeja-list-detail">
-    {% for c in pendientes.trial %}
-    <li>
-      <div>
-        <a href="{{ url_for('cliente', email=c.email_key) }}">{{ c.nombre }}</a>
-        <span class="sub">{{ c.email }}</span>
-      </div>
-      <div class="attention-meta">
-        {% if c.trial %}
-          <span class="tag {{ 'tag-warn' if c.trial.por_vencer }}">{{ c.trial.fecha or "sin fecha" }}</span>
-          {% if c.trial.dias is not none %}
-          <span class="sub">{% if c.trial.vencido %}vencido hace {{ -c.trial.dias }} dias{% else %}faltan {{ c.trial.dias }} dias{% endif %}</span>
-          {% endif %}
-        {% endif %}
-      </div>
-    </li>
-    {% endfor %}
-  </ul>
-  {% else %}<p class="muted">Nada pendiente aca.</p>{% endif %}
-</section>
-
-<section class="panel">
-  <div class="bandeja-head">
-    <h2>Recordatorios ({{ recordatorios|length }})</h2>
-  </div>
-  {% if recordatorios %}
-  <ul class="bandeja-list bandeja-list-detail">
-    {% for r in recordatorios %}
-    <li>
-      <div>
-        <a href="{{ url_for('cliente', email=r.customer_email) }}">{{ r.customer_name }}</a>
-        <span class="sub">{{ r.customer_email }}</span>
-      </div>
-      <div class="attention-meta">
-        <span class="tag {{ 'tag-warn' if r.days is not none and r.days <= 0 }}">{{ r.due_label }}</span>
-        <span class="sub">{{ r.timing }}</span>
-        <span class="sub">{{ r.texto }}</span>
-        <form method="post" action="{{ url_for('complete_recordatorio', reminder_id=r.id) }}" class="inline">
-          <button class="btn-sync" type="submit">Completar</button>
-        </form>
-      </div>
-    </li>
-    {% endfor %}
-  </ul>
-  {% else %}<p class="muted">Nada pendiente aca.</p>{% endif %}
-</section>
+</div>
 
 {% endblock %}
