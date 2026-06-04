@@ -53,6 +53,8 @@ COLAB_CREATOR_TYPES = [
 ]
 COLAB_CREATOR_TYPE_LABELS = dict(COLAB_CREATOR_TYPES)
 MADRID_TZ = ZoneInfo("Europe/Madrid")
+TASK_ASSIGNEE_OPTIONS = complaint_rules.COMMENT_AUTHOR_OPTIONS
+TASK_ASSIGNEE_VALUES = {key for key, _ in TASK_ASSIGNEE_OPTIONS}
 
 
 def _ensure_local_schema():
@@ -89,6 +91,12 @@ def _ensure_local_schema():
         columns = {c["name"] for c in inspect(db.engine).get_columns("interacciones")}
         if name not in columns:
             db.session.execute(text(sql))
+            db.session.commit()
+
+    if "customer_reminders" in inspector.get_table_names():
+        reminder_columns = {c["name"] for c in inspect(db.engine).get_columns("customer_reminders")}
+        if "assignee" not in reminder_columns:
+            db.session.execute(text("ALTER TABLE customer_reminders ADD COLUMN assignee VARCHAR(120) NOT NULL DEFAULT ''"))
             db.session.commit()
 
 
@@ -208,6 +216,24 @@ def _reminder_view(row, nombre_por_email=None):
         timing = "hoy"
     else:
         timing = f"faltan {days} dias"
+    is_completed = row.completed_at is not None
+    if is_completed:
+        status = "completed"
+        status_label = "Completada"
+        status_class = ""
+    elif days is not None and days < 0:
+        status = "overdue"
+        status_label = "Vencida"
+        status_class = "tag-warn"
+    elif days == 0:
+        status = "today"
+        status_label = "Hoy"
+        status_class = "tag-warn"
+    else:
+        status = "pending"
+        status_label = "Pendiente"
+        status_class = ""
+    assignee = row.assignee or ""
     return {
         "id": row.id,
         "customer_email": row.customer_email,
@@ -217,6 +243,11 @@ def _reminder_view(row, nombre_por_email=None):
         "due_label": due.strftime("%d/%m/%Y") if due else row.due_date,
         "days": days,
         "timing": timing,
+        "assignee": assignee,
+        "assignee_label": assignee or "Sin asignar",
+        "status": status,
+        "status_label": status_label,
+        "status_class": status_class,
         "completed_at": row.completed_at,
     }
 
@@ -227,6 +258,22 @@ def _active_reminders(nombre_por_email=None):
             .order_by(CustomerReminder.due_date.asc(), CustomerReminder.created_at.asc())
             .all())
     return [_reminder_view(row, nombre_por_email) for row in rows]
+
+
+def _task_groups(rows, selected_date, nombre_por_email=None):
+    groups = {"overdue": [], "today": [], "upcoming": [], "completed": []}
+    for row in rows:
+        item = _reminder_view(row, nombre_por_email)
+        due = _parse_iso_date(row.due_date)
+        if row.completed_at:
+            groups["completed"].append(item)
+        elif due and due < selected_date:
+            groups["overdue"].append(item)
+        elif due == selected_date:
+            groups["today"].append(item)
+        else:
+            groups["upcoming"].append(item)
+    return groups
 
 
 def _churn_key(email, fecha):
@@ -1037,7 +1084,42 @@ def bandeja():
     recordatorios = _active_reminders(nombre_por_email)
     return render_template("bandeja.html", pendientes=pendientes,
                            nombres=nombre_por_email,
-                           recordatorios=recordatorios)
+                           recordatorios=recordatorios,
+                           task_assignees=TASK_ASSIGNEE_OPTIONS)
+
+
+@app.route("/tareas")
+@login_required
+def tareas_list():
+    snap, _ = _clientes_enriquecidos()
+    clientes = snap["clientes"] if snap else []
+    nombre_por_email = {c["email_key"]: c["nombre"] for c in clientes}
+    selected_date = _parse_iso_date(request.args.get("date")) or dt.datetime.now(MADRID_TZ).date()
+    assignee = (request.args.get("assignee") or "").strip()
+    status = request.args.get("status") or "activas"
+
+    query = CustomerReminder.query
+    if assignee in TASK_ASSIGNEE_VALUES:
+        query = query.filter(CustomerReminder.assignee == assignee)
+    elif assignee == "sin_asignar":
+        query = query.filter(CustomerReminder.assignee == "")
+
+    if status == "completadas":
+        query = query.filter(CustomerReminder.completed_at.is_not(None))
+    elif status == "todas":
+        pass
+    else:
+        query = query.filter(CustomerReminder.completed_at.is_(None))
+
+    rows = query.order_by(CustomerReminder.due_date.asc(), CustomerReminder.created_at.asc()).all()
+    groups = _task_groups(rows, selected_date, nombre_por_email)
+    return render_template("tareas.html",
+                           groups=groups,
+                           selected_date=selected_date.isoformat(),
+                           selected_assignee=assignee,
+                           selected_status=status,
+                           task_assignees=TASK_ASSIGNEE_OPTIONS,
+                           total_tasks=sum(len(v) for v in groups.values()))
 
 
 @app.route("/clientes/marcar-bienvenidos", methods=["POST"])
@@ -1122,6 +1204,7 @@ def cliente(email):
                            equipos=complaint_rules.TEAM_OPTIONS,
                            estados_solicitud=complaint_rules.REQUEST_STATUS_OPTIONS,
                            importancias=complaint_rules.IMPORTANCE_OPTIONS,
+                           task_assignees=TASK_ASSIGNEE_OPTIONS,
                            category_map=_complaint_category_map(),
                            category_label=complaint_rules.category_label,
                            recordatorios_activos=[_reminder_view(r) for r in recordatorios_activos],
@@ -1199,16 +1282,21 @@ def add_recordatorio(email):
     email_key = email.lower()
     texto = (request.form.get("texto") or "").strip()
     due = _parse_iso_date(request.form.get("due_date"))
+    assignee = (request.form.get("assignee") or "").strip()
     if not texto or not due:
-        flash("Completa fecha y detalle del recordatorio", "error")
+        flash("Completa fecha y detalle de la tarea", "error")
+        return redirect(url_for("cliente", email=email_key))
+    if assignee and assignee not in TASK_ASSIGNEE_VALUES:
+        flash("El asignado no es valido", "error")
         return redirect(url_for("cliente", email=email_key))
     db.session.add(CustomerReminder(
         customer_email=email_key,
         texto=texto,
         due_date=due.isoformat(),
+        assignee=assignee,
     ))
     db.session.commit()
-    flash("Recordatorio creado", "ok")
+    flash("Tarea creada", "ok")
     return redirect(url_for("cliente", email=email_key))
 
 
@@ -1221,7 +1309,7 @@ def complete_recordatorio(reminder_id):
     if not reminder.completed_at:
         reminder.completed_at = dt.datetime.now(dt.timezone.utc)
         db.session.commit()
-        flash("Recordatorio completado", "ok")
+        flash("Tarea completada", "ok")
     return redirect(request.referrer or url_for("bandeja"))
 
 

@@ -710,3 +710,32 @@ Railway:
 ## Pendiente Recomendado
 
 - Si el refresh crece mucho, mover `Actualizar datos` a job/background task para evitar requests largos.
+
+## Iteracion 2026-06-04 - Tareas asignables v1
+
+Implementado en rama `codex/tareas-asignables`:
+
+- Los recordatorios pasan a operar como tareas cliente-centricas con `assignee` opcional.
+- Asignados validos v1: Luis, Dalila, Nicky y Frank; las tareas antiguas quedan como `Sin asignar`.
+- Nueva vista `/tareas` con filtros por fecha, asignado y estado, agrupada en vencidas, para la fecha, proximas y completadas.
+- Bandeja y Ficha muestran “Tareas”, responsable, estado relativo y accion `Completar`.
+- Se mantienen las rutas compatibles `/cliente/<email>/recordatorios` y `/recordatorios/<id>/completar`.
+
+Fuera de alcance por ahora:
+
+- Tareas internas sin cliente.
+- Usuarios configurables.
+- Creacion automatica o desde boton dentro de tickets.
+
+Verificacion:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- 77 tests OK.
+- `git diff --check` sin errores; solo avisos esperados de normalizacion CRLF en Windows.
+- HTTP local con server en `http://127.0.0.1:5001`: `/tareas`, `/tareas?assignee=Luis&date=2026-06-04` y `/bandeja` responden 200.
