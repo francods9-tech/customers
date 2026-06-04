@@ -888,6 +888,12 @@ table.grid.clientes-grid {
   gap: 1rem;
   align-items: start;
 }
+.dashboard-chart-row {
+  grid-template-columns: minmax(0, 1.2fr) minmax(360px, .8fr);
+}
+.dashboard-ops-row {
+  grid-template-columns: minmax(320px, .85fr) minmax(0, 1fr);
+}
 .dashboard-secondary-grid {
   grid-template-columns: minmax(0, 1fr) minmax(360px, .8fr);
 }

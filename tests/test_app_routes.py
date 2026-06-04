@@ -221,7 +221,7 @@ class AppRoutesTest(unittest.TestCase):
             ticket_id = ticket.id
 
         pages = [
-            ("/", ['class="dashboard-page page polish-v5"', 'class="dashboard-main-grid v5-dashboard-grid"']),
+            ("/", ['class="dashboard-page page polish-v5"', 'class="dashboard-main-grid dashboard-chart-row v5-dashboard-grid"']),
             ("/clientes", ['class="clients-page page polish-v5"', 'class="client-toolbar v5-toolbar"']),
             ("/cliente/cliente-v5@example.test", ['class="customer-page page polish-v5"', 'class="customer-command-grid v5-two-column"']),
             ("/bandeja", ['class="inbox-page page polish-v5"', 'class="inbox-buckets v5-panel-stack"']),
@@ -386,7 +386,8 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn('class="dashboard-page page polish-v5"', body)
         self.assertIn('class="page-head dashboard-head"', body)
         self.assertIn('class="dashboard-kpi-strip dashboard-kpi-grid"', body)
-        self.assertIn('class="dashboard-main-grid v5-dashboard-grid"', body)
+        self.assertIn('class="dashboard-main-grid dashboard-chart-row v5-dashboard-grid"', body)
+        self.assertIn('class="dashboard-main-grid dashboard-ops-row v5-dashboard-grid"', body)
         self.assertIn('class="dashboard-action-panel panel"', body)
         self.assertIn("Requiere accion", body)
         self.assertIn('href="/bandeja"', body)
@@ -399,7 +400,7 @@ class AppRoutesTest(unittest.TestCase):
         from pathlib import Path
 
         from db import db
-        from db.models import Interaccion
+        from db.models import CustomerReminder, Interaccion
 
         self.login()
         self.add_snapshot([
@@ -409,6 +410,7 @@ class AppRoutesTest(unittest.TestCase):
         ])
         with self.app.app_context():
             Interaccion.query.filter(Interaccion.customer_email.like("%@example.test")).delete(synchronize_session=False)
+            CustomerReminder.query.filter(CustomerReminder.customer_email.like("%@example.test")).delete(synchronize_session=False)
             db.session.add(Interaccion(
                 customer_email="activo@example.test",
                 tipo="solicitud",
@@ -432,6 +434,19 @@ class AppRoutesTest(unittest.TestCase):
                 resolved_at=dt.datetime.now(dt.timezone.utc),
                 created_at=dt.datetime.now(dt.timezone.utc),
             ))
+            db.session.add(CustomerReminder(
+                customer_email="activo@example.test",
+                texto="Tarea activa Inicio",
+                due_date="2026-06-04",
+                assignee="Luis",
+            ))
+            db.session.add(CustomerReminder(
+                customer_email="trial@example.test",
+                texto="Tarea completada Inicio",
+                due_date="2026-06-04",
+                assignee="Nicky",
+                completed_at=dt.datetime.now(dt.timezone.utc),
+            ))
             db.session.commit()
 
         response = self.client.get("/?preset=todo")
@@ -440,16 +455,28 @@ class AppRoutesTest(unittest.TestCase):
         body = response.get_data(as_text=True)
         self.assertIn('class="dashboard-kpi-strip dashboard-kpi-grid"', body)
         self.assertIn('class="periodo-bar dashboard-period dashboard-period-compact"', body)
+        self.assertIn('class="dashboard-main-grid dashboard-chart-row v5-dashboard-grid"', body)
+        self.assertIn('class="dashboard-main-grid dashboard-ops-row v5-dashboard-grid"', body)
         self.assertIn('class="panel dashboard-chart-panel dashboard-channel-panel"', body)
+        self.assertLess(body.index("chartSerie"), body.index("chartCanal"))
+        self.assertLess(body.index("chartCanal"), body.index("Requiere accion"))
+        self.assertLess(body.index("Requiere accion"), body.index("Estado actual de la base"))
         tickets_row = body[body.index("Tickets abiertos"):]
         tickets_row = tickets_row[:tickets_row.index("</a>")]
         self.assertIn("<b>2</b>", tickets_row)
         self.assertNotIn("<b>CS</b>", tickets_row)
+        tareas_start = body.rindex('<a class="action-row"', 0, body.index("Tareas pendientes"))
+        tareas_row = body[tareas_start:]
+        tareas_row = tareas_row[:tareas_row.index("</a>")]
+        self.assertIn('href="/bandeja"', tareas_row)
+        self.assertIn("<b>1</b>", tareas_row)
 
         css = Path("static/style.css").read_text(encoding="utf-8")
         grid_rule_start = css.index(".dashboard-kpi-grid")
         grid_rule = css[grid_rule_start:css.index("}", grid_rule_start)]
         self.assertIn("display: grid", grid_rule)
+        self.assertIn(".dashboard-chart-row", css)
+        self.assertIn(".dashboard-ops-row", css)
 
     def test_bandeja_muestra_cancelaciones_programadas_y_riesgos_manuales_de_churn(self):
         import datetime as dt

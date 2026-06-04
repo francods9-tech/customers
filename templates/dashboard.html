@@ -64,7 +64,7 @@
       {% endfor %}
     </div>
 
-    <div class="dashboard-main-grid v5-dashboard-grid">
+    <div class="dashboard-main-grid dashboard-chart-row v5-dashboard-grid">
       <section class="panel dashboard-chart-panel">
         <div class="panel-head">
           <h2>Altas, bajas y trials por {{ serie.agrupado }}</h2>
@@ -77,6 +77,19 @@
         <canvas id="chartSerie" height="120"></canvas>
       </section>
 
+      <section class="panel dashboard-chart-panel dashboard-channel-panel">
+        <div class="panel-head">
+          <h2>{{ canales_titulo or "Base actual por canal" }}</h2>
+        </div>
+        {% if canales %}
+          <canvas id="chartCanal" height="130"></canvas>
+        {% else %}
+          <p class="muted">Sin altas ni trials con canal asignado en el periodo.</p>
+        {% endif %}
+      </section>
+    </div>
+
+    <div class="dashboard-main-grid dashboard-ops-row v5-dashboard-grid">
       <section class="dashboard-action-panel panel">
         <div class="panel-head">
           <h2>Requiere accion</h2>
@@ -97,6 +110,13 @@
             </span>
             <b>{{ tickets_abiertos }}</b>
           </a>
+          <a class="action-row" href="{{ url_for('bandeja') }}">
+            <span>
+              <strong>Tareas pendientes</strong>
+              <small>Seguimientos activos en Bandeja</small>
+            </span>
+            <b>{{ tareas_activas }}</b>
+          </a>
           <a class="action-row" href="{{ url_for('clientes_list', estado='trial') }}">
             <span>
               <strong>Trials que vencen</strong>
@@ -105,19 +125,6 @@
             <b>{{ estado.trial }}</b>
           </a>
         </div>
-      </section>
-    </div>
-
-    <div class="dashboard-main-grid dashboard-secondary-grid v5-dashboard-grid">
-      <section class="panel dashboard-chart-panel dashboard-channel-panel">
-        <div class="panel-head">
-          <h2>{{ canales_titulo or "Base actual por canal" }}</h2>
-        </div>
-        {% if canales %}
-          <canvas id="chartCanal" height="130"></canvas>
-        {% else %}
-          <p class="muted">Sin altas ni trials con canal asignado en el periodo.</p>
-        {% endif %}
       </section>
 
       <section class="panel">
@@ -163,7 +170,7 @@
           data: { labels: canalData.labels, datasets: [{ data: canalData.valores,
             backgroundColor: ["#2563eb","#16a34a","#d97706","#7c3aed","#0891b2","#dc2626","#9333ea","#94a3b8"] }] },
           options: { maintainAspectRatio: false, plugins: {
-            legend: { position: "right", labels: {
+            legend: { position: "bottom", labels: {
               color: txt,
               generateLabels(chart) {
                 const dataset = chart.data.datasets[0];
