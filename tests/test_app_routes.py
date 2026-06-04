@@ -18,6 +18,7 @@ class AppRoutesTest(unittest.TestCase):
             TicketComment.query.filter(TicketComment.ticket.has(Interaccion.customer_email.like("%@example.test"))).delete(synchronize_session=False)
             Interaccion.query.filter(Interaccion.customer_email.like("%@example.test")).delete(synchronize_session=False)
             CustomerReminder.query.filter(CustomerReminder.customer_email.like("%@example.test")).delete(synchronize_session=False)
+            CustomerReminder.query.filter(CustomerReminder.customer_email == "").delete(synchronize_session=False)
             CustomerMeta.query.filter(CustomerMeta.email.like("%@example.test")).delete(synchronize_session=False)
             ChurnReason.query.filter(ChurnReason.email.like("%@example.test")).delete(synchronize_session=False)
             ColabCreator.query.filter(ColabCreator.contacto.like("%@example.test")).delete(synchronize_session=False)
@@ -591,16 +592,78 @@ class AppRoutesTest(unittest.TestCase):
             ))
             db.session.commit()
 
-        response = self.client.get("/tareas?assignee=Luis&date=2026-06-03")
+        response = self.client.get("/bandeja?assignee=Luis&date=2026-06-03")
 
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
         self.assertIn("Tareas", body)
+        self.assertIn('action="/tareas"', body)
         self.assertIn("Cliente Vencido", body)
         self.assertIn("Llamar por impago", body)
         self.assertIn("Luis", body)
         self.assertIn("Vencida", body)
         self.assertNotIn("Enviar resumen mensual", body)
+
+    def test_tareas_redirige_a_bandeja_con_filtros(self):
+        self.login()
+
+        response = self.client.get("/tareas?assignee=Luis&date=2026-06-03")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/bandeja?assignee=Luis&date=2026-06-03", response.location)
+
+    def test_bandeja_crea_tarea_generica_y_vinculada(self):
+        from db.models import CustomerReminder
+
+        self.login()
+        self.add_snapshot([self.customer_row(nombre="Cliente Tarea")])
+
+        response = self.client.post(
+            "/tareas",
+            data={
+                "due_date": "2026-06-20",
+                "texto": "Revisar SOP interno",
+                "assignee": "Nicky",
+                "customer_email": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            task = CustomerReminder.query.filter_by(texto="Revisar SOP interno").one()
+            self.assertEqual(task.customer_email, "")
+            self.assertEqual(task.assignee, "Nicky")
+
+        response = self.client.get("/bandeja")
+        body = response.get_data(as_text=True)
+        self.assertIn("Revisar SOP interno", body)
+        self.assertIn("Sin cliente", body)
+
+        response = self.client.post(
+            "/tareas",
+            data={
+                "due_date": "2026-06-21",
+                "texto": "Enviar propuesta",
+                "assignee": "Frank",
+                "customer_email": "cliente-z@example.test",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            task = CustomerReminder.query.filter_by(texto="Enviar propuesta").one()
+            self.assertEqual(task.customer_email, "cliente-z@example.test")
+            self.assertEqual(task.assignee, "Frank")
+
+    def test_base_no_muestra_nav_tareas_separada(self):
+        self.login()
+
+        response = self.client.get("/bandeja")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn('href="/bandeja">Bandeja', body)
+        self.assertNotIn('href="/tareas">Tareas', body)
 
     def test_dashboard_agrupa_variantes_de_instagram(self):
         from db import db
