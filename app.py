@@ -923,9 +923,40 @@ def ticket_detail(qid):
         importancias=complaint_rules.IMPORTANCE_OPTIONS,
         importance_labels=complaint_rules.IMPORTANCE_LABELS,
         comment_authors=complaint_rules.COMMENT_AUTHOR_OPTIONS,
+        task_assignees=TASK_ASSIGNEE_OPTIONS,
+        task_default_due_date=dt.datetime.now(MADRID_TZ).date().isoformat(),
         ctx=_ticket_context(ticket),
         team_labels=complaint_rules.TEAM_LABELS,
     )
+
+
+@app.route("/solicitudes/<int:qid>/tareas", methods=["POST"])
+@login_required
+def add_ticket_task(qid):
+    ticket = db.session.get(Interaccion, qid)
+    if not ticket or not complaint_rules.is_customer_request(ticket):
+        abort(404)
+    if ticket.resuelta:
+        flash("El ticket ya esta resuelto; reabrilo antes de crear una tarea", "error")
+        return redirect(url_for("ticket_detail", qid=qid))
+
+    texto = (request.form.get("texto") or "").strip()
+    due = _parse_iso_date(request.form.get("due_date"))
+    assignee = (request.form.get("assignee") or "").strip()
+    if not texto or not due or assignee not in TASK_ASSIGNEE_VALUES:
+        flash("Completa titulo, fecha y asignado de la tarea", "error")
+        return redirect(url_for("ticket_detail", qid=qid))
+
+    db.session.add(CustomerReminder(
+        customer_email=ticket.customer_email,
+        texto=f"Ticket #{ticket.id} · {texto}",
+        due_date=due.isoformat(),
+        assignee=assignee,
+        source="ticket",
+    ))
+    db.session.commit()
+    flash("Tarea creada desde ticket", "ok")
+    return redirect(url_for("ticket_detail", qid=qid))
 
 
 @app.route("/solicitudes/<int:qid>/comentarios", methods=["POST"])
