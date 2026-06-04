@@ -525,10 +525,12 @@ class AppRoutesTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
-        self.assertIn("Tareas (1)", body)
+        self.assertIn("Tareas (2)", body)
         self.assertIn("Cliente Recordado", body)
         self.assertIn("Mandar seguimiento de WhatsApp", body)
         self.assertIn("Dalila", body)
+        self.assertIn("Bienvenida pendiente", body)
+        self.assertIn("Nicky", body)
         self.assertIn("15/06/2026", body)
         self.assertIn("Completar", body)
 
@@ -541,8 +543,57 @@ class AppRoutesTest(unittest.TestCase):
 
         response = self.client.get("/bandeja")
         body = response.get_data(as_text=True)
-        self.assertIn("Tareas (0)", body)
+        self.assertIn("Tareas (1)", body)
         self.assertNotIn("Mandar seguimiento de WhatsApp", body)
+
+    def test_bandeja_crea_tarea_de_bienvenida_para_nicky_sin_duplicar(self):
+        from db.models import CustomerReminder
+
+        self.login()
+        self.add_snapshot([self.customer_row(nombre="Cliente Nuevo")])
+
+        response = self.client.get("/bandeja?date=2026-05-01")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn("Bienvenida pendiente", body)
+        self.assertIn("Cliente Nuevo", body)
+        self.assertIn("Nicky", body)
+        self.assertIn("Vencida", body)
+        with self.app.app_context():
+            task = CustomerReminder.query.filter_by(customer_email="cliente-z@example.test", source="onboarding").one()
+            self.assertEqual(task.texto, "Bienvenida pendiente")
+            self.assertEqual(task.assignee, "Nicky")
+            self.assertEqual(task.due_date, "2026-05-01")
+            self.assertIsNone(task.completed_at)
+
+        self.client.get("/bandeja?date=2026-05-01")
+        with self.app.app_context():
+            self.assertEqual(CustomerReminder.query.filter_by(customer_email="cliente-z@example.test", source="onboarding").count(), 1)
+
+    def test_completar_tarea_de_bienvenida_marca_onboarding_hecho(self):
+        from db import db
+        from db.models import CustomerMeta, CustomerReminder
+
+        self.login()
+        self.add_snapshot([self.customer_row(nombre="Cliente Nuevo")])
+        self.client.get("/bandeja?date=2026-05-01")
+        with self.app.app_context():
+            task = CustomerReminder.query.filter_by(customer_email="cliente-z@example.test", source="onboarding").one()
+            task_id = task.id
+
+        response = self.client.post(f"/recordatorios/{task_id}/completar")
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            task = db.session.get(CustomerReminder, task_id)
+            meta = CustomerMeta.query.filter_by(email="cliente-z@example.test").one()
+            self.assertIsNotNone(task.completed_at)
+            self.assertTrue(meta.onboarding_hecho)
+
+        response = self.client.get("/bandeja?date=2026-05-01")
+        body = response.get_data(as_text=True)
+        self.assertNotIn("Bienvenida pendiente", body)
 
     def test_tarea_requiere_fecha_texto_y_asignado_valido(self):
         from db.models import CustomerReminder

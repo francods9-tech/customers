@@ -55,6 +55,9 @@ COLAB_CREATOR_TYPE_LABELS = dict(COLAB_CREATOR_TYPES)
 MADRID_TZ = ZoneInfo("Europe/Madrid")
 TASK_ASSIGNEE_OPTIONS = complaint_rules.COMMENT_AUTHOR_OPTIONS
 TASK_ASSIGNEE_VALUES = {key for key, _ in TASK_ASSIGNEE_OPTIONS}
+ONBOARDING_TASK_SOURCE = "onboarding"
+ONBOARDING_TASK_ASSIGNEE = "Nicky"
+ONBOARDING_TASK_TEXT = "Bienvenida pendiente"
 
 
 def _ensure_local_schema():
@@ -97,6 +100,10 @@ def _ensure_local_schema():
         reminder_columns = {c["name"] for c in inspect(db.engine).get_columns("customer_reminders")}
         if "assignee" not in reminder_columns:
             db.session.execute(text("ALTER TABLE customer_reminders ADD COLUMN assignee VARCHAR(120) NOT NULL DEFAULT ''"))
+            db.session.commit()
+        reminder_columns = {c["name"] for c in inspect(db.engine).get_columns("customer_reminders")}
+        if "source" not in reminder_columns:
+            db.session.execute(text("ALTER TABLE customer_reminders ADD COLUMN source VARCHAR(32) NOT NULL DEFAULT ''"))
             db.session.commit()
 
 
@@ -236,6 +243,9 @@ def _reminder_view(row, nombre_por_email=None):
     assignee = row.assignee or ""
     customer_email = row.customer_email or ""
     is_generic = not customer_email
+    source = row.source or ""
+    if source == ONBOARDING_TASK_SOURCE and not is_completed:
+        status_class = "tag-warn"
     return {
         "id": row.id,
         "customer_email": customer_email,
@@ -248,6 +258,7 @@ def _reminder_view(row, nombre_por_email=None):
         "timing": timing,
         "assignee": assignee,
         "assignee_label": assignee or "Sin asignar",
+        "source": source,
         "status": status,
         "status_label": status_label,
         "status_class": status_class,
@@ -295,6 +306,44 @@ def _task_query_from_request():
     else:
         query = query.filter(CustomerReminder.completed_at.is_(None))
     return selected_date, assignee, status, query
+
+
+def _customer_signup_date(c):
+    raw = c.get("fecha_alta_raw") or ""
+    if raw:
+        parsed = _parse_iso_date(raw[:10])
+        if parsed:
+            return parsed
+    return dt.datetime.now(MADRID_TZ).date()
+
+
+def _ensure_onboarding_tasks(clientes):
+    pending = [c for c in clientes if c.get("estado") in ("activo", "trial") and not c.get("onboarding_hecho")]
+    if not pending:
+        return
+    emails = [c["email_key"] for c in pending]
+    existing = {
+        row.customer_email
+        for row in CustomerReminder.query
+        .filter(CustomerReminder.customer_email.in_(emails),
+                CustomerReminder.source == ONBOARDING_TASK_SOURCE)
+        .all()
+    }
+    created = False
+    for c in pending:
+        email = c["email_key"]
+        if email in existing:
+            continue
+        db.session.add(CustomerReminder(
+            customer_email=email,
+            texto=ONBOARDING_TASK_TEXT,
+            due_date=_customer_signup_date(c).isoformat(),
+            assignee=ONBOARDING_TASK_ASSIGNEE,
+            source=ONBOARDING_TASK_SOURCE,
+        ))
+        created = True
+    if created:
+        db.session.commit()
 
 
 def _churn_key(email, fecha):
@@ -1102,6 +1151,7 @@ def bandeja():
         key=lambda c: (((c.get("trial") or {}).get("fecha_raw") or "9999"), (c.get("nombre") or "").lower()),
     )
     clientes = snap["clientes"] if snap else []
+    _ensure_onboarding_tasks(clientes)
     nombre_por_email = {c["email_key"]: c["nombre"] for c in clientes}
     selected_date, assignee, status, task_query = _task_query_from_request()
     task_rows = task_query.order_by(CustomerReminder.due_date.asc(), CustomerReminder.created_at.asc()).all()
@@ -1145,6 +1195,7 @@ def add_tarea():
         texto=texto,
         due_date=due.isoformat(),
         assignee=assignee,
+        source="",
     ))
     db.session.commit()
     flash("Tarea creada", "ok")
@@ -1164,6 +1215,12 @@ def marcar_bienvenidos():
             if not meta.onboarding_hecho:
                 meta.onboarding_hecho = True
                 n += 1
+            for task in CustomerReminder.query.filter_by(
+                customer_email=c["email_key"],
+                source=ONBOARDING_TASK_SOURCE,
+                completed_at=None,
+            ).all():
+                task.completed_at = dt.datetime.now(dt.timezone.utc)
         db.session.commit()
     flash(f"{n} clientes marcados con bienvenida hecha", "ok")
     return redirect(request.referrer or url_for("bandeja"))
@@ -1323,6 +1380,7 @@ def add_recordatorio(email):
         texto=texto,
         due_date=due.isoformat(),
         assignee=assignee,
+        source="",
     ))
     db.session.commit()
     flash("Tarea creada", "ok")
@@ -1337,6 +1395,9 @@ def complete_recordatorio(reminder_id):
         abort(404)
     if not reminder.completed_at:
         reminder.completed_at = dt.datetime.now(dt.timezone.utc)
+        if reminder.source == ONBOARDING_TASK_SOURCE and reminder.customer_email:
+            meta = _get_or_create_meta(reminder.customer_email)
+            meta.onboarding_hecho = True
         db.session.commit()
         flash("Tarea completada", "ok")
     return redirect(request.referrer or url_for("bandeja"))

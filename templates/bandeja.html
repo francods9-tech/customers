@@ -45,7 +45,7 @@
               <span class="tag {{ r.status_class }}">{{ r.status_label }}</span>
               <span class="tag">{{ r.assignee_label }}</span>
               <span class="tag {{ 'tag-warn' if r.days is not none and r.days <= 0 }}">{{ r.due_label }}</span>
-              <span class="sub">{{ r.texto }}</span>
+              <span class="{{ 'tag tag-warn' if r.source == 'onboarding' else 'sub' }}">{{ r.texto }}</span>
               {% if not r.completed_at %}
                 <form method="post" action="{{ url_for('complete_recordatorio', reminder_id=r.id) }}" class="inline">
                   <button class="btn-sync" type="submit">Completar</button>
