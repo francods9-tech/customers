@@ -896,3 +896,44 @@ PR/deploy:
   - `/login` -> 200, contiene `Customers Dashboard`.
   - `/bandeja` sin sesion -> 302 a `/login?next=/bandeja`.
 - QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
+
+## Iteracion 2026-06-04 - Tareas manuales desde tickets
+
+Implementado en rama `codex/tareas-desde-tickets`:
+
+- Nueva ruta autenticada `POST /solicitudes/<id>/tareas`.
+- La ficha de ticket abierto muestra un panel compacto `Crear tarea` en la sidebar.
+- La tarea creada queda asociada al cliente del ticket con `source="ticket"` y texto `Ticket #ID · <accion>`.
+- Se validan texto, fecha limite y asignado obligatorio entre Luis, Dalila, Nicky y Frank.
+- Tickets inexistentes o que no sean solicitud/queja devuelven 404.
+- Tickets resueltos no crean tareas; requieren reabrirse antes.
+- Bandeja muestra estas tareas como tareas activas normales, sin UI especial nueva.
+
+Archivos tocados:
+
+- `app.py`
+- `templates/ticket.html`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes.AppRoutesTest.test_ticket_abierto_renderiza_form_para_crear_tarea tests.test_app_routes.AppRoutesTest.test_crear_tarea_desde_ticket_abierto_persiste_trazabilidad tests.test_app_routes.AppRoutesTest.test_ticket_resuelto_no_crea_tarea tests.test_app_routes.AppRoutesTest.test_tarea_desde_ticket_rechaza_asignado_texto_o_fecha_invalidos tests.test_app_routes.AppRoutesTest.test_tarea_desde_ticket_inexistente_o_no_solicitud_devuelve_404 tests.test_app_routes.AppRoutesTest.test_tarea_creada_desde_ticket_aparece_en_bandeja -v
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests focales OK.
+- `tests.test_app_routes`: 57 tests OK.
+- Suite completa: 96 tests OK.
+- `git diff --check` con codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local por test client: crear tarea desde ticket abierto devuelve 302; `/bandeja?date=2026-06-12` devuelve 200 y contiene `Ticket #ID`, texto de tarea y asignado.
+
+Riesgos / fuera de alcance:
+
+- No se agrego `ticket_id` ni migracion; trazabilidad v1 vive en `source="ticket"` y el prefijo del texto.
+- No se agregaron automatizaciones ni acciones rapidas en la lista `/solicitudes`.

@@ -1530,6 +1530,214 @@ class AppRoutesTest(unittest.TestCase):
         with self.app.app_context():
             self.assertEqual(TicketComment.query.filter_by(interaccion_id=ticket_id).count(), 0)
 
+    def test_ticket_abierto_renderiza_form_para_crear_tarea(self):
+        import datetime as dt
+
+        from app import MADRID_TZ
+        from db import db
+        from db.models import Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="solicitud",
+                texto="Dar seguimiento desde ticket",
+                estado_gestion="abierta",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            )
+            resolved = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="solicitud",
+                texto="Ticket cerrado",
+                estado_gestion="resuelta",
+                resuelta=True,
+                resolved_at=dt.datetime.now(dt.timezone.utc),
+                created_at=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=1),
+            )
+            db.session.add(ticket)
+            db.session.add(resolved)
+            db.session.commit()
+            ticket_id = ticket.id
+            resolved_id = resolved.id
+
+        response = self.client.get(f"/solicitudes/{ticket_id}")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        today = dt.datetime.now(MADRID_TZ).date().isoformat()
+        self.assertIn("Crear tarea", body)
+        self.assertIn(f'action="/solicitudes/{ticket_id}/tareas"', body)
+        self.assertIn('name="texto"', body)
+        self.assertIn(f'name="due_date" value="{today}"', body)
+        self.assertIn('name="assignee"', body)
+        for assignee in ("Luis", "Dalila", "Nicky", "Frank"):
+            self.assertIn(f'value="{assignee}"', body)
+
+        resolved_response = self.client.get(f"/solicitudes/{resolved_id}")
+        resolved_body = resolved_response.get_data(as_text=True)
+        self.assertNotIn(f'action="/solicitudes/{resolved_id}/tareas"', resolved_body)
+
+    def test_crear_tarea_desde_ticket_abierto_persiste_trazabilidad(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import CustomerReminder, Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="queja",
+                texto="Cliente pide respuesta",
+                estado_gestion="abierta",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            )
+            db.session.add(ticket)
+            db.session.commit()
+            ticket_id = ticket.id
+
+        response = self.client.post(
+            f"/solicitudes/{ticket_id}/tareas",
+            data={"texto": "Responder con estado", "due_date": "2026-06-12", "assignee": "Frank"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(f"/solicitudes/{ticket_id}", response.location)
+        with self.app.app_context():
+            task = CustomerReminder.query.filter_by(customer_email="cliente-z@example.test", source="ticket").one()
+            self.assertEqual(task.texto, f"Ticket #{ticket_id} · Responder con estado")
+            self.assertEqual(task.due_date, "2026-06-12")
+            self.assertEqual(task.assignee, "Frank")
+
+    def test_ticket_resuelto_no_crea_tarea(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import CustomerReminder, Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="solicitud",
+                texto="Ya resuelto",
+                estado_gestion="resuelta",
+                resuelta=True,
+                resolved_at=dt.datetime.now(dt.timezone.utc),
+                created_at=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=1),
+            )
+            db.session.add(ticket)
+            db.session.commit()
+            ticket_id = ticket.id
+
+        response = self.client.post(
+            f"/solicitudes/{ticket_id}/tareas",
+            data={"texto": "No crear", "due_date": "2026-06-12", "assignee": "Luis"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            self.assertEqual(CustomerReminder.query.filter_by(customer_email="cliente-z@example.test", source="ticket").count(), 0)
+
+    def test_tarea_desde_ticket_rechaza_asignado_texto_o_fecha_invalidos(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import CustomerReminder, Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="solicitud",
+                texto="Validar formulario",
+                estado_gestion="abierta",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            )
+            db.session.add(ticket)
+            db.session.commit()
+            ticket_id = ticket.id
+
+        invalid_payloads = [
+            {"texto": "Asignado invalido", "due_date": "2026-06-12", "assignee": "Persona Invalida"},
+            {"texto": "", "due_date": "2026-06-12", "assignee": "Luis"},
+            {"texto": "Sin fecha", "due_date": "", "assignee": "Luis"},
+        ]
+        for payload in invalid_payloads:
+            response = self.client.post(f"/solicitudes/{ticket_id}/tareas", data=payload)
+            self.assertEqual(response.status_code, 302)
+
+        with self.app.app_context():
+            self.assertEqual(CustomerReminder.query.filter_by(customer_email="cliente-z@example.test", source="ticket").count(), 0)
+
+    def test_tarea_desde_ticket_inexistente_o_no_solicitud_devuelve_404(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        response = self.client.post(
+            "/solicitudes/999999/tareas",
+            data={"texto": "No existe", "due_date": "2026-06-12", "assignee": "Luis"},
+        )
+        self.assertEqual(response.status_code, 404)
+
+        with self.app.app_context():
+            note = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="nota",
+                texto="No es solicitud",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            )
+            db.session.add(note)
+            db.session.commit()
+            note_id = note.id
+
+        response = self.client.post(
+            f"/solicitudes/{note_id}/tareas",
+            data={"texto": "No crear", "due_date": "2026-06-12", "assignee": "Luis"},
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_tarea_creada_desde_ticket_aparece_en_bandeja(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="solicitud",
+                texto="Seguir en bandeja",
+                estado_gestion="abierta",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            )
+            db.session.add(ticket)
+            db.session.commit()
+            ticket_id = ticket.id
+
+        self.client.post(
+            f"/solicitudes/{ticket_id}/tareas",
+            data={"texto": "Enviar update", "due_date": "2026-06-12", "assignee": "Dalila"},
+        )
+
+        response = self.client.get("/bandeja?date=2026-06-12")
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn(f"Ticket #{ticket_id} · Enviar update", body)
+        self.assertIn("Cliente Z", body)
+        self.assertIn("Dalila", body)
+
     def test_ticket_resuelto_muestra_dias_abierto_y_permite_reabrir(self):
         import datetime as dt
 

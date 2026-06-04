@@ -122,6 +122,28 @@
         </form>
       {% endif %}
     </section>
+
+    {% if not ticket.resuelta %}
+    <section class="panel v5-form-panel ticket-task-panel">
+      <div class="panel-head">
+        <h2>Crear tarea</h2>
+      </div>
+      <form method="post" action="{{ url_for('add_ticket_task', qid=ticket.id) }}" class="ticket-form">
+        <label>Titulo / accion</label>
+        <textarea name="texto" placeholder="Ej: responder al cliente con avance" required></textarea>
+        <label>Fecha limite</label>
+        <input type="date" name="due_date" value="{{ task_default_due_date }}" required>
+        <label>Asignado</label>
+        <select name="assignee" required>
+          <option value="">Elegir</option>
+          {% for value, label in task_assignees %}
+          <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit">Crear tarea</button>
+      </form>
+    </section>
+    {% endif %}
   </aside>
 </div>
 </div>
