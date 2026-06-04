@@ -1076,3 +1076,42 @@ PR/deploy:
   - `/?preset=todo` desktop 1280px -> sin overflow horizontal; `chartSerie` y `chartCanal` alineados arriba; `Requiere accion` y `Estado actual de la base` abajo; `Tareas pendientes ... 7`.
   - `/?preset=todo` mobile 390px -> sin overflow horizontal; graficos apilados antes de operacion; `Tareas pendientes ... 7`.
   - No se crearon ni modificaron datos reales.
+
+## Iteracion 2026-06-04 - Inicio balance paneles accion
+
+Implementado en rama `codex/inicio-action-panel-balance`:
+
+- Se quita el boton `Ver bandeja` del header de `Requiere accion`.
+- La fila `Tareas pendientes` conserva el link a `/bandeja`.
+- `Requiere accion` y `Estado actual de la base` ahora se estiran a la misma altura en desktop usando `dashboard-state-panel` y `align-items: stretch`.
+
+Archivos tocados:
+
+- `templates/dashboard.html`
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes.AppRoutesTest.test_dashboard_inicio_pulido_muestra_kpis_en_grilla_y_tickets_reales tests.test_app_routes.AppRoutesTest.test_dashboard_usa_layout_core_redisenado -v
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests focales OK.
+- `tests.test_app_routes`: 58 tests OK.
+- Suite completa: 97 tests OK.
+- `git diff --check` con codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local autenticado en `http://127.0.0.1:5028/?preset=todo` con Playwright:
+  - Desktop 1280px sin overflow horizontal; `Requiere accion` y `Estado actual de la base` con la misma altura `374.4px`; sin texto `Ver bandeja`; `Tareas pendientes` sigue linkeando a `/bandeja`.
+  - Mobile 390px sin overflow horizontal; bloques apilados; sin texto `Ver bandeja`.
+
+Riesgos / fuera de alcance:
+
+- No se cambia schema, rutas ni conteos.
+- La igualacion de altura aplica a los paneles de la fila operativa; en mobile se mantienen apilados.
