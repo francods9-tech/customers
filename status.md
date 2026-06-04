@@ -1061,3 +1061,18 @@ Riesgos / fuera de alcance:
 - No se cambia schema ni se crean tareas desde Inicio.
 - El contador de tareas es global de activas y no queda filtrado por fecha/asignado.
 - La navegacion mobile conserva el scroll horizontal existente del shell.
+
+PR/deploy:
+
+- PR #73 mergeado a `main` con commit `53428d8`.
+- Deploy manual ejecutado con `railway deployment up -m "Deploy Inicio layout actions"`.
+- Deployment Railway `b6d8f125-9c33-4546-978f-cdfb60a2f44c` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard`.
+  - `/` sin sesion -> 302 a `/login?next=/`.
+- QA autenticada de produccion:
+  - Login OK.
+  - `/?preset=todo` desktop 1280px -> sin overflow horizontal; `chartSerie` y `chartCanal` alineados arriba; `Requiere accion` y `Estado actual de la base` abajo; `Tareas pendientes ... 7`.
+  - `/?preset=todo` mobile 390px -> sin overflow horizontal; graficos apilados antes de operacion; `Tareas pendientes ... 7`.
+  - No se crearon ni modificaron datos reales.
