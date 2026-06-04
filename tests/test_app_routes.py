@@ -756,6 +756,243 @@ class AppRoutesTest(unittest.TestCase):
             self.assertEqual(task.customer_email, "cliente-z@example.test")
             self.assertEqual(task.assignee, "Frank")
 
+    def test_bandeja_renderiza_edicion_plegada_para_tareas_activas(self):
+        from db import db
+        from db.models import CustomerReminder
+
+        self.login()
+        self.add_snapshot([self.customer_row(nombre="Cliente Editable")])
+        with self.app.app_context():
+            db.session.add(CustomerReminder(
+                customer_email="cliente-z@example.test",
+                due_date="2026-06-20",
+                texto="Editar seguimiento",
+                assignee="Luis",
+            ))
+            db.session.commit()
+            task_id = CustomerReminder.query.filter_by(texto="Editar seguimiento").one().id
+
+        response = self.client.get("/bandeja?date=2026-06-20")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn("Editar", body)
+        self.assertIn(f'action="/recordatorios/{task_id}/editar"', body)
+        self.assertIn(f'name="texto" value="Editar seguimiento"', body)
+        self.assertIn('name="due_date" value="2026-06-20"', body)
+        self.assertIn('name="assignee"', body)
+        self.assertIn('name="customer_email"', body)
+        self.assertIn("Sin cliente", body)
+
+    def test_editar_tarea_manual_cambia_titulo_fecha_asignado_y_cliente(self):
+        from db import db
+        from db.models import CustomerReminder
+
+        self.login()
+        self.add_snapshot([
+            self.customer_row(nombre="Cliente A", email="cliente-a@example.test"),
+            self.customer_row(nombre="Cliente B", email="cliente-b@example.test"),
+        ])
+        with self.app.app_context():
+            reminder = CustomerReminder(
+                customer_email="cliente-a@example.test",
+                due_date="2026-06-20",
+                texto="Titulo anterior",
+                assignee="Luis",
+            )
+            db.session.add(reminder)
+            db.session.commit()
+            reminder_id = reminder.id
+
+        response = self.client.post(
+            f"/recordatorios/{reminder_id}/editar",
+            data={
+                "texto": "Titulo actualizado",
+                "due_date": "2026-06-25",
+                "assignee": "Frank",
+                "customer_email": "cliente-b@example.test",
+            },
+            headers={"Referer": "/bandeja?assignee=Luis&date=2026-06-20"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/bandeja?assignee=Luis&date=2026-06-20", response.location)
+        with self.app.app_context():
+            reminder = db.session.get(CustomerReminder, reminder_id)
+            self.assertEqual(reminder.texto, "Titulo actualizado")
+            self.assertEqual(reminder.due_date, "2026-06-25")
+            self.assertEqual(reminder.assignee, "Frank")
+            self.assertEqual(reminder.customer_email, "cliente-b@example.test")
+
+    def test_editar_tarea_manual_permite_quitar_cliente(self):
+        from db import db
+        from db.models import CustomerReminder
+
+        self.login()
+        self.add_snapshot([self.customer_row(nombre="Cliente A", email="cliente-a@example.test")])
+        with self.app.app_context():
+            reminder = CustomerReminder(
+                customer_email="cliente-a@example.test",
+                due_date="2026-06-20",
+                texto="Quitar cliente",
+                assignee="Luis",
+            )
+            db.session.add(reminder)
+            db.session.commit()
+            reminder_id = reminder.id
+
+        response = self.client.post(
+            f"/recordatorios/{reminder_id}/editar",
+            data={
+                "texto": "Quitar cliente",
+                "due_date": "2026-06-20",
+                "assignee": "Luis",
+                "customer_email": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            reminder = db.session.get(CustomerReminder, reminder_id)
+            self.assertEqual(reminder.customer_email, "")
+
+    def test_editar_tarea_manual_rechaza_asignado_invalido_sin_persistir(self):
+        from db import db
+        from db.models import CustomerReminder
+
+        self.login()
+        self.add_snapshot([self.customer_row(nombre="Cliente A", email="cliente-a@example.test")])
+        with self.app.app_context():
+            reminder = CustomerReminder(
+                customer_email="cliente-a@example.test",
+                due_date="2026-06-20",
+                texto="Original",
+                assignee="Luis",
+            )
+            db.session.add(reminder)
+            db.session.commit()
+            reminder_id = reminder.id
+
+        response = self.client.post(
+            f"/recordatorios/{reminder_id}/editar",
+            data={
+                "texto": "No debe guardar",
+                "due_date": "2026-06-25",
+                "assignee": "Persona Invalida",
+                "customer_email": "cliente-a@example.test",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            reminder = db.session.get(CustomerReminder, reminder_id)
+            self.assertEqual(reminder.texto, "Original")
+            self.assertEqual(reminder.due_date, "2026-06-20")
+            self.assertEqual(reminder.assignee, "Luis")
+
+    def test_editar_tarea_manual_rechaza_cliente_invalido_sin_persistir(self):
+        from db import db
+        from db.models import CustomerReminder
+
+        self.login()
+        self.add_snapshot([self.customer_row(nombre="Cliente A", email="cliente-a@example.test")])
+        with self.app.app_context():
+            reminder = CustomerReminder(
+                customer_email="cliente-a@example.test",
+                due_date="2026-06-20",
+                texto="Original",
+                assignee="Luis",
+            )
+            db.session.add(reminder)
+            db.session.commit()
+            reminder_id = reminder.id
+
+        response = self.client.post(
+            f"/recordatorios/{reminder_id}/editar",
+            data={
+                "texto": "No debe guardar",
+                "due_date": "2026-06-25",
+                "assignee": "Frank",
+                "customer_email": "fantasma@example.test",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            reminder = db.session.get(CustomerReminder, reminder_id)
+            self.assertEqual(reminder.texto, "Original")
+            self.assertEqual(reminder.due_date, "2026-06-20")
+            self.assertEqual(reminder.assignee, "Luis")
+            self.assertEqual(reminder.customer_email, "cliente-a@example.test")
+
+    def test_editar_tarea_onboarding_solo_reasigna_responsable(self):
+        from db import db
+        from db.models import CustomerReminder
+
+        self.login()
+        self.add_snapshot([self.customer_row(nombre="Cliente Nuevo", email="nuevo@example.test")])
+        self.client.get("/bandeja?date=2026-05-01")
+        with self.app.app_context():
+            reminder = CustomerReminder.query.filter_by(customer_email="nuevo@example.test", source="onboarding").one()
+            reminder_id = reminder.id
+
+        response = self.client.post(
+            f"/recordatorios/{reminder_id}/editar",
+            data={
+                "texto": "No cambiar bienvenida",
+                "due_date": "2026-06-25",
+                "assignee": "Dalila",
+                "customer_email": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            reminder = db.session.get(CustomerReminder, reminder_id)
+            self.assertEqual(reminder.texto, "Bienvenida pendiente")
+            self.assertEqual(reminder.due_date, "2026-05-01")
+            self.assertEqual(reminder.customer_email, "nuevo@example.test")
+            self.assertEqual(reminder.source, "onboarding")
+            self.assertEqual(reminder.assignee, "Dalila")
+
+    def test_editar_tarea_completada_no_persiste_cambios(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import CustomerReminder
+
+        self.login()
+        self.add_snapshot([self.customer_row(nombre="Cliente A", email="cliente-a@example.test")])
+        with self.app.app_context():
+            reminder = CustomerReminder(
+                customer_email="cliente-a@example.test",
+                due_date="2026-06-20",
+                texto="Completada",
+                assignee="Luis",
+                completed_at=dt.datetime.now(dt.timezone.utc),
+            )
+            db.session.add(reminder)
+            db.session.commit()
+            reminder_id = reminder.id
+
+        response = self.client.post(
+            f"/recordatorios/{reminder_id}/editar",
+            data={
+                "texto": "No debe cambiar",
+                "due_date": "2026-06-25",
+                "assignee": "Frank",
+                "customer_email": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            reminder = db.session.get(CustomerReminder, reminder_id)
+            self.assertEqual(reminder.texto, "Completada")
+            self.assertEqual(reminder.due_date, "2026-06-20")
+            self.assertEqual(reminder.assignee, "Luis")
+            self.assertEqual(reminder.customer_email, "cliente-a@example.test")
+
     def test_base_no_muestra_nav_tareas_separada(self):
         self.login()
 
