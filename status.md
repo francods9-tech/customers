@@ -206,6 +206,8 @@ git diff --check
 ```
 
 Resultado: tests focales OK; 75 tests OK; import Flask OK con 40 rutas; `git diff --check` sin errores reales, solo avisos CRLF de Windows. Verificacion visual local con Playwright en 1440px y 390px para `/colabs`, `/bajas?preset=todo` y `/mensajes`: sin overflow horizontal; capturas guardadas en `design-screenshots/admin-ui-redesign/`.
+PR #58 mergeado a `main`.
+Deploy Railway posterior: `47b9d041-5dc8-42c4-810b-96d4603f95c8` SUCCESS; produccion verificada con `/healthz` 200, `/login` 200 y `/colabs`, `/bajas`, `/mensajes` redirigiendo a login.
 
 Ultima verificacion luego de redisenar Inicio, Bandeja y Ficha de cliente:
 
