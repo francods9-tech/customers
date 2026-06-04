@@ -1192,3 +1192,48 @@ git diff --check
 ```
 
 Resultado: test focal OK; suite completa 102 tests OK; `git diff --check` sin errores reales, solo avisos CRLF de Windows.
+
+## Iteracion 2026-06-04 - Clientes V2 crear desde toolbar
+
+Implementado en rama `codex/clientes-v2-toolbar`:
+
+- `/clientes` elimina el panel permanente `Cliente manual`.
+- La toolbar de clientes agrega boton `Crear cliente` junto al buscador/filtros.
+- El alta manual se mueve a un modal compacto con nombre, email, fecha de alta, tipo, estado y origen.
+- El modal conserva `POST /clientes/manual`; al crear redirige a `/cliente/<email>`.
+- Los labels del modal quedan asociados con `for/id` para accesibilidad y smoke Playwright.
+- La validacion minima de nombre/email mantiene redirect a `/clientes` sin persistir datos incompletos.
+
+Archivos tocados:
+
+- `templates/clientes.html`
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes.AppRoutesTest.test_clientes_busca_por_usuario_y_whatsapp_con_placeholder_simple tests.test_app_routes.AppRoutesTest.test_crear_cliente_manual_rechaza_datos_minimos_incompletos tests.test_app_routes.AppRoutesTest.test_crear_cliente_manual_persiste_aparece_y_abre_ficha tests.test_app_routes.AppRoutesTest.test_clientes_default_ordena_por_alta_desc_y_oculta_inactivos -v
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests focales OK.
+- `tests.test_app_routes`: 64 tests OK.
+- Suite completa: 103 tests OK.
+- `git diff --check` con codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local Playwright autenticado en `http://127.0.0.1:5001/clientes`:
+  - Desktop 1280px y mobile 390px sin overflow horizontal.
+  - Boton `Crear cliente` visible.
+  - Modal abre/cierra y muestra campos minimos por label.
+  - Capturas generadas en `design-screenshots/clientes-v2-toolbar/`.
+
+Riesgos / fuera de alcance:
+
+- No se cambia schema ni rutas backend.
+- No se sincronizan clientes manuales a Stripe/Mongo.
+- No se hace deploy Railway en esta iteracion hasta que Franco lo pida o se complete el flujo PR/merge.

@@ -295,6 +295,12 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn('action="/clientes"', body)
         self.assertIn('name="q"', body)
         self.assertIn('placeholder="Buscar cliente"', body)
+        self.assertIn('onclick="document.getElementById(\'create-client-dialog\').showModal()"', body)
+        self.assertIn('id="create-client-dialog"', body)
+        self.assertIn('action="/clientes/manual"', body)
+        self.assertIn('value="colab_descuento" selected>Colab con descuento', body)
+        self.assertIn('value="activo" selected>Activo', body)
+        self.assertNotIn("<h2>Cliente manual</h2>", body)
         self.assertIn("Ana", body)
         self.assertNotIn("Mia", body)
 
@@ -409,6 +415,27 @@ class AppRoutesTest(unittest.TestCase):
         response = self.client.get("/cliente/manual-colab@example.test")
         self.assertEqual(response.status_code, 200)
         self.assertIn("Manual Colab", response.get_data(as_text=True))
+
+    def test_crear_cliente_manual_rechaza_datos_minimos_incompletos(self):
+        from db.models import CustomerMeta
+
+        self.login()
+        self.add_snapshot([])
+
+        response = self.client.post("/clientes/manual", data={
+            "manual_nombre": "",
+            "email": "incompleto@example.test",
+            "manual_fecha_alta": "2026-06-04",
+            "tipo_cliente": "colab_descuento",
+            "manual_estado": "activo",
+            "origen": "whatsapp",
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/clientes", response.location)
+        with self.app.app_context():
+            meta = CustomerMeta.query.filter_by(email="incompleto@example.test").first()
+            self.assertIsNone(meta)
 
     def test_cliente_manual_no_duplica_si_email_existe_en_snapshot_real(self):
         from db import db

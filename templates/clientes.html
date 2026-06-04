@@ -54,55 +54,62 @@
         {% endfor %}
       </select>
       <button type="submit">Buscar</button>
+      <button type="button" class="btn-secondary create-client-button" onclick="document.getElementById('create-client-dialog').showModal()">Crear cliente</button>
     </form>
+    <dialog id="create-client-dialog" class="client-create-dialog">
+      <form method="post" action="{{ url_for('add_cliente_manual') }}" class="client-action-form manual-client-form">
+        <div class="dialog-head">
+          <div>
+            <h2>Crear cliente</h2>
+            <p class="muted">Alta minima para completar luego desde la ficha.</p>
+          </div>
+          <button type="button" class="icon-button" aria-label="Cerrar" onclick="document.getElementById('create-client-dialog').close()">&times;</button>
+        </div>
+        <div>
+          <label for="manual-client-name">Nombre</label>
+          <input id="manual-client-name" type="text" name="manual_nombre" placeholder="Nombre del cliente" required>
+        </div>
+        <div>
+          <label for="manual-client-email">Email</label>
+          <input id="manual-client-email" type="email" name="email" placeholder="email@dominio.com" required>
+        </div>
+        <div>
+          <label for="manual-client-signup-date">Fecha de alta</label>
+          <input id="manual-client-signup-date" type="date" name="manual_fecha_alta" value="{{ manual_fecha_default }}" required>
+        </div>
+        <div>
+          <label for="manual-client-type">Tipo</label>
+          <select id="manual-client-type" name="tipo_cliente">
+            <option value="colab_descuento" selected>Colab con descuento</option>
+            <option value="free_colab">Free por colab</option>
+            <option value="individual">Individual</option>
+            <option value="agencia">Agencia</option>
+            <option value="one_time">One time payment</option>
+          </select>
+        </div>
+        <div>
+          <label for="manual-client-status">Estado</label>
+          <select id="manual-client-status" name="manual_estado">
+            <option value="activo" selected>Activo</option>
+            <option value="trial">Trial</option>
+            <option value="inactivo">Inactivo</option>
+          </select>
+        </div>
+        <div>
+          <label for="manual-client-origin">Origen</label>
+          <select id="manual-client-origin" name="origen">
+            {% for k, label in origenes %}
+              <option value="{{ k }}" {{ "selected" if k == "sin_asignar" }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="btn-secondary" onclick="document.getElementById('create-client-dialog').close()">Cancelar</button>
+          <button type="submit">Crear cliente</button>
+        </div>
+      </form>
+    </dialog>
   </div>
-
-  <section class="panel manual-client-panel v5-form-panel">
-    <div class="panel-head">
-      <h2>Cliente manual</h2>
-    </div>
-    <form method="post" action="{{ url_for('add_cliente_manual') }}" class="client-action-form manual-client-form">
-      <div>
-        <label>Nombre</label>
-        <input type="text" name="manual_nombre" placeholder="Nombre del cliente" required>
-      </div>
-      <div>
-        <label>Email</label>
-        <input type="email" name="email" placeholder="email@dominio.com" required>
-      </div>
-      <div>
-        <label>Fecha de alta</label>
-        <input type="date" name="manual_fecha_alta" value="{{ manual_fecha_default }}" required>
-      </div>
-      <div>
-        <label>Tipo</label>
-        <select name="tipo_cliente">
-          <option value="colab_descuento" selected>Colab con descuento</option>
-          <option value="free_colab">Free por colab</option>
-          <option value="individual">Individual</option>
-          <option value="agencia">Agencia</option>
-          <option value="one_time">One time payment</option>
-        </select>
-      </div>
-      <div>
-        <label>Estado</label>
-        <select name="manual_estado">
-          <option value="activo" selected>Activo</option>
-          <option value="trial">Trial</option>
-          <option value="inactivo">Inactivo</option>
-        </select>
-      </div>
-      <div>
-        <label>Origen</label>
-        <select name="origen">
-          {% for k, label in origenes %}
-            <option value="{{ k }}" {{ "selected" if k == "sin_asignar" }}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <button type="submit">Crear cliente</button>
-    </form>
-  </section>
 
   <div class="mini-kpis clients-kpi-strip">
     <div><strong>{{ resumen.activos_recurrentes }}</strong><span>Activos recurrentes</span></div>

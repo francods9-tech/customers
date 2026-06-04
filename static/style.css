@@ -1861,7 +1861,65 @@ table.grid.clientes-grid {
   padding-bottom: .1rem;
 }
 .clients-page .client-filters {
-  grid-template-columns: minmax(260px, 1fr) minmax(180px, 220px) minmax(180px, 220px) auto;
+  grid-template-columns: minmax(260px, 1fr) minmax(180px, 220px) minmax(180px, 220px) auto auto;
+}
+.create-client-button {
+  white-space: nowrap;
+}
+.client-create-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(760px, calc(100vh - 32px));
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, .22);
+}
+.client-create-dialog::backdrop {
+  background: rgba(15, 23, 42, .42);
+}
+.client-create-dialog .manual-client-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .75rem;
+  padding: 1rem;
+}
+.client-create-dialog .dialog-head,
+.client-create-dialog .dialog-actions {
+  grid-column: 1 / -1;
+}
+.dialog-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.dialog-head h2 {
+  margin: 0 0 .2rem;
+  font-size: 1.15rem;
+}
+.dialog-head .muted {
+  margin: 0;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .5rem;
+  padding-top: .25rem;
+}
+.icon-button {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 6px;
+  background: var(--panel-muted);
+  color: var(--muted);
+}
+.icon-button:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
 }
 .clientes-grid td:first-child,
 .requests-table td:first-child {
