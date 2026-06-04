@@ -957,3 +957,47 @@ Deploy Railway posterior:
   - `/solicitudes` -> 200 con tickets.
   - `/solicitudes/7` -> 200; ticket abierto con panel `Crear tarea` y accion `/solicitudes/7/tareas`.
   - No se crearon tareas reales en produccion.
+
+## Iteracion 2026-06-04 - Pulido Inicio V1
+
+Implementado en rama `codex/inicio-polish-v1`:
+
+- Inicio corrige la tira superior de KPIs para renderizar como grilla real en desktop.
+- `Requiere accion` reemplaza el placeholder `CS` por contador real de tickets abiertos (`solicitud`/`queja` sin resolver).
+- La accion se renombra a `Tickets abiertos` con copy operativo mas preciso.
+- El filtro de periodo/canal usa clase compacta y mejora el layout responsive en mobile.
+- El grafico lateral `Base actual por canal` queda acotado para no dominar la pantalla.
+
+Archivos tocados:
+
+- `app.py`
+- `templates/dashboard.html`
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes.AppRoutesTest.test_dashboard_inicio_pulido_muestra_kpis_en_grilla_y_tickets_reales tests.test_app_routes.AppRoutesTest.test_dashboard_usa_layout_core_redisenado tests.test_app_routes.AppRoutesTest.test_dashboard_no_muestra_finanzas_ni_gastos tests.test_app_routes.AppRoutesTest.test_polish_v5_renderiza_todas_las_pantallas_principales -v
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests focales OK.
+- `tests.test_app_routes`: 58 tests OK.
+- Suite completa: 97 tests OK.
+- `git diff --check` con codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local autenticado en `http://127.0.0.1:5026/?preset=todo` con Playwright:
+  - Desktop 1280px sin overflow horizontal, 4 KPIs en fila, `Tickets abiertos ... 2`, grafico de canal acotado a 360px.
+  - Mobile 390px sin overflow horizontal, filtros compactados, `Tickets abiertos ... 2`, grafico de canal acotado a 260px.
+  - Capturas temporales: `%TEMP%\traqeer_inicio_polish_v1\inicio-desktop.png` y `inicio-mobile.png`.
+
+Riesgos / fuera de alcance:
+
+- No se cambia schema ni se agrega trazabilidad nueva.
+- El contador de `Tickets abiertos` es global y no queda filtrado por periodo/canal en esta iteracion.
+- La navegacion mobile conserva el scroll horizontal existente del shell.

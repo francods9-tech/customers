@@ -869,9 +869,11 @@ table.grid.clientes-grid {
 .dashboard-period .periodo-custom {
   justify-content: flex-end;
 }
-.dashboard-kpi-strip {
+.dashboard-kpi-grid {
+  display: grid;
   margin: 0;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .75rem;
 }
 .dashboard-kpi-strip .kpi {
   margin: 0;
@@ -891,6 +893,10 @@ table.grid.clientes-grid {
 }
 .dashboard-chart-panel {
   min-width: 0;
+}
+.dashboard-channel-panel canvas {
+  width: 100%;
+  max-height: 360px;
 }
 .chart-legend {
   display: flex;
@@ -2044,7 +2050,33 @@ table.grid.clientes-grid {
     width: 100%;
     justify-content: flex-start;
   }
-  .dashboard-kpi-strip {
+  .dashboard-period-compact {
+    gap: .55rem;
+  }
+  .dashboard-period-compact .presets {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .dashboard-period-compact .chip {
+    justify-content: center;
+    text-align: center;
+  }
+  .dashboard-period-compact .periodo-custom {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .5rem;
+  }
+  .dashboard-period-compact .periodo-custom input[type="date"] {
+    min-width: 0;
+  }
+  .dashboard-period-compact .periodo-custom select,
+  .dashboard-period-compact .periodo-custom button {
+    grid-column: 1 / -1;
+  }
+  .dashboard-period-compact .periodo-custom button {
+    width: 100%;
+  }
+  .dashboard-kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .dashboard-main-grid,
@@ -2145,6 +2177,9 @@ table.grid.clientes-grid {
   }
   .dashboard-kpi-strip {
     grid-template-columns: 1fr;
+  }
+  .dashboard-channel-panel canvas {
+    max-height: 260px;
   }
   .customer-head-actions .btn-sync {
     width: 100%;

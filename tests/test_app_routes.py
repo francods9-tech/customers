@@ -385,7 +385,7 @@ class AppRoutesTest(unittest.TestCase):
         body = response.get_data(as_text=True)
         self.assertIn('class="dashboard-page page polish-v5"', body)
         self.assertIn('class="page-head dashboard-head"', body)
-        self.assertIn('class="dashboard-kpi-strip"', body)
+        self.assertIn('class="dashboard-kpi-strip dashboard-kpi-grid"', body)
         self.assertIn('class="dashboard-main-grid v5-dashboard-grid"', body)
         self.assertIn('class="dashboard-action-panel panel"', body)
         self.assertIn("Requiere accion", body)
@@ -393,6 +393,63 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn('href="/clientes?estado=impago"', body)
         self.assertIn('href="/clientes?estado=trial"', body)
         self.assertIn('class="base-state-grid"', body)
+
+    def test_dashboard_inicio_pulido_muestra_kpis_en_grilla_y_tickets_reales(self):
+        import datetime as dt
+        from pathlib import Path
+
+        from db import db
+        from db.models import Interaccion
+
+        self.login()
+        self.add_snapshot([
+            self.customer_row(nombre="Cliente Activo", email="activo@example.test"),
+            {**self.customer_row(nombre="Cliente Trial", email="trial@example.test"), "estado": "trial"},
+            {**self.customer_row(nombre="Cliente Impago", email="impago@example.test"), "estado": "impago"},
+        ])
+        with self.app.app_context():
+            Interaccion.query.filter(Interaccion.customer_email.like("%@example.test")).delete(synchronize_session=False)
+            db.session.add(Interaccion(
+                customer_email="activo@example.test",
+                tipo="solicitud",
+                texto="Ticket abierto uno",
+                estado_gestion="abierta",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            ))
+            db.session.add(Interaccion(
+                customer_email="trial@example.test",
+                tipo="queja",
+                texto="Ticket abierto dos",
+                estado_gestion="en_gestion",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            ))
+            db.session.add(Interaccion(
+                customer_email="impago@example.test",
+                tipo="solicitud",
+                texto="Ticket resuelto",
+                estado_gestion="resuelta",
+                resuelta=True,
+                resolved_at=dt.datetime.now(dt.timezone.utc),
+                created_at=dt.datetime.now(dt.timezone.utc),
+            ))
+            db.session.commit()
+
+        response = self.client.get("/?preset=todo")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn('class="dashboard-kpi-strip dashboard-kpi-grid"', body)
+        self.assertIn('class="periodo-bar dashboard-period dashboard-period-compact"', body)
+        self.assertIn('class="panel dashboard-chart-panel dashboard-channel-panel"', body)
+        tickets_row = body[body.index("Tickets abiertos"):]
+        tickets_row = tickets_row[:tickets_row.index("</a>")]
+        self.assertIn("<b>2</b>", tickets_row)
+        self.assertNotIn("<b>CS</b>", tickets_row)
+
+        css = Path("static/style.css").read_text(encoding="utf-8")
+        grid_rule_start = css.index(".dashboard-kpi-grid")
+        grid_rule = css[grid_rule_start:css.index("}", grid_rule_start)]
+        self.assertIn("display: grid", grid_rule)
 
     def test_bandeja_muestra_cancelaciones_programadas_y_riesgos_manuales_de_churn(self):
         import datetime as dt

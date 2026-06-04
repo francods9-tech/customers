@@ -592,11 +592,17 @@ def index():
         "bajas": serie_bajas["valores"],
         "trials": serie_trials["valores"],
     }
+    tickets_abiertos = (Interaccion.query
+                        .filter(Interaccion.tipo.in_(complaint_rules.REQUEST_TYPES),
+                                Interaccion.resuelta.is_(False),
+                                Interaccion.estado_gestion != "resuelta")
+                        .count())
 
     return render_template(
         "dashboard.html", snap=snap, origenes=ORIGENES_BASE, presets=metrics.PRESETS,
         kpis=kpis, label=label, canal=canal, canales=canales, canales_titulo=canales_titulo, serie=serie,
         desde=desde.strftime("%Y-%m-%d"), hasta=(hasta - dt.timedelta(days=1)).strftime("%Y-%m-%d"),
+        tickets_abiertos=tickets_abiertos,
         estado={
             **estado_summary,
             "activos": estado_summary["activos_recurrentes"],

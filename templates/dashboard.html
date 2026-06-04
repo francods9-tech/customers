@@ -25,7 +25,7 @@
         <h1>Inicio</h1>
         <p class="muted">Periodo: {{ label }}{% if canal %} · canal: {{ origenes|selectattr('0','equalto',canal)|map(attribute=1)|first }}{% endif %} · comparado con el periodo anterior</p>
       </div>
-      <form method="get" class="periodo-bar dashboard-period">
+      <form method="get" class="periodo-bar dashboard-period dashboard-period-compact">
         <div class="presets">
           {% for key, plabel in presets %}
             <a class="chip {{ 'chip-on' if label == plabel }}" href="{{ url_for('index', preset=key, canal=canal) }}">{{ plabel }}</a>
@@ -45,7 +45,7 @@
       </form>
     </div>
 
-    <div class="dashboard-kpi-strip">
+    <div class="dashboard-kpi-strip dashboard-kpi-grid">
       {% for k in kpis %}
       {% set tag = 'a' if k.href else 'div' %}
       <{{ tag }} class="kpi {{ 'kpi-link' if k.href }}" {% if k.href %}href="{{ k.href }}"{% endif %}>
@@ -92,10 +92,10 @@
           </a>
           <a class="action-row" href="{{ url_for('quejas_list') }}">
             <span>
-              <strong>Tickets urgentes</strong>
-              <small>Gestion operativa y comunicacion al cliente</small>
+              <strong>Tickets abiertos</strong>
+              <small>Solicitudes y quejas sin resolver</small>
             </span>
-            <b>CS</b>
+            <b>{{ tickets_abiertos }}</b>
           </a>
           <a class="action-row" href="{{ url_for('clientes_list', estado='trial') }}">
             <span>
@@ -109,12 +109,12 @@
     </div>
 
     <div class="dashboard-main-grid dashboard-secondary-grid v5-dashboard-grid">
-      <section class="panel dashboard-chart-panel">
+      <section class="panel dashboard-chart-panel dashboard-channel-panel">
         <div class="panel-head">
           <h2>{{ canales_titulo or "Base actual por canal" }}</h2>
         </div>
         {% if canales %}
-          <canvas id="chartCanal" height="160"></canvas>
+          <canvas id="chartCanal" height="130"></canvas>
         {% else %}
           <p class="muted">Sin altas ni trials con canal asignado en el periodo.</p>
         {% endif %}
@@ -162,7 +162,7 @@
           type: "doughnut",
           data: { labels: canalData.labels, datasets: [{ data: canalData.valores,
             backgroundColor: ["#2563eb","#16a34a","#d97706","#7c3aed","#0891b2","#dc2626","#9333ea","#94a3b8"] }] },
-          options: { plugins: {
+          options: { maintainAspectRatio: false, plugins: {
             legend: { position: "right", labels: {
               color: txt,
               generateLabels(chart) {
