@@ -458,7 +458,7 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("Cliente Trial", body)
         self.assertIn("Completar", body)
 
-    def test_ficha_crea_recordatorio_con_fecha_y_texto(self):
+    def test_ficha_crea_tarea_con_fecha_texto_y_asignado(self):
         from db.models import CustomerReminder
 
         self.login()
@@ -467,12 +467,13 @@ class AppRoutesTest(unittest.TestCase):
         response = self.client.get("/cliente/cliente-z@example.test")
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
-        self.assertIn("Recordatorios", body)
+        self.assertIn("Tareas", body)
         self.assertIn('name="due_date"', body)
+        self.assertIn('name="assignee"', body)
 
         response = self.client.post(
             "/cliente/cliente-z@example.test/recordatorios",
-            data={"due_date": "2026-06-15", "texto": "Escribirle para revisar avance"},
+            data={"due_date": "2026-06-15", "texto": "Escribirle para revisar avance", "assignee": "Luis"},
         )
 
         self.assertEqual(response.status_code, 302)
@@ -480,6 +481,7 @@ class AppRoutesTest(unittest.TestCase):
             reminder = CustomerReminder.query.filter_by(customer_email="cliente-z@example.test").one()
             self.assertEqual(reminder.due_date, "2026-06-15")
             self.assertEqual(reminder.texto, "Escribirle para revisar avance")
+            self.assertEqual(reminder.assignee, "Luis")
             self.assertIsNone(reminder.completed_at)
 
     def test_ficha_usa_layout_core_en_columnas(self):
@@ -501,7 +503,7 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn('action="/cliente/cliente-z@example.test/interaccion"', body)
         self.assertIn('action="/cliente/cliente-z@example.test/recordatorios"', body)
 
-    def test_bandeja_muestra_recordatorios_activos_y_permite_completarlos(self):
+    def test_bandeja_muestra_tareas_activas_y_permite_completarlas(self):
         from db import db
         from db.models import CustomerReminder
 
@@ -512,6 +514,7 @@ class AppRoutesTest(unittest.TestCase):
                 customer_email="cliente-z@example.test",
                 due_date="2026-06-15",
                 texto="Mandar seguimiento de WhatsApp",
+                assignee="Dalila",
             )
             db.session.add(reminder)
             db.session.commit()
@@ -521,9 +524,10 @@ class AppRoutesTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
-        self.assertIn("Recordatorios (1)", body)
+        self.assertIn("Tareas (1)", body)
         self.assertIn("Cliente Recordado", body)
         self.assertIn("Mandar seguimiento de WhatsApp", body)
+        self.assertIn("Dalila", body)
         self.assertIn("15/06/2026", body)
         self.assertIn("Completar", body)
 
@@ -536,10 +540,10 @@ class AppRoutesTest(unittest.TestCase):
 
         response = self.client.get("/bandeja")
         body = response.get_data(as_text=True)
-        self.assertIn("Recordatorios (0)", body)
+        self.assertIn("Tareas (0)", body)
         self.assertNotIn("Mandar seguimiento de WhatsApp", body)
 
-    def test_recordatorio_requiere_fecha_y_texto(self):
+    def test_tarea_requiere_fecha_texto_y_asignado_valido(self):
         from db.models import CustomerReminder
 
         self.login()
@@ -553,6 +557,50 @@ class AppRoutesTest(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         with self.app.app_context():
             self.assertEqual(CustomerReminder.query.filter_by(customer_email="cliente-z@example.test").count(), 0)
+
+        response = self.client.post(
+            "/cliente/cliente-z@example.test/recordatorios",
+            data={"due_date": "2026-06-15", "texto": "Escribirle", "assignee": "Persona Invalida"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            self.assertEqual(CustomerReminder.query.filter_by(customer_email="cliente-z@example.test").count(), 0)
+
+    def test_tareas_filtra_por_fecha_asignado_y_marca_vencidas(self):
+        from db import db
+        from db.models import CustomerReminder
+
+        self.login()
+        self.add_snapshot([
+            self.customer_row(nombre="Cliente Vencido", email="vencido@example.test"),
+            self.customer_row(nombre="Cliente Futuro", email="futuro@example.test"),
+        ])
+        with self.app.app_context():
+            db.session.add(CustomerReminder(
+                customer_email="vencido@example.test",
+                due_date="2026-06-03",
+                texto="Llamar por impago",
+                assignee="Luis",
+            ))
+            db.session.add(CustomerReminder(
+                customer_email="futuro@example.test",
+                due_date="2026-06-15",
+                texto="Enviar resumen mensual",
+                assignee="Frank",
+            ))
+            db.session.commit()
+
+        response = self.client.get("/tareas?assignee=Luis&date=2026-06-03")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn("Tareas", body)
+        self.assertIn("Cliente Vencido", body)
+        self.assertIn("Llamar por impago", body)
+        self.assertIn("Luis", body)
+        self.assertIn("Vencida", body)
+        self.assertNotIn("Enviar resumen mensual", body)
 
     def test_dashboard_agrupa_variantes_de_instagram(self):
         from db import db

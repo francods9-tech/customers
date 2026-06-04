@@ -467,6 +467,7 @@ dd { margin: 0; min-width: 0; }
   .topbar nav { width: 100%; }
   .periodo-custom, .periodo-custom input, .periodo-custom select, .periodo-custom button { width: 100%; }
   .periodo-custom input[type="search"] { min-width: 0; }
+  .task-filters { grid-template-columns: 1fr; }
   .bandeja-head { align-items: flex-start; flex-direction: column; }
   .bandeja-list li { flex-direction: column; }
   .attention-meta { justify-content: flex-start; text-align: left; }
@@ -982,6 +983,33 @@ table.grid.clientes-grid {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: .45rem;
+}
+.tasks-page {
+  display: grid;
+  gap: 1rem;
+}
+.task-filter-panel {
+  margin-bottom: 0;
+}
+.task-filters {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) minmax(180px, 240px) minmax(160px, 220px) auto;
+  gap: .65rem;
+  align-items: end;
+  margin: 0;
+}
+.task-filters label {
+  display: grid;
+  gap: .28rem;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 600;
+}
+.task-filters input,
+.task-filters select,
+.task-filters button {
+  width: 100%;
+  margin: 0;
 }
 .inbox-buckets {
   display: grid;

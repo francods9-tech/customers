@@ -20,6 +20,7 @@
       <a class="nav-item {{ 'active' if active == 'index' }}" href="{{ url_for('index') }}">Inicio</a>
       <a class="nav-item {{ 'active' if active in ('clientes_list', 'cliente') }}" href="{{ url_for('clientes_list') }}">Clientes</a>
       <a class="nav-item {{ 'active' if active == 'bandeja' }}" href="{{ url_for('bandeja') }}">Bandeja</a>
+      <a class="nav-item {{ 'active' if active == 'tareas_list' }}" href="{{ url_for('tareas_list') }}">Tareas</a>
       <a class="nav-item {{ 'active' if active in ('quejas_list', 'ticket_detail') }}" href="{{ url_for('quejas_list') }}">Solicitudes</a>
       <div class="sidebar-section">Administracion</div>
       <a class="nav-item {{ 'active' if active == 'colabs_list' }}" href="{{ url_for('colabs_list') }}">Colabs</a>

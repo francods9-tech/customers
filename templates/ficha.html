@@ -331,18 +331,28 @@
 
       <section class="panel">
         <div class="panel-head">
-          <h2>Recordatorios</h2>
+          <h2>Tareas</h2>
+          <a class="chip" href="{{ url_for('tareas_list') }}">Ver agenda</a>
         </div>
         <form method="post" action="{{ url_for('add_recordatorio', email=c.email_key) }}" class="nota-form client-action-form">
           <div>
             <label>Fecha limite</label>
             <input type="date" name="due_date" required>
           </div>
+          <div>
+            <label>Asignado</label>
+            <select name="assignee">
+              <option value="">Sin asignar</option>
+              {% for value, label in task_assignees %}
+                <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
           <div class="action-detail">
             <label>Que hay que hacer</label>
             <textarea name="texto" placeholder="Ej: escribirle para revisar avance, enviar propuesta, confirmar pago..." required></textarea>
           </div>
-          <button type="submit">Crear recordatorio</button>
+          <button type="submit">Crear tarea</button>
         </form>
 
         {% if recordatorios_activos %}
@@ -350,6 +360,8 @@
             {% for r in recordatorios_activos %}
               <li>
                 <div class="timeline-head">
+                  <span class="tag {{ r.status_class }}">{{ r.status_label }}</span>
+                  <span class="tag">{{ r.assignee_label }}</span>
                   <span class="tag {{ 'tag-warn' if r.days is not none and r.days <= 0 }}">{{ r.due_label }}</span>
                   <span class="muted">{{ r.timing }}</span>
                   <form method="post" action="{{ url_for('complete_recordatorio', reminder_id=r.id) }}" class="inline">
@@ -361,7 +373,7 @@
             {% endfor %}
           </ul>
         {% else %}
-          <p class="muted">Sin recordatorios activos.</p>
+          <p class="muted">Sin tareas activas.</p>
         {% endif %}
 
         {% if recordatorios_completados %}

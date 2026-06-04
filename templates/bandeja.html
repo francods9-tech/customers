@@ -12,7 +12,7 @@
     <div class="inbox-summary">
       <span class="tag tag-warn">{{ pendientes.impago|length }} impagos</span>
       <span class="tag">{{ pendientes.trial|length }} trials</span>
-      <span class="tag">{{ recordatorios|length }} recordatorios</span>
+      <span class="tag">{{ recordatorios|length }} tareas</span>
     </div>
   </div>
 
@@ -141,7 +141,8 @@
 
     <section class="inbox-panel panel tone-neutral">
       <div class="panel-head">
-        <h2>Recordatorios ({{ recordatorios|length }})</h2>
+        <h2>Tareas ({{ recordatorios|length }})</h2>
+        <a class="chip" href="{{ url_for('tareas_list') }}">Ver agenda</a>
       </div>
       {% if recordatorios %}
         <div class="inbox-list">
@@ -152,6 +153,8 @@
                 <span class="sub">{{ r.customer_email }}</span>
               </div>
               <div class="inbox-meta">
+                <span class="tag {{ r.status_class }}">{{ r.status_label }}</span>
+                <span class="tag">{{ r.assignee_label }}</span>
                 <span class="tag {{ 'tag-warn' if r.days is not none and r.days <= 0 }}">{{ r.due_label }}</span>
                 <span class="sub">{{ r.timing }}</span>
                 <span class="sub">{{ r.texto }}</span>
