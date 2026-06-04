@@ -1001,3 +1001,18 @@ Riesgos / fuera de alcance:
 - No se cambia schema ni se agrega trazabilidad nueva.
 - El contador de `Tickets abiertos` es global y no queda filtrado por periodo/canal en esta iteracion.
 - La navegacion mobile conserva el scroll horizontal existente del shell.
+
+PR/deploy:
+
+- PR #72 mergeado a `main` con commit `35e8a6b`.
+- Deploy manual ejecutado con `railway deployment up -m "Deploy Inicio polish v1"`.
+- Deployment Railway `48828c5f-c04b-482d-9419-835c30392792` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard`.
+  - `/` sin sesion -> 302 a `/login?next=/`.
+- QA autenticada de produccion:
+  - Login OK.
+  - `/?preset=todo` desktop 1280px -> 4 KPIs alineados en una fila, sin overflow horizontal, `Tickets abiertos ... 4`, grafico de canal 360px.
+  - `/?preset=todo` mobile 390px -> sin overflow horizontal, `Tickets abiertos ... 4`, grafico de canal 260px.
+  - No se crearon ni modificaron datos reales.
