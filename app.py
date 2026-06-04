@@ -597,12 +597,15 @@ def index():
                                 Interaccion.resuelta.is_(False),
                                 Interaccion.estado_gestion != "resuelta")
                         .count())
+    tareas_activas = (CustomerReminder.query
+                      .filter(CustomerReminder.completed_at.is_(None))
+                      .count())
 
     return render_template(
         "dashboard.html", snap=snap, origenes=ORIGENES_BASE, presets=metrics.PRESETS,
         kpis=kpis, label=label, canal=canal, canales=canales, canales_titulo=canales_titulo, serie=serie,
         desde=desde.strftime("%Y-%m-%d"), hasta=(hasta - dt.timedelta(days=1)).strftime("%Y-%m-%d"),
-        tickets_abiertos=tickets_abiertos,
+        tickets_abiertos=tickets_abiertos, tareas_activas=tareas_activas,
         estado={
             **estado_summary,
             "activos": estado_summary["activos_recurrentes"],

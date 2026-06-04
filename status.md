@@ -1016,3 +1016,48 @@ PR/deploy:
   - `/?preset=todo` desktop 1280px -> 4 KPIs alineados en una fila, sin overflow horizontal, `Tickets abiertos ... 4`, grafico de canal 360px.
   - `/?preset=todo` mobile 390px -> sin overflow horizontal, `Tickets abiertos ... 4`, grafico de canal 260px.
   - No se crearon ni modificaron datos reales.
+
+## Iteracion 2026-06-04 - Inicio layout acciones V2
+
+Implementado en rama `codex/inicio-layout-actions`:
+
+- Inicio reordena el contenido para separar lectura y operacion:
+  - Arriba: dos graficos en paralelo (`Altas, bajas y trials` + `Base actual por canal`).
+  - Abajo: `Requiere accion` junto a `Estado actual de la base`.
+- `Requiere accion` agrega `Tareas pendientes`, enlazando a `/bandeja`.
+- El contador de tareas usa `CustomerReminder` activas (`completed_at is None`) sin crear tareas ni modificar datos.
+- La leyenda del grafico de canal pasa abajo para evitar cortes cuando el grafico comparte fila con el grafico principal.
+
+Archivos tocados:
+
+- `app.py`
+- `templates/dashboard.html`
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes.AppRoutesTest.test_dashboard_inicio_pulido_muestra_kpis_en_grilla_y_tickets_reales tests.test_app_routes.AppRoutesTest.test_dashboard_usa_layout_core_redisenado tests.test_app_routes.AppRoutesTest.test_dashboard_no_muestra_finanzas_ni_gastos tests.test_app_routes.AppRoutesTest.test_polish_v5_renderiza_todas_las_pantallas_principales -v
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests focales OK.
+- `tests.test_app_routes`: 58 tests OK.
+- Suite completa: 97 tests OK.
+- `git diff --check` con codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local autenticado en `http://127.0.0.1:5027/?preset=todo` con Playwright:
+  - Desktop 1280px sin overflow horizontal; graficos arriba en paralelo; accion y estado abajo; `Tareas pendientes ... 2`.
+  - Mobile 390px sin overflow horizontal; graficos y bloques operativos apilados en orden.
+  - Capturas temporales: `%TEMP%\traqeer_inicio_layout_actions\inicio-desktop.png` y `inicio-mobile.png`.
+
+Riesgos / fuera de alcance:
+
+- No se cambia schema ni se crean tareas desde Inicio.
+- El contador de tareas es global de activas y no queda filtrado por fecha/asignado.
+- La navegacion mobile conserva el scroll horizontal existente del shell.
