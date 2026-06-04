@@ -2,6 +2,7 @@
 {% block title %}Ticket #{{ ticket.id }}{% endblock %}
 {% block content %}
 
+<div class="ticket-page page polish-v5">
 <div class="page-head ticket-page-head">
   <div>
     <div class="crumb"><a href="{{ url_for('quejas_list') }}">Solicitudes</a> / Ticket #{{ ticket.id }}</div>
@@ -23,7 +24,7 @@
   </div>
 </div>
 
-<div class="ticket-layout">
+<div class="ticket-layout v5-two-column">
   <section class="panel ticket-thread">
     <div class="panel-head">
       <h2>Conversacion interna</h2>
@@ -122,6 +123,7 @@
       {% endif %}
     </section>
   </aside>
+</div>
 </div>
 
 {% endblock %}

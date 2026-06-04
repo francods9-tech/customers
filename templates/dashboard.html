@@ -2,7 +2,7 @@
 {% block title %}Inicio{% endblock %}
 {% block content %}
 
-<div class="dashboard-page page">
+<div class="dashboard-page page polish-v5">
   {% if not snap or not snap.eventos %}
     <div class="page-head dashboard-head">
       <div>
@@ -64,7 +64,7 @@
       {% endfor %}
     </div>
 
-    <div class="dashboard-main-grid">
+    <div class="dashboard-main-grid v5-dashboard-grid">
       <section class="panel dashboard-chart-panel">
         <div class="panel-head">
           <h2>Altas, bajas y trials por {{ serie.agrupado }}</h2>
@@ -108,7 +108,7 @@
       </section>
     </div>
 
-    <div class="dashboard-main-grid dashboard-secondary-grid">
+    <div class="dashboard-main-grid dashboard-secondary-grid v5-dashboard-grid">
       <section class="panel dashboard-chart-panel">
         <div class="panel-head">
           <h2>{{ canales_titulo or "Base actual por canal" }}</h2>

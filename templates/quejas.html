@@ -2,7 +2,8 @@
 {% block title %}Solicitudes{% endblock %}
 {% block content %}
 
-<div class="page-head">
+<div class="requests-page page polish-v5">
+<div class="page-head requests-head">
   <div>
     <div class="crumb"><a href="{{ url_for('bandeja') }}">Bandeja</a> / Solicitudes</div>
     <h1>Solicitudes de clientes</h1>
@@ -10,7 +11,7 @@
   </div>
 </div>
 
-<form method="get" class="periodo-bar">
+<form method="get" class="periodo-bar requests-period v5-toolbar">
   <div class="presets">
     {% for key, plabel in presets %}
       <a class="chip {{ 'chip-on' if label == plabel }}" href="{{ url_for('quejas_list', preset=key) }}">{{ plabel }}</a>
@@ -18,7 +19,7 @@
   </div>
 </form>
 
-<div class="mini-kpis">
+<div class="mini-kpis requests-kpi-strip">
   <div><strong>{{ period_stats.total }}</strong><span>Registradas en {{ label }}</span></div>
   <div><strong>{{ request_stats.total_abiertas }}</strong><span>Abiertas actuales</span></div>
   <div><strong>{{ period_stats.por_equipo.cs }}</strong><span>Customer Success</span></div>
@@ -26,7 +27,7 @@
   <div><strong>{{ period_stats.total_resueltas }}</strong><span>Resueltas en {{ label }}</span></div>
 </div>
 
-<section class="panel">
+<section class="panel requests-chart-panel">
   <h2>Solicitudes por {{ serie_solicitudes.agrupado }}</h2>
   {% if serie_solicitudes.valores|sum %}
     <canvas id="chartSolicitudes" height="105"></canvas>
@@ -35,7 +36,7 @@
   {% endif %}
 </section>
 
-<section class="request-form-panel panel">
+<section class="request-form-panel panel v5-form-panel">
   <div class="panel-head">
     <h2>Nueva solicitud</h2>
     <span class="muted">Carga rapida desde cliente existente</span>
@@ -93,7 +94,7 @@
   {% endif %}
 </section>
 
-<section class="panel request-board">
+<section class="panel request-board v5-board-panel">
   <div class="panel-head">
     <h2>Abiertas ({{ abiertas|length }})</h2>
     <span class="muted">Ordenadas por antiguedad</span>
@@ -187,7 +188,7 @@
 </section>
 
 {% if resueltas %}
-<section class="panel">
+<section class="panel v5-board-panel">
   <div class="panel-head">
     <h2>Resueltas (ultimas {{ resueltas|length }})</h2>
     <span class="muted">Historial reciente</span>
@@ -308,4 +309,5 @@
     });
   });
 </script>
+</div>
 {% endblock %}

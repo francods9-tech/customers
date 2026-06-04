@@ -2,7 +2,8 @@
 {% block title %}{{ titulo or "Clientes" }}{% endblock %}
 {% block content %}
 
-<div class="page-head">
+<div class="clients-page page polish-v5">
+<div class="page-head clients-head">
   <div>
     <div class="crumb">Operacion / Clientes</div>
     <h1>{{ titulo or "Clientes" }}</h1>
@@ -20,7 +21,7 @@
     </form>
   </div>
 {% else %}
-  <div class="client-toolbar">
+  <div class="client-toolbar v5-toolbar">
     <div class="segmented-filter">
       <a class="chip {{ 'chip-on' if not estado and not tipo and not recurrente }}" href="{{ url_for('clientes_list', origen=origen, q=q) }}">Todos</a>
       <a class="chip {{ 'chip-on' if recurrente }}" href="{{ url_for('clientes_list', recurrente=1, origen=origen, q=q) }}">Activos recurrentes</a>
@@ -56,7 +57,7 @@
     </form>
   </div>
 
-  <div class="mini-kpis">
+  <div class="mini-kpis clients-kpi-strip">
     <div><strong>{{ resumen.activos_recurrentes }}</strong><span>Activos recurrentes</span></div>
     <div><strong>{{ resumen.agencias }}</strong><span>Agencias</span></div>
     <div><strong>{{ resumen.one_time }}</strong><span>One time</span></div>
@@ -65,7 +66,7 @@
     <div><strong>{{ resumen.colabs_revision_pendiente }}</strong><span>Colabs a revisar</span></div>
   </div>
 
-  <div class="table-wrap clientes-table-wrap">
+  <div class="table-wrap clientes-table-wrap v5-table-surface">
     <table class="grid clientes-grid">
       <thead>
         <tr>
@@ -123,7 +124,7 @@
     </table>
   </div>
 
-  <div class="clientes-mobile-list">
+  <div class="clientes-mobile-list v5-mobile-list">
     {% for c in snap.clientes %}
     <a class="cliente-card" href="{{ url_for('cliente', email=c.email_key) }}">
       <div class="cliente-card-head">
@@ -153,4 +154,5 @@
     {% endfor %}
   </div>
 {% endif %}
+</div>
 {% endblock %}
