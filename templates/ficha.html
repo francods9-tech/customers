@@ -332,7 +332,7 @@
       <section class="panel">
         <div class="panel-head">
           <h2>Tareas</h2>
-          <a class="chip" href="{{ url_for('tareas_list') }}">Ver agenda</a>
+          <a class="chip" href="{{ url_for('bandeja') }}">Ver bandeja</a>
         </div>
         <form method="post" action="{{ url_for('add_recordatorio', email=c.email_key) }}" class="nota-form client-action-form">
           <div>

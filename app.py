@@ -234,10 +234,13 @@ def _reminder_view(row, nombre_por_email=None):
         status_label = "Pendiente"
         status_class = ""
     assignee = row.assignee or ""
+    customer_email = row.customer_email or ""
+    is_generic = not customer_email
     return {
         "id": row.id,
-        "customer_email": row.customer_email,
-        "customer_name": (nombre_por_email or {}).get(row.customer_email, row.customer_email),
+        "customer_email": customer_email,
+        "customer_name": "Sin cliente" if is_generic else (nombre_por_email or {}).get(customer_email, customer_email),
+        "is_generic": is_generic,
         "texto": row.texto,
         "due_date": row.due_date,
         "due_label": due.strftime("%d/%m/%Y") if due else row.due_date,
@@ -274,6 +277,24 @@ def _task_groups(rows, selected_date, nombre_por_email=None):
         else:
             groups["upcoming"].append(item)
     return groups
+
+
+def _task_query_from_request():
+    selected_date = _parse_iso_date(request.args.get("date")) or dt.datetime.now(MADRID_TZ).date()
+    assignee = (request.args.get("assignee") or "").strip()
+    status = request.args.get("status") or "activas"
+    query = CustomerReminder.query
+    if assignee in TASK_ASSIGNEE_VALUES:
+        query = query.filter(CustomerReminder.assignee == assignee)
+    elif assignee == "sin_asignar":
+        query = query.filter(CustomerReminder.assignee == "")
+    if status == "completadas":
+        query = query.filter(CustomerReminder.completed_at.is_not(None))
+    elif status == "todas":
+        pass
+    else:
+        query = query.filter(CustomerReminder.completed_at.is_(None))
+    return selected_date, assignee, status, query
 
 
 def _churn_key(email, fecha):
@@ -1080,46 +1101,54 @@ def bandeja():
         pendientes["trial"],
         key=lambda c: (((c.get("trial") or {}).get("fecha_raw") or "9999"), (c.get("nombre") or "").lower()),
     )
-    nombre_por_email = {c["email_key"]: c["nombre"] for c in (snap["clientes"] if snap else [])}
-    recordatorios = _active_reminders(nombre_por_email)
-    return render_template("bandeja.html", pendientes=pendientes,
-                           nombres=nombre_por_email,
-                           recordatorios=recordatorios,
-                           task_assignees=TASK_ASSIGNEE_OPTIONS)
-
-
-@app.route("/tareas")
-@login_required
-def tareas_list():
-    snap, _ = _clientes_enriquecidos()
     clientes = snap["clientes"] if snap else []
     nombre_por_email = {c["email_key"]: c["nombre"] for c in clientes}
-    selected_date = _parse_iso_date(request.args.get("date")) or dt.datetime.now(MADRID_TZ).date()
-    assignee = (request.args.get("assignee") or "").strip()
-    status = request.args.get("status") or "activas"
-
-    query = CustomerReminder.query
-    if assignee in TASK_ASSIGNEE_VALUES:
-        query = query.filter(CustomerReminder.assignee == assignee)
-    elif assignee == "sin_asignar":
-        query = query.filter(CustomerReminder.assignee == "")
-
-    if status == "completadas":
-        query = query.filter(CustomerReminder.completed_at.is_not(None))
-    elif status == "todas":
-        pass
-    else:
-        query = query.filter(CustomerReminder.completed_at.is_(None))
-
-    rows = query.order_by(CustomerReminder.due_date.asc(), CustomerReminder.created_at.asc()).all()
-    groups = _task_groups(rows, selected_date, nombre_por_email)
-    return render_template("tareas.html",
-                           groups=groups,
+    selected_date, assignee, status, task_query = _task_query_from_request()
+    task_rows = task_query.order_by(CustomerReminder.due_date.asc(), CustomerReminder.created_at.asc()).all()
+    task_groups = _task_groups(task_rows, selected_date, nombre_por_email)
+    task_total = sum(len(v) for v in task_groups.values())
+    return render_template("bandeja.html", pendientes=pendientes,
+                           nombres=nombre_por_email,
+                           recordatorios=[item for group in task_groups.values() for item in group],
+                           task_groups=task_groups,
                            selected_date=selected_date.isoformat(),
                            selected_assignee=assignee,
                            selected_status=status,
                            task_assignees=TASK_ASSIGNEE_OPTIONS,
-                           total_tasks=sum(len(v) for v in groups.values()))
+                           task_total=task_total,
+                           task_customer_options=[(c["email_key"], c["nombre"]) for c in clientes])
+
+
+@app.route("/tareas", methods=["GET"])
+@login_required
+def tareas_list():
+    return redirect(url_for("bandeja", **request.args.to_dict(flat=True)))
+
+
+@app.route("/tareas", methods=["POST"])
+@login_required
+def add_tarea():
+    snap = ultimo_snapshot()
+    customer_email = (request.form.get("customer_email") or "").strip().lower()
+    valid_customers = {c.get("email_key") for c in snap.get("clientes", [])} if snap else set()
+    if customer_email and customer_email not in valid_customers:
+        flash("El cliente elegido no es valido", "error")
+        return redirect(url_for("bandeja"))
+    texto = (request.form.get("texto") or "").strip()
+    due = _parse_iso_date(request.form.get("due_date"))
+    assignee = (request.form.get("assignee") or "").strip()
+    if not texto or not due or assignee not in TASK_ASSIGNEE_VALUES:
+        flash("Completa titulo, fecha y asignado de la tarea", "error")
+        return redirect(url_for("bandeja"))
+    db.session.add(CustomerReminder(
+        customer_email=customer_email,
+        texto=texto,
+        due_date=due.isoformat(),
+        assignee=assignee,
+    ))
+    db.session.commit()
+    flash("Tarea creada", "ok")
+    return redirect(url_for("bandeja", date=due.isoformat(), assignee=assignee))
 
 
 @app.route("/clientes/marcar-bienvenidos", methods=["POST"])

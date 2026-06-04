@@ -739,3 +739,32 @@ Resultado:
 - 77 tests OK.
 - `git diff --check` sin errores; solo avisos esperados de normalizacion CRLF en Windows.
 - HTTP local con server en `http://127.0.0.1:5001`: `/tareas`, `/tareas?assignee=Luis&date=2026-06-04` y `/bandeja` responden 200.
+
+## Iteracion 2026-06-04 - Bandeja unificada con tareas genericas
+
+Implementado en rama `codex/bandeja-tareas-unificada`:
+
+- Bandeja absorbe la experiencia de Tareas: filtros por fecha/asignado/estado, grupos de vencidas/para la fecha/proximas y formulario `Nueva tarea`.
+- Se elimina la pestaña lateral `Tareas`; `GET /tareas` redirige a `/bandeja` preservando query params.
+- `POST /tareas` crea tareas rapidas con titulo, fecha, asignado y cliente opcional.
+- Las tareas sin cliente se guardan con `customer_email=""` y se muestran como `Sin cliente`.
+- Se elimina `templates/tareas.html` para no mantener una pantalla duplicada muerta.
+
+Fuera de alcance por ahora:
+
+- Usuarios configurables.
+- Tareas desde tickets o automatizacion de solicitudes.
+- Campo de detalle separado del titulo.
+
+Verificacion:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- 80 tests OK.
+- `git diff --check` sin errores; solo avisos esperados de normalizacion CRLF en Windows.
+- HTTP local por test client: `/bandeja` 200, `/bandeja?assignee=Luis&date=2026-06-04` 200 y `/tareas?assignee=Luis&date=2026-06-04` 302 hacia Bandeja.
