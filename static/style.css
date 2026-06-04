@@ -893,6 +893,19 @@ table.grid.clientes-grid {
 }
 .dashboard-ops-row {
   grid-template-columns: minmax(320px, .85fr) minmax(0, 1fr);
+  align-items: stretch;
+}
+.dashboard-ops-row > .panel {
+  height: 100%;
+}
+.dashboard-action-panel,
+.dashboard-state-panel {
+  display: flex;
+  flex-direction: column;
+}
+.dashboard-action-panel .action-stack,
+.dashboard-state-panel .base-state-grid {
+  flex: 1;
 }
 .dashboard-secondary-grid {
   grid-template-columns: minmax(0, 1fr) minmax(360px, .8fr);

@@ -458,6 +458,8 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn('class="dashboard-main-grid dashboard-chart-row v5-dashboard-grid"', body)
         self.assertIn('class="dashboard-main-grid dashboard-ops-row v5-dashboard-grid"', body)
         self.assertIn('class="panel dashboard-chart-panel dashboard-channel-panel"', body)
+        self.assertIn('class="panel dashboard-state-panel"', body)
+        self.assertNotIn("Ver bandeja", body)
         self.assertLess(body.index("chartSerie"), body.index("chartCanal"))
         self.assertLess(body.index("chartCanal"), body.index("Requiere accion"))
         self.assertLess(body.index("Requiere accion"), body.index("Estado actual de la base"))
@@ -477,6 +479,10 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("display: grid", grid_rule)
         self.assertIn(".dashboard-chart-row", css)
         self.assertIn(".dashboard-ops-row", css)
+        ops_rule_start = css.index(".dashboard-ops-row")
+        ops_rule = css[ops_rule_start:css.index("}", ops_rule_start)]
+        self.assertIn("align-items: stretch", ops_rule)
+        self.assertIn(".dashboard-state-panel", css)
 
     def test_bandeja_muestra_cancelaciones_programadas_y_riesgos_manuales_de_churn(self):
         import datetime as dt

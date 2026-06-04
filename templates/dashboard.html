@@ -93,7 +93,6 @@
       <section class="dashboard-action-panel panel">
         <div class="panel-head">
           <h2>Requiere accion</h2>
-          <a class="chip" href="{{ url_for('bandeja') }}">Ver bandeja</a>
         </div>
         <div class="action-stack">
           <a class="action-row" href="{{ url_for('clientes_list', estado='impago') }}">
@@ -127,7 +126,7 @@
         </div>
       </section>
 
-      <section class="panel">
+      <section class="panel dashboard-state-panel">
         <div class="panel-head">
           <h2>Estado actual de la base</h2>
           <span class="muted">{{ snap.clientes|length }} registros</span>
