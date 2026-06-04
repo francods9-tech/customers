@@ -888,4 +888,11 @@ Resultado:
 PR/deploy:
 
 - PR #67 mergeado a `main` con commit `ab94c16`.
-- Deploy no ejecutado en esta iteracion.
+- Correccion de handoff PR #68 mergeada a `main` con commit `86691ee`.
+- Deploy Railway posterior ejecutado desde `main` con `railway deployment up -m "Deploy Bandeja task editing"`.
+- Deployment Railway `e04a1e03-2e7d-4cf9-8f7f-713f7e71976d` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard`.
+  - `/bandeja` sin sesion -> 302 a `/login?next=/bandeja`.
+- QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
