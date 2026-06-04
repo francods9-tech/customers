@@ -1113,6 +1113,209 @@ table.grid.clientes-grid {
   width: 100%;
 }
 
+/* Redesign V4: admin screens */
+.collabs-page,
+.churn-page,
+.messages-page {
+  display: grid;
+  gap: 1rem;
+}
+.collabs-page > *,
+.churn-page > *,
+.messages-page > * {
+  min-width: 0;
+}
+.collabs-head,
+.churn-head,
+.messages-head {
+  margin-bottom: 0;
+}
+.collabs-kpi-strip,
+.churn-kpi-strip {
+  margin: 0;
+}
+.collab-form-panel,
+.message-form-panel,
+.message-toolbar {
+  margin-bottom: 0;
+}
+.admin-creator-form {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.admin-creator-form input,
+.admin-creator-form select,
+.admin-creator-form textarea {
+  margin: 0;
+}
+.admin-creator-form textarea {
+  min-height: 76px;
+}
+.admin-creator-form button {
+  justify-self: start;
+}
+.creator-pipeline {
+  display: grid;
+  gap: .75rem;
+}
+.creator-card {
+  margin: 0;
+}
+.creator-card summary {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto auto auto auto;
+  align-items: center;
+  gap: .55rem;
+}
+.creator-card summary strong,
+.creator-card summary small {
+  display: block;
+}
+.creator-card summary small {
+  color: var(--muted);
+  font-size: .78rem;
+  margin-top: .1rem;
+}
+.creator-card-note {
+  margin: .8rem 0 0;
+  padding: .7rem .8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+.creator-card-note p {
+  margin: 0 0 .25rem;
+}
+.collab-client-kpis {
+  margin-top: 0;
+}
+.collab-clients-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 980px;
+}
+.collab-clients-table th {
+  text-align: left;
+  font-size: .75rem;
+  color: var(--muted);
+  padding: .65rem .75rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-2);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.collab-clients-table td {
+  padding: .7rem .75rem;
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: top;
+}
+.collab-clients-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.collab-clients-table tbody tr:hover td {
+  background: var(--accent-soft);
+}
+
+.churn-toolbar {
+  margin: 0;
+  padding: .85rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+.churn-toolbar .presets,
+.churn-toolbar .periodo-custom {
+  margin: 0;
+}
+.collabs-page .table-wrap,
+.churn-page .table-wrap,
+.messages-page .table-wrap {
+  max-width: 100%;
+}
+.churn-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1040px;
+}
+.churn-table th {
+  text-align: left;
+  font-size: .75rem;
+  color: var(--muted);
+  padding: .65rem .75rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-2);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.churn-table td {
+  padding: .7rem .75rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+.churn-table td {
+  vertical-align: middle;
+}
+.churn-table .churn-form {
+  grid-template-columns: 170px minmax(260px, 1fr) auto;
+}
+.churn-table .churn-form select,
+.churn-table .churn-form textarea {
+  margin: 0;
+}
+
+.message-toolbar .panel-head {
+  align-items: center;
+}
+.message-toolbar .wiki-filters {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(220px, 280px) auto;
+  gap: .55rem;
+  margin: 0;
+}
+.message-toolbar .wiki-filters input,
+.message-toolbar .wiki-filters select,
+.message-toolbar .wiki-filters button {
+  margin: 0;
+}
+.admin-message-form {
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, 240px) minmax(220px, 1fr) auto;
+}
+.admin-message-form input,
+.admin-message-form select,
+.admin-message-form textarea {
+  margin: 0;
+}
+.admin-message-form textarea {
+  grid-column: 1 / -1;
+  min-height: 96px;
+}
+.admin-message-form button {
+  justify-self: start;
+}
+.redesigned-message-list {
+  display: grid;
+  gap: .85rem;
+}
+.redesigned-message-list .message-card {
+  margin: 0;
+}
+.message-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin-top: .35rem;
+}
+.message-edit-details {
+  margin-top: .8rem;
+}
+.message-edit-details summary {
+  cursor: pointer;
+  color: var(--accent-2);
+  font-weight: 600;
+}
+.compact-empty {
+  padding: 1.5rem 1rem;
+}
+
 /* Redesign V2: Solicitudes + ticket detail */
 .panel-head {
   display: flex;
@@ -1461,6 +1664,28 @@ table.grid.clientes-grid {
   }
   .base-state-item:last-child {
     border-bottom: 0;
+  }
+  .admin-creator-form,
+  .message-toolbar .wiki-filters,
+  .admin-message-form {
+    grid-template-columns: 1fr;
+  }
+  .admin-message-form textarea {
+    grid-column: auto;
+  }
+  .creator-card summary {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+  .churn-toolbar {
+    align-items: stretch;
+  }
+  .churn-toolbar .presets,
+  .churn-toolbar .periodo-custom {
+    width: 100%;
+  }
+  .churn-table .churn-form {
+    grid-template-columns: 1fr;
   }
   .mini-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
