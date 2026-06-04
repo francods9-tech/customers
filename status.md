@@ -1115,3 +1115,18 @@ Riesgos / fuera de alcance:
 
 - No se cambia schema, rutas ni conteos.
 - La igualacion de altura aplica a los paneles de la fila operativa; en mobile se mantienen apilados.
+
+PR/deploy:
+
+- PR #74 mergeado a `main` con commit `f380ac7`.
+- Deploy manual ejecutado con `railway deployment up -m "Deploy Inicio action panel balance"`.
+- Deployment Railway `ceebff87-a8c8-4d7b-848c-71686f9e6b62` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard`.
+  - `/` sin sesion -> 302 a `/login?next=/`.
+- QA autenticada de produccion:
+  - Login OK.
+  - `/?preset=todo` desktop 1280px -> sin overflow horizontal; sin `Ver bandeja`; `Tareas pendientes` conserva href `/bandeja`; `Requiere accion` y `Estado actual de la base` con altura igual `374.4px`.
+  - `/?preset=todo` mobile 390px -> sin overflow horizontal; sin `Ver bandeja`; `Tareas pendientes` conserva href `/bandeja`.
+  - No se crearon ni modificaron datos reales.
