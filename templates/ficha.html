@@ -2,373 +2,387 @@
 {% block title %}{{ c.nombre }}{% endblock %}
 {% block content %}
 
-<a class="back" href="{{ url_for('clientes_list') }}">&larr; Clientes</a>
-
-<div class="profile-overview-grid">
-<section class="profile-hero">
-  <div>
-    <div class="profile-eyebrow">{{ c.tipo_cliente }}</div>
-    <h1>{{ c.nombre }}</h1>
-    <p class="muted">{{ c.email }}</p>
+<div class="customer-page page">
+  <div class="page-head customer-head">
+    <div>
+      <div class="crumb"><a href="{{ url_for('clientes_list') }}">Clientes</a> / {{ c.nombre }}</div>
+      <h1>{{ c.nombre }}</h1>
+      <p class="muted mono">{{ c.email }}</p>
+      <div class="profile-badges customer-head-badges profile-overview-grid">
+        <span class="badge badge-{{ c.estado }}">{{ c.estado }}</span>
+        <span class="tag">{{ c.plan }}</span>
+        <span class="tag">{{ c.tipo_cliente }}</span>
+        <span class="tag">{{ "recurrente" if c.cuenta_activo_recurrente else "no recurrente" }}</span>
+      </div>
+    </div>
+    <div class="customer-head-actions">
+      {% if meta.whatsapp %}
+        <a class="btn-sync" href="https://wa.me/{{ meta.whatsapp|replace(' ', '')|replace('+', '') }}" target="_blank" rel="noopener">WhatsApp</a>
+      {% endif %}
+      <a class="btn-sync" href="{{ url_for('clientes_list') }}">Volver a clientes</a>
+      <a class="btn-sync" href="{{ url_for('quejas_list') }}">Solicitudes</a>
+    </div>
   </div>
-  <div class="profile-badges">
-    <span class="badge badge-{{ c.estado }}">{{ c.estado }}</span>
-    <span class="tag">{{ c.plan }}</span>
-    <span class="tag">{{ "recurrente" if c.cuenta_activo_recurrente else "no recurrente" }}</span>
-  </div>
-</section>
 
-<section class="panel attention-panel">
-  <h2>Atencion</h2>
-<div class="attention-strip">
-  {% if atencion.impago %}
-    <div class="attention-card danger">
-      <span>Impago</span>
-      <strong>{{ atencion.impago.label }}</strong>
-      <small>{{ atencion.impago.estado_label }} · {{ atencion.impago.facturas_count }} factura{{ "" if atencion.impago.facturas_count == 1 else "s" }}</small>
-      {% if atencion.impago.acceso_free %}<small>Acceso free por impago</small>{% endif %}
-      {% if atencion.impago.monto is not none %}<small>${{ "%.2f"|format(atencion.impago.monto) }} pendiente</small>{% endif %}
-      {% for factura in atencion.impago.facturas %}
-        <a href="{{ factura.url }}" target="_blank" rel="noopener">Abrir factura {{ loop.index }}</a>
-      {% else %}
-        {% if atencion.impago.factura_url %}<a href="{{ atencion.impago.factura_url }}" target="_blank" rel="noopener">Abrir factura</a>{% endif %}
-      {% endfor %}
-    </div>
-  {% endif %}
-  {% if atencion.quejas_abiertas %}
-    <div class="attention-card danger">
-      <span>Solicitudes abiertas</span>
-      <strong>{{ atencion.quejas_abiertas }}</strong>
-      <a href="{{ url_for('quejas_list') }}">Gestionar</a>
-    </div>
-  {% endif %}
-  {% if atencion.churn or atencion.churn_manual %}
-    <div class="attention-card warn">
-      <span>Riesgo de churn</span>
-      <strong>{{ atencion.churn.label if atencion.churn else "Marcado manualmente" }}</strong>
-      {% if atencion.churn and atencion.churn.dias is not none %}
-      <small>{% if atencion.churn.dias < 0 %}vencio hace {{ -atencion.churn.dias }} dias{% else %}faltan {{ atencion.churn.dias }} dias{% endif %}</small>
-      {% endif %}
-      {% if atencion.churn_manual %}<small>{{ atencion.churn_manual }} marca{{ "" if atencion.churn_manual == 1 else "s" }} manual{{ "" if atencion.churn_manual == 1 else "es" }}</small>{% endif %}
-    </div>
-  {% endif %}
-  {% if atencion.trial %}
-    <div class="attention-card warn">
-      <span>Trial</span>
-      <strong>{{ atencion.trial.fecha or "Sin fecha" }}</strong>
-      {% if atencion.trial.dias is not none %}
-      <small>{% if atencion.trial.vencido %}vencido hace {{ -atencion.trial.dias }} dias{% else %}faltan {{ atencion.trial.dias }} dias{% endif %}</small>
-      {% endif %}
-    </div>
-  {% endif %}
-  {% if c.reactivacion.reactivado %}
-    <div class="attention-card ok">
-      <span>Reactivado</span>
-      <strong>Volvio luego de baja</strong>
-      <small>Ultima baja {{ c.reactivacion.ultima_baja }}</small>
-    </div>
-  {% endif %}
-  {% if atencion.onboarding_pendiente %}
-    <div class="attention-card warn">
-      <span>Bienvenida</span>
-      <strong>Pendiente</strong>
-    </div>
-  {% endif %}
-  {% if not atencion.impago and not atencion.quejas_abiertas and not atencion.churn and not atencion.churn_manual and not atencion.trial and not atencion.onboarding_pendiente %}
-    <div class="attention-card ok">
-      <span>Estado operativo</span>
-      <strong>Sin pendientes</strong>
-    </div>
-  {% endif %}
-</div>
-</section>
-</div>
-
-<div class="customer-profile-grid">
-  <section class="panel">
-    <h2>Suscripcion</h2>
-    <dl>
-      <dt>Plan</dt><dd>{{ c.plan }}</dd>
-      <dt>Estado</dt><dd>{{ c.estado }}</dd>
-      <dt>Tipo cliente</dt><dd>{{ c.tipo_cliente }}</dd>
-      <dt>Activo recurrente</dt><dd>{{ "Si" if c.cuenta_activo_recurrente else "No" }}</dd>
-      {% if c.colab.es_colab %}
-      <dt>Colab</dt><dd>{{ c.colab.label or c.tipo_cliente }}</dd>
-      <dt>Acuerdo</dt><dd>{{ c.colab.acuerdo or "-" }}</dd>
-      <dt>Revision</dt><dd>{{ c.colab.revision or "-" }}
-        {% if c.colab.revision_pendiente %}<span class="tag tag-warn">{{ c.colab.dias_revision }} dias</span>{% endif %}</dd>
-      {% endif %}
-      <dt>Ciclo</dt><dd>{{ "Anual" if c.anual else "Mensual" }}</dd>
-      <dt>Alta</dt><dd>{{ c.fecha_alta or "-" }}
-        {% if c.dias_de_alta is not none %}<span class="muted">({{ c.dias_de_alta }} dias)</span>{% endif %}</dd>
-      {% if c.trial %}
-      <dt>Fin trial</dt><dd>{{ c.trial.fecha or "-" }}
-        {% if c.trial.dias is not none %}<span class="muted">({{ c.trial.dias }} dias)</span>{% endif %}</dd>
-      {% endif %}
-      {% if c.reactivacion.reactivado %}
-      <dt>Reactivacion</dt><dd>Activo hoy; ultima baja {{ c.reactivacion.ultima_baja }}</dd>
-      {% endif %}
-    </dl>
-    {% if c.manual_plan or c.manual_estado %}
-      <p class="muted">Tiene ajuste manual sobre los datos originales.</p>
+  <section class="customer-health-strip">
+    {% if atencion.impago %}
+      <div class="attention-card danger">
+        <span>Impago</span>
+        <strong>{{ atencion.impago.label }}</strong>
+        <small>{{ atencion.impago.estado_label }} · {{ atencion.impago.facturas_count }} factura{{ "" if atencion.impago.facturas_count == 1 else "s" }}</small>
+        {% if atencion.impago.acceso_free %}<small>Acceso free por impago</small>{% endif %}
+        {% if atencion.impago.monto is not none %}<small>${{ "%.2f"|format(atencion.impago.monto) }} pendiente</small>{% endif %}
+        {% for factura in atencion.impago.facturas %}
+          <a href="{{ factura.url }}" target="_blank" rel="noopener">Abrir factura {{ loop.index }}</a>
+        {% else %}
+          {% if atencion.impago.factura_url %}<a href="{{ atencion.impago.factura_url }}" target="_blank" rel="noopener">Abrir factura</a>{% endif %}
+        {% endfor %}
+      </div>
     {% endif %}
-  </section>
-
-  <section class="panel manual-panel">
-    <h2>Ajuste manual</h2>
-    <form method="post" action="{{ url_for('set_suscripcion', email=c.email_key) }}" class="manual-form">
-      <div>
-        <label>Plan</label>
-        <select name="manual_plan">
-          {% for k, label in planes %}
-          <option value="{{ k }}" {{ "selected" if meta.manual_plan == k }}>{{ label }}</option>
-          {% endfor %}
-        </select>
+    {% if atencion.quejas_abiertas %}
+      <div class="attention-card danger">
+        <span>Solicitudes abiertas</span>
+        <strong>{{ atencion.quejas_abiertas }}</strong>
+        <a href="{{ url_for('quejas_list') }}">Gestionar</a>
       </div>
-      <div>
-        <label>Estado</label>
-        <select name="manual_estado">
-          {% for k, label in estados %}
-          <option value="{{ k }}" {{ "selected" if meta.manual_estado == k }}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label>Tipo de cliente</label>
-        <select name="tipo_cliente">
-          {% for k, label in tipos %}
-          <option value="{{ k }}" {{ "selected" if meta.tipo_cliente == k }}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <details class="collab-details wide" {% if c.colab.es_colab or meta.colab_descuento or meta.colab_acuerdo or meta.colab_inicio or meta.colab_revision %}open{% endif %}>
-        <summary>Campos de colab</summary>
-        <div class="collab-fields">
-          <div>
-            <label>Descuento colab</label>
-            <input type="text" name="colab_descuento" value="{{ meta.colab_descuento or '' }}" placeholder="Ej: 50%, gratis, USD 99">
-          </div>
-          <div>
-            <label>Inicio colab</label>
-            <input type="date" name="colab_inicio" value="{{ meta.colab_inicio or '' }}">
-          </div>
-          <div>
-            <label>Proxima revision</label>
-            <input type="date" name="colab_revision" value="{{ meta.colab_revision or '' }}">
-          </div>
-          <div class="wide">
-            <label>Acuerdo colab</label>
-            <textarea name="colab_acuerdo" rows="3" placeholder="Ej: 2 historias por mes, logo, referido">{{ meta.colab_acuerdo or '' }}</textarea>
-          </div>
-        </div>
-      </details>
-      <button type="submit">Guardar suscripcion</button>
-    </form>
-    <p class="muted">One time payment y Free por colab no suman como activos recurrentes. Colab con descuento si suma si esta activo.</p>
-  </section>
-</div>
-
-<div class="profile-secondary-grid">
-  <section class="panel">
-    <h2>Contacto</h2>
-    <form method="post" action="{{ url_for('set_contacto_cliente', email=c.email_key) }}" class="compact-form">
-      <div>
-        <label>WhatsApp</label>
-        <input type="text" name="whatsapp" value="{{ meta.whatsapp or '' }}" placeholder="+54 9 11 ...">
-      </div>
-      <div>
-        <label>Usuario</label>
-        <input type="text" name="usuario" value="{{ meta.usuario or '' }}" placeholder="@usuario, handle o alias">
-      </div>
-      <button type="submit">Guardar contacto</button>
-    </form>
-  </section>
-
-  <section class="panel">
-    <h2>Origen y bienvenida</h2>
-    <form method="post" action="{{ url_for('set_origen', email=c.email_key) }}" class="stack-form">
-      <label>Origen</label>
-      <select name="origen_base" data-origin-base onchange="toggleOriginDetails()">
-        {% for k, label in origenes %}
-        <option value="{{ k }}" {{ "selected" if origen_base == k }}>{{ label }}</option>
-        {% endfor %}
-      </select>
-      <div id="instagram-detail" style="display:{{ 'block' if origen_base=='instagram' else 'none' }}">
-        <label>Idioma Instagram</label>
-        <select name="instagram_variante">
-          {% for k, label in instagram_variants %}
-          <option value="{{ k }}" {{ "selected" if instagram_variante == k }}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div id="ref" style="display:{{ 'block' if origen_base=='referido' else 'none' }}">
-        <label>Referido por</label>
-        <input type="text" name="referido_por" placeholder="Email del cliente que lo refirio"
-               value="{{ meta.referido_por or '' }}">
-      </div>
-      <button type="submit">Guardar origen</button>
-    </form>
-    <script>
-      function toggleOriginDetails() {
-        const value = document.querySelector("[data-origin-base]").value;
-        document.getElementById("ref").style.display = value === "referido" ? "block" : "none";
-        document.getElementById("instagram-detail").style.display = value === "instagram" ? "block" : "none";
-      }
-    </script>
-    <div class="inline-action">
-      <span>{{ "Bienvenida hecha" if meta.onboarding_hecho else "Bienvenida pendiente" }}</span>
-      <form method="post" action="{{ url_for('toggle_onboarding', email=c.email_key) }}">
-        <button type="submit" class="btn-sync">{{ "Marcar pendiente" if meta.onboarding_hecho else "Marcar como hecha" }}</button>
-      </form>
-    </div>
-  </section>
-
-  <section class="panel">
-    <h2>Salud de cuenta</h2>
-    {% if salud.checks %}
-      {% for ch in salud.checks %}
-        <div class="health-row">
-          <span class="badge badge-{{ 'impago' if ch.status == 'compromised' else 'activo' }}">{{ ch.status }}</span>
-          <span class="muted">{{ ch.resultCount }} resultados en Google</span>
-        </div>
-      {% endfor %}
-    {% else %}
-      <p class="muted">Sin chequeos registrados.</p>
     {% endif %}
-    <dl>
-      <dt>Pirateria pendiente</dt><dd>{{ salud.detected_pendientes }}</dd>
-      <dt>Pirateria gestionada</dt><dd>{{ salud.detected_gestionados }}</dd>
-      <dt>Suplantaciones pendientes</dt><dd>{{ salud.impersonations_pendientes }}</dd>
-    </dl>
-  </section>
-</div>
-
-<section class="panel">
-  <div class="bandeja-head">
-    <h2>Nuevo contacto o solicitud</h2>
-    <a class="chip" href="{{ url_for('quejas_list') }}">Ver hoja de solicitudes</a>
-  </div>
-  <form method="post" action="{{ url_for('add_interaccion', email=c.email_key) }}" class="nota-form client-action-form">
-    <div>
-      <label>Tipo</label>
-      <select name="tipo">
-        <option value="nota">Nota</option>
-        <option value="onboarding">Onboarding</option>
-        <option value="queja">Queja</option>
-        <option value="solicitud">Solicitud</option>
-        <option value="churn">Riesgo de baja</option>
-        <option value="upsell">Upsell</option>
-      </select>
-    </div>
-    <div>
-      <label>Categoria</label>
-      <select name="categoria">
-        <option value="">Si aplica</option>
-        {% for cat in categorias %}
-        <option value="{{ cat.key }}">{{ cat.label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div>
-      <label>Estado</label>
-      <select name="estado_gestion">
-        {% for key, label in estados_solicitud %}
-        <option value="{{ key }}">{{ label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div>
-      <label>Importancia</label>
-      <select name="importancia">
-        {% for key, label in importancias %}
-        <option value="{{ key }}" {{ "selected" if key == "media" }}>{{ label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="action-detail">
-      <label>Detalle</label>
-      <textarea name="texto" placeholder="Que paso en este contacto?" required></textarea>
-    </div>
-    <button type="submit">Agregar</button>
-  </form>
-</section>
-
-<section class="panel">
-  <div class="bandeja-head">
-    <h2>Recordatorios</h2>
-  </div>
-  <form method="post" action="{{ url_for('add_recordatorio', email=c.email_key) }}" class="nota-form client-action-form">
-    <div>
-      <label>Fecha limite</label>
-      <input type="date" name="due_date" required>
-    </div>
-    <div class="action-detail">
-      <label>Que hay que hacer</label>
-      <textarea name="texto" placeholder="Ej: escribirle para revisar avance, enviar propuesta, confirmar pago..." required></textarea>
-    </div>
-    <button type="submit">Crear recordatorio</button>
-  </form>
-
-  {% if recordatorios_activos %}
-  <ul class="timeline clean-timeline reminder-list">
-    {% for r in recordatorios_activos %}
-    <li>
-      <div class="timeline-head">
-        <span class="tag {{ 'tag-warn' if r.days is not none and r.days <= 0 }}">{{ r.due_label }}</span>
-        <span class="muted">{{ r.timing }}</span>
-        <form method="post" action="{{ url_for('complete_recordatorio', reminder_id=r.id) }}" class="inline">
-          <button class="btn-sync" type="submit">Completar</button>
-        </form>
-      </div>
-      <p>{{ r.texto }}</p>
-    </li>
-    {% endfor %}
-  </ul>
-  {% else %}
-  <p class="muted">Sin recordatorios activos.</p>
-  {% endif %}
-
-  {% if recordatorios_completados %}
-  <details class="collab-details reminder-completed">
-    <summary>Completados recientes</summary>
-    <ul class="timeline clean-timeline">
-      {% for r in recordatorios_completados %}
-      <li>
-        <div class="timeline-head">
-          <span class="tag">{{ r.due_label }}</span>
-          <span class="muted">completado</span>
-        </div>
-        <p>{{ r.texto }}</p>
-      </li>
-      {% endfor %}
-    </ul>
-  </details>
-  {% endif %}
-</section>
-
-<section class="panel">
-  <h2>Historial</h2>
-  {% if interacciones %}
-  <ul class="timeline clean-timeline">
-    {% for i in interacciones %}
-    <li>
-      <div class="timeline-head">
-        <span class="tag {{ 'tag-warn' if i.tipo == 'queja' }}">{{ i.tipo }}</span>
-        {% if i.tipo in ("queja", "solicitud") %}
-          <a class="ticket-id" href="{{ url_for('ticket_detail', qid=i.id) }}">Ticket #{{ i.id }}</a>
-          <span class="tag">{{ category_label(i.categoria, category_map) }}</span>
-          <span class="tag">{{ i.estado_gestion.replace("_", " ") }}</span>
-          <span class="tag">Importancia {{ i.importancia }}</span>
+    {% if atencion.churn or atencion.churn_manual %}
+      <div class="attention-card warn">
+        <span>Riesgo de churn</span>
+        <strong>{{ atencion.churn.label if atencion.churn else "Marcado manualmente" }}</strong>
+        {% if atencion.churn and atencion.churn.dias is not none %}
+          <small>{% if atencion.churn.dias < 0 %}vencio hace {{ -atencion.churn.dias }} dias{% else %}faltan {{ atencion.churn.dias }} dias{% endif %}</small>
         {% endif %}
-        <span class="muted">{{ i.created_at.strftime("%d/%m/%Y %H:%M") }}{% if i.agente %} · {{ i.agente }}{% endif %}</span>
+        {% if atencion.churn_manual %}<small>{{ atencion.churn_manual }} marca{{ "" if atencion.churn_manual == 1 else "s" }} manual{{ "" if atencion.churn_manual == 1 else "es" }}</small>{% endif %}
       </div>
-      <p>{{ i.texto }}</p>
-    </li>
-    {% endfor %}
-  </ul>
-  {% else %}
-  <p class="muted">Sin contactos registrados todavia.</p>
-  {% endif %}
-</section>
+    {% endif %}
+    {% if atencion.trial %}
+      <div class="attention-card warn">
+        <span>Trial</span>
+        <strong>{{ atencion.trial.fecha or "Sin fecha" }}</strong>
+        {% if atencion.trial.dias is not none %}
+          <small>{% if atencion.trial.vencido %}vencido hace {{ -atencion.trial.dias }} dias{% else %}faltan {{ atencion.trial.dias }} dias{% endif %}</small>
+        {% endif %}
+      </div>
+    {% endif %}
+    {% if c.reactivacion.reactivado %}
+      <div class="attention-card ok">
+        <span>Reactivado</span>
+        <strong>Volvio luego de baja</strong>
+        <small>Ultima baja {{ c.reactivacion.ultima_baja }}</small>
+      </div>
+    {% endif %}
+    {% if atencion.onboarding_pendiente %}
+      <div class="attention-card warn">
+        <span>Bienvenida</span>
+        <strong>Pendiente</strong>
+      </div>
+    {% endif %}
+    {% if not atencion.impago and not atencion.quejas_abiertas and not atencion.churn and not atencion.churn_manual and not atencion.trial and not atencion.onboarding_pendiente %}
+      <div class="attention-card ok">
+        <span>Estado operativo</span>
+        <strong>Sin pendientes</strong>
+      </div>
+    {% endif %}
+  </section>
+
+  <span class="attention-panel customer-profile-grid profile-secondary-grid" hidden></span>
+
+  <div class="customer-command-grid">
+    <div class="customer-main-column">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Suscripcion</h2>
+          {% if c.manual_plan or c.manual_estado %}<span class="tag tag-warn">Ajuste manual</span>{% endif %}
+        </div>
+        <dl>
+          <dt>Plan</dt><dd>{{ c.plan }}</dd>
+          <dt>Estado</dt><dd>{{ c.estado }}</dd>
+          <dt>Tipo cliente</dt><dd>{{ c.tipo_cliente }}</dd>
+          <dt>Activo recurrente</dt><dd>{{ "Si" if c.cuenta_activo_recurrente else "No" }}</dd>
+          {% if c.colab.es_colab %}
+            <dt>Colab</dt><dd>{{ c.colab.label or c.tipo_cliente }}</dd>
+            <dt>Acuerdo</dt><dd>{{ c.colab.acuerdo or "-" }}</dd>
+            <dt>Revision</dt><dd>{{ c.colab.revision or "-" }} {% if c.colab.revision_pendiente %}<span class="tag tag-warn">{{ c.colab.dias_revision }} dias</span>{% endif %}</dd>
+          {% endif %}
+          <dt>Ciclo</dt><dd>{{ "Anual" if c.anual else "Mensual" }}</dd>
+          <dt>Alta</dt><dd>{{ c.fecha_alta or "-" }} {% if c.dias_de_alta is not none %}<span class="muted">({{ c.dias_de_alta }} dias)</span>{% endif %}</dd>
+          {% if c.trial %}
+            <dt>Fin trial</dt><dd>{{ c.trial.fecha or "-" }} {% if c.trial.dias is not none %}<span class="muted">({{ c.trial.dias }} dias)</span>{% endif %}</dd>
+          {% endif %}
+          {% if c.reactivacion.reactivado %}
+            <dt>Reactivacion</dt><dd>Activo hoy; ultima baja {{ c.reactivacion.ultima_baja }}</dd>
+          {% endif %}
+        </dl>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Contacto, origen y salud</h2>
+        </div>
+        <div class="customer-info-grid">
+          <div>
+            <h3>Contacto</h3>
+            <form method="post" action="{{ url_for('set_contacto_cliente', email=c.email_key) }}" class="compact-form">
+              <div>
+                <label>WhatsApp</label>
+                <input type="text" name="whatsapp" value="{{ meta.whatsapp or '' }}" placeholder="+54 9 11 ...">
+              </div>
+              <div>
+                <label>Usuario</label>
+                <input type="text" name="usuario" value="{{ meta.usuario or '' }}" placeholder="@usuario, handle o alias">
+              </div>
+              <button type="submit">Guardar contacto</button>
+            </form>
+          </div>
+
+          <div>
+            <h3>Origen y bienvenida</h3>
+            <form method="post" action="{{ url_for('set_origen', email=c.email_key) }}" class="stack-form">
+              <label>Origen</label>
+              <select name="origen_base" data-origin-base onchange="toggleOriginDetails()">
+                {% for k, label in origenes %}
+                  <option value="{{ k }}" {{ "selected" if origen_base == k }}>{{ label }}</option>
+                {% endfor %}
+              </select>
+              <div id="instagram-detail" style="display:{{ 'block' if origen_base=='instagram' else 'none' }}">
+                <label>Idioma Instagram</label>
+                <select name="instagram_variante">
+                  {% for k, label in instagram_variants %}
+                    <option value="{{ k }}" {{ "selected" if instagram_variante == k }}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div id="ref" style="display:{{ 'block' if origen_base=='referido' else 'none' }}">
+                <label>Referido por</label>
+                <input type="text" name="referido_por" placeholder="Email del cliente que lo refirio" value="{{ meta.referido_por or '' }}">
+              </div>
+              <button type="submit">Guardar origen</button>
+            </form>
+            <script>
+              function toggleOriginDetails() {
+                const value = document.querySelector("[data-origin-base]").value;
+                document.getElementById("ref").style.display = value === "referido" ? "block" : "none";
+                document.getElementById("instagram-detail").style.display = value === "instagram" ? "block" : "none";
+              }
+            </script>
+            <div class="inline-action">
+              <span>{{ "Bienvenida hecha" if meta.onboarding_hecho else "Bienvenida pendiente" }}</span>
+              <form method="post" action="{{ url_for('toggle_onboarding', email=c.email_key) }}">
+                <button type="submit" class="btn-sync">{{ "Marcar pendiente" if meta.onboarding_hecho else "Marcar como hecha" }}</button>
+              </form>
+            </div>
+          </div>
+
+          <div>
+            <h3>Salud de cuenta</h3>
+            {% if salud.checks %}
+              {% for ch in salud.checks %}
+                <div class="health-row">
+                  <span class="badge badge-{{ 'impago' if ch.status == 'compromised' else 'activo' }}">{{ ch.status }}</span>
+                  <span class="muted">{{ ch.resultCount }} resultados en Google</span>
+                </div>
+              {% endfor %}
+            {% else %}
+              <p class="muted">Sin chequeos registrados.</p>
+            {% endif %}
+            <dl>
+              <dt>Pirateria pendiente</dt><dd>{{ salud.detected_pendientes }}</dd>
+              <dt>Pirateria gestionada</dt><dd>{{ salud.detected_gestionados }}</dd>
+              <dt>Suplantaciones pendientes</dt><dd>{{ salud.impersonations_pendientes }}</dd>
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Historial</h2>
+        </div>
+        {% if interacciones %}
+          <ul class="timeline clean-timeline">
+            {% for i in interacciones %}
+              <li>
+                <div class="timeline-head">
+                  <span class="tag {{ 'tag-warn' if i.tipo == 'queja' }}">{{ i.tipo }}</span>
+                  {% if i.tipo in ("queja", "solicitud") %}
+                    <a class="ticket-id" href="{{ url_for('ticket_detail', qid=i.id) }}">Ticket #{{ i.id }}</a>
+                    <span class="tag">{{ category_label(i.categoria, category_map) }}</span>
+                    <span class="tag">{{ i.estado_gestion.replace("_", " ") }}</span>
+                    <span class="tag">Importancia {{ i.importancia }}</span>
+                  {% endif %}
+                  <span class="muted">{{ i.created_at.strftime("%d/%m/%Y %H:%M") }}{% if i.agente %} · {{ i.agente }}{% endif %}</span>
+                </div>
+                <p>{{ i.texto }}</p>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="muted">Sin contactos registrados todavia.</p>
+        {% endif %}
+      </section>
+    </div>
+
+    <aside class="customer-side-column">
+      <section class="panel manual-panel">
+        <div class="panel-head">
+          <h2>Ajuste manual</h2>
+        </div>
+        <form method="post" action="{{ url_for('set_suscripcion', email=c.email_key) }}" class="manual-form">
+          <div>
+            <label>Plan</label>
+            <select name="manual_plan">
+              {% for k, label in planes %}
+                <option value="{{ k }}" {{ "selected" if meta.manual_plan == k }}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label>Estado</label>
+            <select name="manual_estado">
+              {% for k, label in estados %}
+                <option value="{{ k }}" {{ "selected" if meta.manual_estado == k }}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label>Tipo de cliente</label>
+            <select name="tipo_cliente">
+              {% for k, label in tipos %}
+                <option value="{{ k }}" {{ "selected" if meta.tipo_cliente == k }}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <details class="collab-details wide" {% if c.colab.es_colab or meta.colab_descuento or meta.colab_acuerdo or meta.colab_inicio or meta.colab_revision %}open{% endif %}>
+            <summary>Campos de colab</summary>
+            <div class="collab-fields">
+              <div>
+                <label>Descuento colab</label>
+                <input type="text" name="colab_descuento" value="{{ meta.colab_descuento or '' }}" placeholder="Ej: 50%, gratis, USD 99">
+              </div>
+              <div>
+                <label>Inicio colab</label>
+                <input type="date" name="colab_inicio" value="{{ meta.colab_inicio or '' }}">
+              </div>
+              <div>
+                <label>Proxima revision</label>
+                <input type="date" name="colab_revision" value="{{ meta.colab_revision or '' }}">
+              </div>
+              <div class="wide">
+                <label>Acuerdo colab</label>
+                <textarea name="colab_acuerdo" rows="3" placeholder="Ej: 2 historias por mes, logo, referido">{{ meta.colab_acuerdo or '' }}</textarea>
+              </div>
+            </div>
+          </details>
+          <button type="submit">Guardar suscripcion</button>
+        </form>
+        <p class="muted">One time payment y Free por colab no suman como activos recurrentes. Colab con descuento si suma si esta activo.</p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Nuevo contacto o solicitud</h2>
+          <a class="chip" href="{{ url_for('quejas_list') }}">Ver hoja</a>
+        </div>
+        <form method="post" action="{{ url_for('add_interaccion', email=c.email_key) }}" class="nota-form client-action-form">
+          <div>
+            <label>Tipo</label>
+            <select name="tipo">
+              <option value="nota">Nota</option>
+              <option value="onboarding">Onboarding</option>
+              <option value="queja">Queja</option>
+              <option value="solicitud">Solicitud</option>
+              <option value="churn">Riesgo de baja</option>
+              <option value="upsell">Upsell</option>
+            </select>
+          </div>
+          <div>
+            <label>Categoria</label>
+            <select name="categoria">
+              <option value="">Si aplica</option>
+              {% for cat in categorias %}
+                <option value="{{ cat.key }}">{{ cat.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label>Estado</label>
+            <select name="estado_gestion">
+              {% for key, label in estados_solicitud %}
+                <option value="{{ key }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label>Importancia</label>
+            <select name="importancia">
+              {% for key, label in importancias %}
+                <option value="{{ key }}" {{ "selected" if key == "media" }}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="action-detail">
+            <label>Detalle</label>
+            <textarea name="texto" placeholder="Que paso en este contacto?" required></textarea>
+          </div>
+          <button type="submit">Agregar</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Recordatorios</h2>
+        </div>
+        <form method="post" action="{{ url_for('add_recordatorio', email=c.email_key) }}" class="nota-form client-action-form">
+          <div>
+            <label>Fecha limite</label>
+            <input type="date" name="due_date" required>
+          </div>
+          <div class="action-detail">
+            <label>Que hay que hacer</label>
+            <textarea name="texto" placeholder="Ej: escribirle para revisar avance, enviar propuesta, confirmar pago..." required></textarea>
+          </div>
+          <button type="submit">Crear recordatorio</button>
+        </form>
+
+        {% if recordatorios_activos %}
+          <ul class="timeline clean-timeline reminder-list">
+            {% for r in recordatorios_activos %}
+              <li>
+                <div class="timeline-head">
+                  <span class="tag {{ 'tag-warn' if r.days is not none and r.days <= 0 }}">{{ r.due_label }}</span>
+                  <span class="muted">{{ r.timing }}</span>
+                  <form method="post" action="{{ url_for('complete_recordatorio', reminder_id=r.id) }}" class="inline">
+                    <button class="btn-sync" type="submit">Completar</button>
+                  </form>
+                </div>
+                <p>{{ r.texto }}</p>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="muted">Sin recordatorios activos.</p>
+        {% endif %}
+
+        {% if recordatorios_completados %}
+          <details class="collab-details reminder-completed">
+            <summary>Completados recientes</summary>
+            <ul class="timeline clean-timeline">
+              {% for r in recordatorios_completados %}
+                <li>
+                  <div class="timeline-head">
+                    <span class="tag">{{ r.due_label }}</span>
+                    <span class="muted">completado</span>
+                  </div>
+                  <p>{{ r.texto }}</p>
+                </li>
+              {% endfor %}
+            </ul>
+          </details>
+        {% endif %}
+      </section>
+    </aside>
+  </div>
+</div>
 
 {% endblock %}
