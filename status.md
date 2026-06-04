@@ -1,6 +1,6 @@
 # Estado Traqeer AM Dashboard Codex
 
-Fecha: 2026-06-03.
+Fecha: 2026-06-04.
 
 Carpeta de trabajo aislada:
 
@@ -188,8 +188,24 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - `/bandeja` adopta buckets operativos densos para churn, impagos, onboarding, trials y recordatorios, preservando acciones POST existentes.
   - `/cliente/<email>` adopta ficha en columnas: cabecera, strip de atencion, columna principal de suscripcion/contacto/salud/historial y columna lateral de ajustes/contactos/recordatorios.
   - Se mantiene Flask/Jinja/CSS sin React/Tailwind ni cambios de schema/rutas.
+- Redisenio UI/UX V4 admin:
+  - `/colabs` adopta cabecera operativa, KPIs, panel de alta de creador, pipeline de creadores y tabla de clientes colab con scroll controlado.
+  - `/bajas` adopta cabecera, filtros de periodo/canal, KPIs y tabla de motivos con formulario inline preservando POST `/bajas/motivo`.
+  - `/mensajes` adopta toolbar de busqueda/categoria, panel compacto de alta y lista de mensajes redisenada con copiar/editar/archivar.
+  - Se mantiene Flask/Jinja/CSS sin React/Tailwind ni cambios de schema/rutas.
 
 ## Verificacion
+
+Ultima verificacion luego de redisenar Colabs, Bajas y Mensajes:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes.AppRoutesTest.test_colabs_usa_layout_admin_redisenado tests.test_app_routes.AppRoutesTest.test_bajas_usa_layout_admin_redisenado tests.test_app_routes.AppRoutesTest.test_mensajes_usa_layout_admin_redisenado -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+git diff --check
+```
+
+Resultado: tests focales OK; 75 tests OK; import Flask OK con 40 rutas; `git diff --check` sin errores reales, solo avisos CRLF de Windows. Verificacion visual local con Playwright en 1440px y 390px para `/colabs`, `/bajas?preset=todo` y `/mensajes`: sin overflow horizontal; capturas guardadas en `design-screenshots/admin-ui-redesign/`.
 
 Ultima verificacion luego de redisenar Inicio, Bandeja y Ficha de cliente:
 

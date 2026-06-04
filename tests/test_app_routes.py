@@ -10,13 +10,19 @@ class AppRoutesTest(unittest.TestCase):
 
     def tearDown(self):
         from db import db
-        from db.models import CustomerMeta, CustomerReminder, Interaccion, Snapshot, TicketComment
+        from db.models import (ChurnReason, ColabCreator, CustomerMeta,
+                               CustomerReminder, Interaccion, MessageCategory,
+                               MessageTemplate, Snapshot, TicketComment)
 
         with self.app.app_context():
             TicketComment.query.filter(TicketComment.ticket.has(Interaccion.customer_email.like("%@example.test"))).delete(synchronize_session=False)
             Interaccion.query.filter(Interaccion.customer_email.like("%@example.test")).delete(synchronize_session=False)
             CustomerReminder.query.filter(CustomerReminder.customer_email.like("%@example.test")).delete(synchronize_session=False)
             CustomerMeta.query.filter(CustomerMeta.email.like("%@example.test")).delete(synchronize_session=False)
+            ChurnReason.query.filter(ChurnReason.email.like("%@example.test")).delete(synchronize_session=False)
+            ColabCreator.query.filter(ColabCreator.contacto.like("%@example.test")).delete(synchronize_session=False)
+            MessageTemplate.query.filter(MessageTemplate.titulo.like("Test UI%")).delete(synchronize_session=False)
+            MessageCategory.query.filter(MessageCategory.key.like("test_ui_%")).delete(synchronize_session=False)
             Snapshot.query.filter(Snapshot.payload["test_marker"].as_string() == "solicitudes_directas").delete(synchronize_session=False)
             db.session.commit()
 
@@ -75,6 +81,118 @@ class AppRoutesTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login", response.location)
+
+    def test_colabs_usa_layout_admin_redisenado(self):
+        from db import db
+        from db.models import ColabCreator, CustomerMeta
+
+        self.login()
+        self.add_snapshot([self.customer_row(nombre="Cliente Colab", email="colab@example.test")])
+        with self.app.app_context():
+            db.session.add(CustomerMeta(
+                email="colab@example.test",
+                tipo_cliente="colab_descuento",
+                colab_descuento="50%",
+                colab_acuerdo="Dos historias por mes",
+                colab_revision="2026-06-01",
+            ))
+            db.session.add(ColabCreator(
+                nombre="Test UI Creator",
+                contacto="creator@example.test",
+                red="Instagram",
+                estado="negociando",
+                tipo="descuento",
+                proxima_accion="Enviar propuesta",
+                responsable="Frank",
+            ))
+            db.session.commit()
+
+        response = self.client.get("/colabs")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn('class="collabs-page page"', body)
+        self.assertIn('class="page-head collabs-head"', body)
+        self.assertIn('class="collabs-kpi-strip mini-kpis"', body)
+        self.assertIn('class="collab-form-panel panel"', body)
+        self.assertIn('action="/colabs/creadores"', body)
+        self.assertIn('class="creator-pipeline"', body)
+        self.assertIn("Test UI Creator", body)
+        self.assertIn("Enviar propuesta", body)
+        self.assertIn('class="collab-clients-table"', body)
+        self.assertIn("Cliente Colab", body)
+
+    def test_bajas_usa_layout_admin_redisenado(self):
+        from db import db
+        from db.models import ChurnReason, Snapshot
+
+        self.login()
+        with self.app.app_context():
+            db.session.add(Snapshot(payload={
+                "test_marker": "solicitudes_directas",
+                "generado": "2026-06-03T00:00:00+00:00",
+                "clientes": [self.customer_row(nombre="Cliente Activo", email="activo-bajas@example.test")],
+                "eventos": {
+                    "altas": [],
+                    "bajas": [{
+                        "email": "baja@example.test",
+                        "fecha": "2026-06-02T00:00:00+00:00",
+                        "plan": "Premium",
+                        "origen": "instagram",
+                    }],
+                },
+                "resumen": {},
+            }))
+            db.session.add(ChurnReason(
+                email="baja@example.test",
+                fecha="2026-06-02",
+                motivo="precio",
+                detalle="Pidio bajar costos",
+            ))
+            db.session.commit()
+
+        response = self.client.get("/bajas?preset=todo")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn('class="churn-page page"', body)
+        self.assertIn('class="page-head churn-head"', body)
+        self.assertIn('class="churn-toolbar periodo-bar"', body)
+        self.assertIn('class="churn-kpi-strip mini-kpis"', body)
+        self.assertIn('class="churn-table"', body)
+        self.assertIn("baja@example.test", body)
+        self.assertIn('action="/bajas/motivo"', body)
+        self.assertIn('name="motivo"', body)
+        self.assertIn("Pidio bajar costos", body)
+
+    def test_mensajes_usa_layout_admin_redisenado(self):
+        from db import db
+        from db.models import MessageCategory, MessageTemplate
+
+        self.login()
+        with self.app.app_context():
+            db.session.add(MessageCategory(key="test_ui_soporte", label="Test UI Soporte"))
+            db.session.add(MessageTemplate(
+                titulo="Test UI Mensaje",
+                cuerpo="Hola, revisamos tu caso y te escribimos con novedades.",
+                categoria_key="test_ui_soporte",
+                tags="soporte,seguimiento",
+            ))
+            db.session.commit()
+
+        response = self.client.get("/mensajes?q=seguimiento")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn('class="messages-page page"', body)
+        self.assertIn('class="page-head messages-head"', body)
+        self.assertIn('class="message-toolbar panel"', body)
+        self.assertIn('action="/mensajes/categorias"', body)
+        self.assertIn('class="message-form-panel panel"', body)
+        self.assertIn('action="/mensajes"', body)
+        self.assertIn('class="message-list redesigned-message-list"', body)
+        self.assertIn("Test UI Mensaje", body)
+        self.assertIn("copy-message", body)
 
     def test_ficha_permita_guardar_contacto_whatsapp_y_usuario(self):
         self.login()
