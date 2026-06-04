@@ -69,6 +69,9 @@ def _ensure_local_schema():
     additions = {
         "manual_plan": "ALTER TABLE customer_meta ADD COLUMN manual_plan VARCHAR(32) NOT NULL DEFAULT ''",
         "manual_estado": "ALTER TABLE customer_meta ADD COLUMN manual_estado VARCHAR(32) NOT NULL DEFAULT ''",
+        "manual_customer": "ALTER TABLE customer_meta ADD COLUMN manual_customer BOOLEAN NOT NULL DEFAULT 0",
+        "manual_nombre": "ALTER TABLE customer_meta ADD COLUMN manual_nombre VARCHAR(160) NOT NULL DEFAULT ''",
+        "manual_fecha_alta": "ALTER TABLE customer_meta ADD COLUMN manual_fecha_alta VARCHAR(10) NOT NULL DEFAULT ''",
         "tipo_cliente": "ALTER TABLE customer_meta ADD COLUMN tipo_cliente VARCHAR(32) NOT NULL DEFAULT ''",
         "whatsapp": "ALTER TABLE customer_meta ADD COLUMN whatsapp VARCHAR(80) NOT NULL DEFAULT ''",
         "usuario": "ALTER TABLE customer_meta ADD COLUMN usuario VARCHAR(120) NOT NULL DEFAULT ''",
@@ -317,6 +320,61 @@ def _customer_signup_date(c):
     return dt.datetime.now(MADRID_TZ).date()
 
 
+def _format_manual_signup_date(value):
+    parsed = _parse_iso_date(value)
+    return parsed.strftime("%d/%m/%Y") if parsed else ""
+
+
+def _manual_signup_raw(value):
+    parsed = _parse_iso_date(value)
+    return f"{parsed.isoformat()}T00:00:00+01:00" if parsed else ""
+
+
+def _manual_signup_age(value):
+    parsed = _parse_iso_date(value)
+    if not parsed:
+        return None
+    return max(0, (dt.datetime.now(MADRID_TZ).date() - parsed).days)
+
+
+def _apply_manual_identity(row, meta):
+    if not meta:
+        return row
+    if meta.manual_nombre:
+        row["nombre"] = meta.manual_nombre
+    if meta.manual_fecha_alta:
+        row["fecha_alta"] = _format_manual_signup_date(meta.manual_fecha_alta)
+        row["fecha_alta_raw"] = _manual_signup_raw(meta.manual_fecha_alta)
+        row["dias_de_alta"] = _manual_signup_age(meta.manual_fecha_alta)
+    return row
+
+
+def _manual_customer_row(meta):
+    email = (meta.email or "").lower()
+    row = {
+        "nombre": meta.manual_nombre or email,
+        "email": email,
+        "email_key": email,
+        "plan": "Manual",
+        "estado": meta.manual_estado or "activo",
+        "anual": False,
+        "fecha_alta": _format_manual_signup_date(meta.manual_fecha_alta),
+        "fecha_alta_raw": _manual_signup_raw(meta.manual_fecha_alta),
+        "dias_de_alta": _manual_signup_age(meta.manual_fecha_alta),
+        "account_ids": [],
+        "manual_customer": True,
+    }
+    return row
+
+
+def _is_manually_inactive(customer):
+    return (customer.get("manual_estado") or customer.get("estado")) == "inactivo"
+
+
+def _without_manually_inactive(customers):
+    return [c for c in customers if not _is_manually_inactive(c)]
+
+
 def _ensure_onboarding_tasks(clientes):
     pending = [c for c in clientes if c.get("estado") in ("activo", "trial") and not c.get("onboarding_hecho")]
     if not pending:
@@ -412,8 +470,17 @@ def _clientes_enriquecidos():
         return None, None
     metas = _meta_map()
     bajas = snap.get("eventos", {}).get("bajas", [])
-    for c in snap["clientes"]:
-        m = metas.get(c["email_key"])
+    clientes = []
+    seen = set()
+    for raw in snap["clientes"]:
+        c = dict(raw)
+        email = (c.get("email_key") or c.get("email") or "").lower()
+        if not email:
+            continue
+        c["email_key"] = email
+        c["email"] = c.get("email") or email
+        m = metas.get(email)
+        _apply_manual_identity(c, m)
         c.update(customer_rules.enrich_customer(c, m))
         c["reactivacion"] = customer_rules.reactivation_summary(c, bajas)
         c["origen"] = m.origen if m else "sin_asignar"
@@ -424,7 +491,25 @@ def _clientes_enriquecidos():
         if c["estado"] in customer_rules.UNPAID_STATES:
             c["impago"] = customer_rules.unpaid_summary(c)
         c["churn_risk"] = customer_rules.churn_risk_summary(c)
-    return snap, metas
+        clientes.append(c)
+        seen.add(email)
+    for m in metas.values():
+        email = (m.email or "").lower()
+        if not m.manual_customer or not email or email in seen:
+            continue
+        c = _manual_customer_row(m)
+        c.update(customer_rules.enrich_customer(c, m))
+        c["reactivacion"] = {"reactivado": False, "ultima_baja": "", "ultima_baja_raw": ""}
+        c["origen"] = m.origen if m else "sin_asignar"
+        c["origen_label"] = ORIGEN_LABELS.get(c["origen"], c["origen"])
+        c["onboarding_hecho"] = bool(m and m.onboarding_hecho)
+        c["whatsapp"] = m.whatsapp or ""
+        c["usuario"] = m.usuario or ""
+        c["churn_risk"] = customer_rules.churn_risk_summary(c)
+        clientes.append(c)
+    enriched = dict(snap)
+    enriched["clientes"] = clientes
+    return enriched, metas
 
 
 def _churn_risk_rows(clientes):
@@ -523,6 +608,9 @@ def _complete_todo_altas_with_current_recurrentes_and_bajas(altas, clientes, baj
 @login_required
 def index():
     snap, _ = _clientes_enriquecidos()
+    if snap:
+        snap = dict(snap)
+        snap["clientes"] = _without_manually_inactive(snap["clientes"])
     if not snap or not snap.get("eventos"):
         return render_template("dashboard.html", snap=snap, origenes=ORIGENES_BASE,
                                presets=metrics.PRESETS)
@@ -622,15 +710,18 @@ def clientes_list():
     tipo = request.args.get("tipo") or None
     recurrente = request.args.get("recurrente") == "1"
     q = (request.args.get("q") or "").strip()
-    sort_key = request.args.get("sort") or "cliente"
+    sort_key = request.args.get("sort") or "alta"
     if sort_key not in {"cliente", "tipo", "plan", "estado", "atencion", "origen", "alta"}:
-        sort_key = "cliente"
-    sort_dir = "desc" if request.args.get("dir") == "desc" else "asc"
+        sort_key = "alta"
+    sort_dir = "asc" if request.args.get("dir") == "asc" else "desc"
     titulo = "Clientes"
     if snap:
         snap = dict(snap)
+        base_clientes = snap["clientes"]
+        if estado != "inactivo":
+            base_clientes = [c for c in base_clientes if not _is_manually_inactive(c)]
         clientes = customer_rules.filter_customers(
-            snap["clientes"], estado=estado, origen=origen, tipo=tipo, q=q,
+            base_clientes, estado=estado, origen=origen, tipo=tipo, q=q,
             recurrente=recurrente,
         )
         clientes = customer_rules.sort_customers(clientes, sort_key=sort_key, direction=sort_dir)
@@ -669,7 +760,42 @@ def clientes_list():
                            tipos=customer_rules.TYPE_OPTIONS, resumen=resumen,
                            titulo=titulo, estado=estado, origen=origen,
                            tipo=tipo, q=q, recurrente=recurrente,
-                           sort=sort_key, dir=sort_dir, sort_links=sort_links)
+                           sort=sort_key, dir=sort_dir, sort_links=sort_links,
+                           manual_fecha_default=dt.datetime.now(MADRID_TZ).date().isoformat())
+
+
+@app.route("/clientes/manual", methods=["POST"])
+@login_required
+def add_cliente_manual():
+    email = (request.form.get("email") or "").strip().lower()
+    nombre = (request.form.get("manual_nombre") or request.form.get("nombre") or "").strip()
+    fecha_alta = (request.form.get("manual_fecha_alta") or "").strip()
+    estado = request.form.get("manual_estado") or "activo"
+    tipo = request.form.get("tipo_cliente") or "colab_descuento"
+    origen = request.form.get("origen") or "sin_asignar"
+    if not email or "@" not in email or not nombre:
+        flash("Completa nombre y email del cliente manual", "error")
+        return redirect(url_for("clientes_list"))
+    if not _parse_iso_date(fecha_alta):
+        fecha_alta = dt.datetime.now(MADRID_TZ).date().isoformat()
+    valid_status = {key for key, _ in customer_rules.STATUS_OPTIONS if key}
+    valid_types = {key for key, _ in customer_rules.TYPE_OPTIONS if key}
+    if estado not in valid_status:
+        estado = "activo"
+    if tipo not in valid_types:
+        tipo = "colab_descuento"
+    if origen not in ORIGEN_LABELS:
+        origen = "sin_asignar"
+    meta = _get_or_create_meta(email)
+    meta.manual_customer = True
+    meta.manual_nombre = nombre
+    meta.manual_fecha_alta = fecha_alta
+    meta.manual_estado = estado
+    meta.tipo_cliente = tipo
+    meta.origen = origen
+    db.session.commit()
+    flash("Cliente manual creado", "ok")
+    return redirect(url_for("cliente", email=email))
 
 
 @app.route("/eventos")
@@ -1115,7 +1241,7 @@ def colabs_list():
     rows = []
     resumen = {"total": 0, "free": 0, "descuento": 0, "revision": 0}
     if snap:
-        rows = [c for c in snap["clientes"] if (c.get("colab") or {}).get("es_colab")]
+        rows = [c for c in _without_manually_inactive(snap["clientes"]) if (c.get("colab") or {}).get("es_colab")]
         rows = sorted(
             rows,
             key=lambda c: (
@@ -1284,17 +1410,10 @@ def sync():
 @app.route("/cliente/<path:email>")
 @login_required
 def cliente(email):
-    snap = ultimo_snapshot()
+    snap, metas = _clientes_enriquecidos()
     if not snap:
         return redirect(url_for("index"))
     email_key = email.lower()
-    metas = _meta_map()
-    bajas = snap.get("eventos", {}).get("bajas", [])
-    for row in snap["clientes"]:
-        m = metas.get(row["email_key"])
-        row.update(customer_rules.enrich_customer(row, m))
-        row["reactivacion"] = customer_rules.reactivation_summary(row, bajas)
-        row["churn_risk"] = customer_rules.churn_risk_summary(row)
     c = next((x for x in snap["clientes"] if x["email_key"] == email_key), None)
     if not c:
         abort(404)
@@ -1371,6 +1490,17 @@ def set_suscripcion(email):
     db.session.commit()
     flash("Suscripcion actualizada", "ok")
     return redirect(url_for("cliente", email=email))
+
+
+@app.route("/cliente/<path:email>/inactivar", methods=["POST"])
+@login_required
+def inactivar_cliente(email):
+    email_key = email.lower()
+    meta = _get_or_create_meta(email_key)
+    meta.manual_estado = "inactivo"
+    db.session.commit()
+    flash("Cliente marcado como inactivo", "ok")
+    return redirect(url_for("clientes_list"))
 
 
 @app.route("/cliente/<path:email>/contacto", methods=["POST"])
@@ -1506,7 +1636,7 @@ def estadisticas():
     snap, _ = _clientes_enriquecidos()
     por_origen, por_mes = Counter(), defaultdict(Counter)
     if snap:
-        for c in snap["clientes"]:
+        for c in _without_manually_inactive(snap["clientes"]):
             por_origen[c["origen"]] += 1
             raw = c.get("fecha_alta_raw") or ""
             if raw:

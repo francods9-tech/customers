@@ -21,6 +21,11 @@
       {% endif %}
       <a class="btn-sync" href="{{ url_for('clientes_list') }}">Volver a clientes</a>
       <a class="btn-sync" href="{{ url_for('quejas_list') }}">Solicitudes</a>
+      {% if c.estado != "inactivo" %}
+        <form method="post" action="{{ url_for('inactivar_cliente', email=c.email_key) }}" class="inline">
+          <button class="btn-sync" type="submit">Marcar inactivo</button>
+        </form>
+      {% endif %}
     </div>
   </div>
 
