@@ -1236,4 +1236,14 @@ Riesgos / fuera de alcance:
 
 - No se cambia schema ni rutas backend.
 - No se sincronizan clientes manuales a Stripe/Mongo.
-- No se hace deploy Railway en esta iteracion hasta que Franco lo pida o se complete el flujo PR/merge.
+
+Deploy Railway posterior:
+
+- PR #76 mergeado a `main` con commit `ed45f31`.
+- Deploy manual ejecutado desde `main` con `railway deployment up -m "Deploy Clientes V2 toolbar create"`.
+- Deployment Railway `bb56de65-1c0b-4385-9ee7-1b6fb28ce26a` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard`.
+  - `/clientes` sin sesion -> 302 a `/login?next=/clientes`.
+- QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
