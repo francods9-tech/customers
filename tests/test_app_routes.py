@@ -452,12 +452,62 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn('class="inbox-page page polish-v5"', body)
         self.assertIn('class="page-head inbox-head"', body)
         self.assertIn('class="inbox-buckets v5-panel-stack"', body)
-        self.assertIn('class="inbox-panel panel tone-danger"', body)
+        self.assertIn('class="inbox-panel panel secondary-panel tone-danger"', body)
         self.assertIn('class="inbox-row"', body)
         self.assertIn("Bandeja operativa", body)
         self.assertIn("Cliente Impago", body)
         self.assertIn("Cliente Trial", body)
         self.assertIn("Completar", body)
+
+    def test_bandeja_premium_colapsa_nueva_tarea_y_no_duplica_onboarding(self):
+        from db import db
+        from db.models import CustomerReminder
+
+        self.login()
+        self.add_snapshot([
+            {**self.customer_row(nombre="Cliente Impago", email="impago@example.test"), "estado": "impago"},
+            {**self.customer_row(nombre="Cliente Trial", email="trial@example.test"), "estado": "trial"},
+            self.customer_row(nombre="Cliente Bienvenida", email="bienvenida@example.test"),
+        ])
+        with self.app.app_context():
+            db.session.add(CustomerReminder(
+                customer_email="impago@example.test",
+                due_date="2026-06-02",
+                texto="Llamar por deuda",
+                assignee="Luis",
+            ))
+            db.session.add(CustomerReminder(
+                customer_email="trial@example.test",
+                due_date="2026-06-04",
+                texto="Revisar trial",
+                assignee="Dalila",
+            ))
+            db.session.commit()
+
+        response = self.client.get("/bandeja?date=2026-06-04")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn('class="task-command-panel compact-task-command"', body)
+        self.assertIn("<summary", body)
+        self.assertIn('action="/tareas"', body)
+        self.assertIn('name="texto"', body)
+        self.assertIn('name="due_date"', body)
+        self.assertIn('name="assignee"', body)
+        self.assertIn('name="customer_email"', body)
+        self.assertIn("Vencidas (", body)
+        self.assertIn("Hoy (", body)
+        self.assertIn("Proximas (", body)
+        self.assertNotIn("Para la fecha", body)
+        self.assertNotIn("Onboarding pendiente", body)
+        self.assertIn("Bienvenida pendiente", body)
+        self.assertLess(body.index("Tareas ("), body.index("Riesgo de churn"))
+        self.assertLess(body.index("Riesgo de churn"), body.index("Impagos ("))
+        self.assertLess(body.index("Impagos ("), body.index("En trial ("))
+        self.assertIn('class="task-group task-group-overdue"', body)
+        self.assertIn('class="inbox-panel panel secondary-panel tone-warning"', body)
+        self.assertIn('class="inbox-panel panel secondary-panel tone-danger"', body)
+        self.assertIn("Sin pendientes.", body)
 
     def test_ficha_crea_tarea_con_fecha_texto_y_asignado(self):
         from db.models import CustomerReminder
