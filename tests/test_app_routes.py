@@ -366,6 +366,15 @@ class AppRoutesTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Cliente Oculto", body)
 
+    def test_migracion_manual_customer_usa_default_boolean_postgres(self):
+        import inspect
+        import app as app_module
+
+        source = inspect.getsource(app_module._ensure_local_schema)
+
+        self.assertIn("manual_customer BOOLEAN NOT NULL DEFAULT FALSE", source)
+        self.assertNotIn("manual_customer BOOLEAN NOT NULL DEFAULT 0", source)
+
     def test_crear_cliente_manual_persiste_aparece_y_abre_ficha(self):
         from db.models import CustomerMeta
 

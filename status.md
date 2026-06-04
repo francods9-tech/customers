@@ -1178,3 +1178,17 @@ Riesgos / fuera de alcance:
 - No se sincronizan clientes manuales a Stripe/Mongo.
 - No se elimina informacion real; ocultar equivale a marcar inactivo.
 - La auditoria/pulido de ficha queda para la siguiente iteracion.
+
+Hotfix deploy Railway:
+
+- Primer deploy `e064b866-ddf9-4e79-b1bd-ec793a7c83fa` crasheo porque Postgres rechazo `ALTER TABLE customer_meta ADD COLUMN manual_customer BOOLEAN NOT NULL DEFAULT 0`.
+- Se corrigio la migracion local a `DEFAULT FALSE`, compatible con Postgres, y se agrego test preventivo.
+- Verificacion hotfix:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes.AppRoutesTest.test_migracion_manual_customer_usa_default_boolean_postgres -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado: test focal OK; suite completa 102 tests OK; `git diff --check` sin errores reales, solo avisos CRLF de Windows.

@@ -69,7 +69,7 @@ def _ensure_local_schema():
     additions = {
         "manual_plan": "ALTER TABLE customer_meta ADD COLUMN manual_plan VARCHAR(32) NOT NULL DEFAULT ''",
         "manual_estado": "ALTER TABLE customer_meta ADD COLUMN manual_estado VARCHAR(32) NOT NULL DEFAULT ''",
-        "manual_customer": "ALTER TABLE customer_meta ADD COLUMN manual_customer BOOLEAN NOT NULL DEFAULT 0",
+        "manual_customer": "ALTER TABLE customer_meta ADD COLUMN manual_customer BOOLEAN NOT NULL DEFAULT FALSE",
         "manual_nombre": "ALTER TABLE customer_meta ADD COLUMN manual_nombre VARCHAR(160) NOT NULL DEFAULT ''",
         "manual_fecha_alta": "ALTER TABLE customer_meta ADD COLUMN manual_fecha_alta VARCHAR(10) NOT NULL DEFAULT ''",
         "tipo_cliente": "ALTER TABLE customer_meta ADD COLUMN tipo_cliente VARCHAR(32) NOT NULL DEFAULT ''",
