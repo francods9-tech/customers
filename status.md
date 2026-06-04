@@ -937,3 +937,23 @@ Riesgos / fuera de alcance:
 
 - No se agrego `ticket_id` ni migracion; trazabilidad v1 vive en `source="ticket"` y el prefijo del texto.
 - No se agregaron automatizaciones ni acciones rapidas en la lista `/solicitudes`.
+
+Deploy Railway posterior:
+
+- Ejecutado desde `main` limpio en commit `1c118e3`.
+- Comando: `railway deployment up -m "Deploy ticket task creation"`.
+- Deployment Railway `f60d5075-159b-4be0-ab6c-0d78deae95c1` -> SUCCESS.
+- Verificacion pre-deploy:
+  - `.\.venv\Scripts\python.exe -m unittest discover -s tests -v` -> 96 tests OK.
+  - `git diff --check` -> sin salida.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard`.
+  - `/bandeja` sin sesion -> 302 a `/login?next=/bandeja`.
+  - `/solicitudes` sin sesion -> 302 a `/login?next=/solicitudes`.
+- QA autenticada de produccion:
+  - Login OK.
+  - `/bandeja` -> 200 con `Bandeja operativa`.
+  - `/solicitudes` -> 200 con tickets.
+  - `/solicitudes/7` -> 200; ticket abierto con panel `Crear tarea` y accion `/solicitudes/7/tareas`.
+  - No se crearon tareas reales en produccion.
