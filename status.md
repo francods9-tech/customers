@@ -1130,3 +1130,51 @@ PR/deploy:
   - `/?preset=todo` desktop 1280px -> sin overflow horizontal; sin `Ver bandeja`; `Tareas pendientes` conserva href `/bandeja`; `Requiere accion` y `Estado actual de la base` con altura igual `374.4px`.
   - `/?preset=todo` mobile 390px -> sin overflow horizontal; sin `Ver bandeja`; `Tareas pendientes` conserva href `/bandeja`.
   - No se crearon ni modificaron datos reales.
+
+## Iteracion 2026-06-04 - Clientes V1 manuales e inactivos
+
+Implementado en rama `codex/clientes-manuales-v1`:
+
+- `CustomerMeta` agrega alta operativa manual: `manual_customer`, `manual_nombre` y `manual_fecha_alta`.
+- `/clientes` agrega formulario compacto `Cliente manual` y `POST /clientes/manual`.
+- Los clientes manuales se inyectan en el listado enriquecido; si el email ya existe en snapshot real, no se duplica y se usa la fila real con overrides manuales.
+- `/cliente/<email>` abre fichas de clientes manuales aunque no existan en Stripe/Mongo.
+- El orden default de `/clientes` pasa a `sort=alta&dir=desc`.
+- Clientes con `manual_estado="inactivo"` quedan ocultos de `/clientes` default, Inicio, Colabs y Estadisticas; aparecen en `/clientes?estado=inactivo`.
+- La ficha agrega accion `Marcar inactivo`, que marca `manual_estado="inactivo"` y vuelve a Clientes.
+
+Archivos tocados:
+
+- `app.py`
+- `db/models.py`
+- `templates/clientes.html`
+- `templates/ficha.html`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes.AppRoutesTest.test_clientes_default_ordena_por_alta_desc_y_oculta_inactivos tests.test_app_routes.AppRoutesTest.test_crear_cliente_manual_persiste_aparece_y_abre_ficha tests.test_app_routes.AppRoutesTest.test_cliente_manual_no_duplica_si_email_existe_en_snapshot_real tests.test_app_routes.AppRoutesTest.test_ficha_permita_marcar_cliente_como_inactivo -v
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests focales OK.
+- `tests.test_app_routes`: 62 tests OK.
+- Suite completa: 101 tests OK.
+- `git diff --check` con codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local Playwright con DB SQLite temporal en `http://127.0.0.1:5030/clientes`:
+  - Desktop 1280px y mobile 390px sin overflow horizontal.
+  - Default muestra formulario manual, ordena por alta desc y oculta inactivos.
+  - `/clientes?estado=inactivo` muestra el cliente oculto.
+  - Capturas generadas en `design-screenshots/clientes-v1-smoke/` y no versionadas.
+
+Riesgos / fuera de alcance:
+
+- No se sincronizan clientes manuales a Stripe/Mongo.
+- No se elimina informacion real; ocultar equivale a marcar inactivo.
+- La auditoria/pulido de ficha queda para la siguiente iteracion.

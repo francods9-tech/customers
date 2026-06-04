@@ -333,6 +333,123 @@ class AppRoutesTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertLess(body.index("Ana"), body.index("Beta"))
 
+    def test_clientes_default_ordena_por_alta_desc_y_oculta_inactivos(self):
+        from db import db
+        from db.models import CustomerMeta
+
+        self.login()
+        self.add_snapshot([
+            {**self.customer_row(nombre="Alta Vieja", email="alta-vieja@example.test"), "fecha_alta": "01/06/2026", "fecha_alta_raw": "2026-06-01T00:00:00+00:00"},
+            {**self.customer_row(nombre="Alta Nueva", email="alta-nueva@example.test"), "fecha_alta": "03/06/2026", "fecha_alta_raw": "2026-06-03T00:00:00+00:00"},
+        ])
+        with self.app.app_context():
+            db.session.add(CustomerMeta(
+                email="oculto@example.test",
+                manual_customer=True,
+                manual_nombre="Cliente Oculto",
+                manual_fecha_alta="2026-06-04",
+                manual_estado="inactivo",
+                tipo_cliente="colab_descuento",
+            ))
+            db.session.commit()
+
+        response = self.client.get("/clientes")
+        body = response.get_data(as_text=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertLess(body.index("Alta Nueva"), body.index("Alta Vieja"))
+        self.assertNotIn("Cliente Oculto", body)
+
+        response = self.client.get("/clientes?estado=inactivo")
+        body = response.get_data(as_text=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Cliente Oculto", body)
+
+    def test_crear_cliente_manual_persiste_aparece_y_abre_ficha(self):
+        from db.models import CustomerMeta
+
+        self.login()
+        self.add_snapshot([])
+
+        response = self.client.post("/clientes/manual", data={
+            "manual_nombre": "Manual Colab",
+            "email": "manual-colab@example.test",
+            "manual_fecha_alta": "2026-06-04",
+            "tipo_cliente": "free_colab",
+            "manual_estado": "activo",
+            "origen": "whatsapp",
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/cliente/manual-colab@example.test", response.location)
+        with self.app.app_context():
+            meta = CustomerMeta.query.filter_by(email="manual-colab@example.test").one()
+            self.assertTrue(meta.manual_customer)
+            self.assertEqual(meta.manual_nombre, "Manual Colab")
+            self.assertEqual(meta.manual_fecha_alta, "2026-06-04")
+            self.assertEqual(meta.tipo_cliente, "free_colab")
+            self.assertEqual(meta.manual_estado, "activo")
+            self.assertEqual(meta.origen, "whatsapp")
+
+        response = self.client.get("/clientes")
+        body = response.get_data(as_text=True)
+        self.assertIn("Manual Colab", body)
+        self.assertIn("Free por colab", body)
+
+        response = self.client.get("/cliente/manual-colab@example.test")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Manual Colab", response.get_data(as_text=True))
+
+    def test_cliente_manual_no_duplica_si_email_existe_en_snapshot_real(self):
+        from db import db
+        from db.models import CustomerMeta
+
+        self.login()
+        self.add_snapshot([self.customer_row(nombre="Nombre Stripe", email="dup@example.test")])
+        with self.app.app_context():
+            db.session.add(CustomerMeta(
+                email="dup@example.test",
+                manual_customer=True,
+                manual_nombre="Nombre Manual",
+                manual_fecha_alta="2026-06-04",
+                manual_estado="activo",
+                tipo_cliente="colab_descuento",
+            ))
+            db.session.commit()
+
+        response = self.client.get("/clientes")
+        body = response.get_data(as_text=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(body.count('class="client-name" href="/cliente/dup@example.test"'), 1)
+        self.assertIn("Nombre Manual", body)
+        self.assertNotIn("Nombre Stripe", body)
+        self.assertIn("Colab con descuento", body)
+
+    def test_ficha_permita_marcar_cliente_como_inactivo(self):
+        from db.models import CustomerMeta
+
+        self.login()
+        self.add_snapshot([self.customer_row(nombre="Cliente Ocultable", email="ocultable@example.test")])
+
+        response = self.client.get("/cliente/ocultable@example.test")
+        body = response.get_data(as_text=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('action="/cliente/ocultable@example.test/inactivar"', body)
+        self.assertIn("Marcar inactivo", body)
+
+        response = self.client.post("/cliente/ocultable@example.test/inactivar")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/clientes", response.location)
+        with self.app.app_context():
+            meta = CustomerMeta.query.filter_by(email="ocultable@example.test").one()
+            self.assertEqual(meta.manual_estado, "inactivo")
+
+        response = self.client.get("/clientes")
+        self.assertNotIn("Cliente Ocultable", response.get_data(as_text=True))
+
     def test_ficha_origen_instagram_permita_elegir_idioma(self):
         self.login()
         self.add_snapshot([self.customer_row()])

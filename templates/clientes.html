@@ -57,6 +57,53 @@
     </form>
   </div>
 
+  <section class="panel manual-client-panel v5-form-panel">
+    <div class="panel-head">
+      <h2>Cliente manual</h2>
+    </div>
+    <form method="post" action="{{ url_for('add_cliente_manual') }}" class="client-action-form manual-client-form">
+      <div>
+        <label>Nombre</label>
+        <input type="text" name="manual_nombre" placeholder="Nombre del cliente" required>
+      </div>
+      <div>
+        <label>Email</label>
+        <input type="email" name="email" placeholder="email@dominio.com" required>
+      </div>
+      <div>
+        <label>Fecha de alta</label>
+        <input type="date" name="manual_fecha_alta" value="{{ manual_fecha_default }}" required>
+      </div>
+      <div>
+        <label>Tipo</label>
+        <select name="tipo_cliente">
+          <option value="colab_descuento" selected>Colab con descuento</option>
+          <option value="free_colab">Free por colab</option>
+          <option value="individual">Individual</option>
+          <option value="agencia">Agencia</option>
+          <option value="one_time">One time payment</option>
+        </select>
+      </div>
+      <div>
+        <label>Estado</label>
+        <select name="manual_estado">
+          <option value="activo" selected>Activo</option>
+          <option value="trial">Trial</option>
+          <option value="inactivo">Inactivo</option>
+        </select>
+      </div>
+      <div>
+        <label>Origen</label>
+        <select name="origen">
+          {% for k, label in origenes %}
+            <option value="{{ k }}" {{ "selected" if k == "sin_asignar" }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit">Crear cliente</button>
+    </form>
+  </section>
+
   <div class="mini-kpis clients-kpi-strip">
     <div><strong>{{ resumen.activos_recurrentes }}</strong><span>Activos recurrentes</span></div>
     <div><strong>{{ resumen.agencias }}</strong><span>Agencias</span></div>
