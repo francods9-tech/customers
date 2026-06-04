@@ -825,3 +825,19 @@ Resultado:
 - `git diff --check` sin errores; solo avisos esperados de normalizacion CRLF en Windows.
 - HTTP local autenticado en `http://127.0.0.1:5021/bandeja?date=2026-06-04` -> 200; contiene `Nueva tarea` y `Hoy`, no contiene `Onboarding pendiente`.
 - Capturas Chrome headless desktop/mobile generadas en `design-screenshots/bandeja-premium/`; desktop sin solapes evidentes, mobile mejorado en cuerpo de Bandeja. La navegacion movil del shell conserva su scroll horizontal existente.
+
+Deploy Railway posterior:
+
+- PR #65 mergeado en `main` con commit `73fe3aa`.
+- Deploy manual ejecutado con `railway deployment up -m "Deploy Bandeja premium polish"`.
+- Deployment Railway `4dd2683a-34a3-4568-95a2-67ea147b6bb9` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard`.
+  - `/bandeja` sin sesion -> 302 a `/login?next=/bandeja`.
+- QA autenticada de produccion no ejecutada por decision de alcance; se uso QA autenticada local.
+- QA local autenticada en `http://127.0.0.1:5022/bandeja?date=2026-06-04`:
+  - Sin fixture temporal: 200, contiene `Nueva tarea` y `Hoy`, no contiene `Onboarding pendiente`.
+  - Con fixture temporal `deploy-qa-bienvenida@example.test`: 200, contiene `Bienvenida pendiente` y `Deploy QA Bienvenida`, no contiene `Onboarding pendiente`.
+  - Fixture temporal limpiado despues del smoke.
+- Verificacion pre-deploy: `.\.venv\Scripts\python.exe -m unittest discover -s tests -v` -> 83 tests OK; `git diff --check` sin salida.
