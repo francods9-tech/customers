@@ -211,6 +211,8 @@ git diff --check
 ```
 
 Resultado: test focal V5 OK; 76 tests OK; import Flask OK con 40 rutas; `git diff --check` sin errores reales, solo avisos CRLF de Windows. Verificacion visual local con Playwright en 1440px y 390px para `/`, `/clientes`, `/cliente/<email>`, `/bandeja`, `/solicitudes`, `/solicitudes/<id>`, `/colabs`, `/bajas?preset=todo` y `/mensajes`: todas con `polish-v5` y sin overflow horizontal; capturas guardadas en `design-screenshots/polish-v5/`.
+PR #60 mergeado a `main`.
+Deploy Railway posterior: `b267b2da-e00d-4889-8198-327a5c2b657f` SUCCESS; produccion verificada con `/healthz` 200, `/login` 200 y `/`, `/clientes`, `/bandeja`, `/solicitudes`, `/colabs`, `/bajas`, `/mensajes` redirigiendo a login.
 
 Ultima verificacion luego de redisenar Colabs, Bajas y Mensajes:
 
