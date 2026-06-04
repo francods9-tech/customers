@@ -768,3 +768,27 @@ Resultado:
 - 80 tests OK.
 - `git diff --check` sin errores; solo avisos esperados de normalizacion CRLF en Windows.
 - HTTP local por test client: `/bandeja` 200, `/bandeja?assignee=Luis&date=2026-06-04` 200 y `/tareas?assignee=Luis&date=2026-06-04` 302 hacia Bandeja.
+
+## Iteracion 2026-06-04 - Bienvenidas como tareas automaticas
+
+Implementado en rama `codex/onboarding-tasks`:
+
+- Bandeja crea tareas automaticas `Bienvenida pendiente` para clientes activos/trial con onboarding pendiente.
+- Responsable automatico: `Nicky`.
+- Fecha limite: fecha de alta del cliente; si ya paso, la tarea aparece como vencida.
+- Las tareas de bienvenida usan `customer_reminders.source = "onboarding"` para evitar duplicados.
+- Completar una tarea de bienvenida marca `CustomerMeta.onboarding_hecho = True`.
+- `Marcar a todos como bienvenidos` tambien completa tareas onboarding activas.
+
+Verificacion:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- 82 tests OK.
+- `git diff --check` sin errores; solo avisos esperados de normalizacion CRLF en Windows.
+- HTTP local por test client: `/bandeja` 200 y `/bandeja?assignee=Nicky&date=2026-06-04` 200.

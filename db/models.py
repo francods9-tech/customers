@@ -102,6 +102,7 @@ class CustomerReminder(db.Model):
     texto = db.Column(db.Text, nullable=False)
     due_date = db.Column(db.String(10), nullable=False, index=True)
     assignee = db.Column(db.String(120), nullable=False, default="", index=True)
+    source = db.Column(db.String(32), nullable=False, default="", index=True)
     completed_at = db.Column(db.DateTime(timezone=True), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), default=_now)
 
