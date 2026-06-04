@@ -2,7 +2,7 @@
 {% block title %}Bajas{% endblock %}
 {% block content %}
 
-<div class="churn-page page">
+<div class="churn-page page polish-v5">
   <div class="page-head churn-head">
     <div>
       <div class="crumb"><a href="{{ url_for('index') }}">Inicio</a> / Bajas</div>
@@ -11,7 +11,7 @@
     </div>
   </div>
 
-  <form method="get" class="churn-toolbar periodo-bar">
+  <form method="get" class="churn-toolbar periodo-bar v5-toolbar">
     <div class="presets">
       {% for key, plabel in presets %}
         <a class="chip {{ 'chip-on' if label == plabel }}" href="{{ url_for('bajas_list', preset=key, canal=canal) }}">{{ plabel }}</a>

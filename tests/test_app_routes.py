@@ -111,10 +111,10 @@ class AppRoutesTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
-        self.assertIn('class="collabs-page page"', body)
+        self.assertIn('class="collabs-page page polish-v5"', body)
         self.assertIn('class="page-head collabs-head"', body)
         self.assertIn('class="collabs-kpi-strip mini-kpis"', body)
-        self.assertIn('class="collab-form-panel panel"', body)
+        self.assertIn('class="collab-form-panel panel v5-form-panel"', body)
         self.assertIn('action="/colabs/creadores"', body)
         self.assertIn('class="creator-pipeline"', body)
         self.assertIn("Test UI Creator", body)
@@ -155,9 +155,9 @@ class AppRoutesTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
-        self.assertIn('class="churn-page page"', body)
+        self.assertIn('class="churn-page page polish-v5"', body)
         self.assertIn('class="page-head churn-head"', body)
-        self.assertIn('class="churn-toolbar periodo-bar"', body)
+        self.assertIn('class="churn-toolbar periodo-bar v5-toolbar"', body)
         self.assertIn('class="churn-kpi-strip mini-kpis"', body)
         self.assertIn('class="churn-table"', body)
         self.assertIn("baja@example.test", body)
@@ -184,15 +184,67 @@ class AppRoutesTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
-        self.assertIn('class="messages-page page"', body)
+        self.assertIn('class="messages-page page polish-v5"', body)
         self.assertIn('class="page-head messages-head"', body)
-        self.assertIn('class="message-toolbar panel"', body)
+        self.assertIn('class="message-toolbar panel v5-toolbar"', body)
         self.assertIn('action="/mensajes/categorias"', body)
         self.assertIn('class="message-form-panel panel"', body)
         self.assertIn('action="/mensajes"', body)
         self.assertIn('class="message-list redesigned-message-list"', body)
         self.assertIn("Test UI Mensaje", body)
         self.assertIn("copy-message", body)
+
+    def test_polish_v5_renderiza_todas_las_pantallas_principales(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import Interaccion
+
+        self.login()
+        self.add_snapshot([
+            self.customer_row(nombre="Cliente V5", email="cliente-v5@example.test"),
+            {**self.customer_row(nombre="Trial V5", email="trial-v5@example.test"), "estado": "trial"},
+        ])
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-v5@example.test",
+                tipo="solicitud",
+                texto="Revisar experiencia V5",
+                categoria="envia_links",
+                estado_gestion="abierta",
+                importancia="alta",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            )
+            db.session.add(ticket)
+            db.session.commit()
+            ticket_id = ticket.id
+
+        pages = [
+            ("/", ['class="dashboard-page page polish-v5"', 'class="dashboard-main-grid v5-dashboard-grid"']),
+            ("/clientes", ['class="clients-page page polish-v5"', 'class="client-toolbar v5-toolbar"']),
+            ("/cliente/cliente-v5@example.test", ['class="customer-page page polish-v5"', 'class="customer-command-grid v5-two-column"']),
+            ("/bandeja", ['class="inbox-page page polish-v5"', 'class="inbox-buckets v5-panel-stack"']),
+            ("/solicitudes", ['class="requests-page page polish-v5"', 'class="request-form-panel panel v5-form-panel"']),
+            (f"/solicitudes/{ticket_id}", ['class="ticket-page page polish-v5"', 'class="ticket-layout v5-two-column"']),
+            ("/colabs", ['class="collabs-page page polish-v5"', 'class="collab-form-panel panel v5-form-panel"']),
+            ("/bajas?preset=todo", ['class="churn-page page polish-v5"', 'class="churn-toolbar periodo-bar v5-toolbar"']),
+            ("/mensajes", ['class="messages-page page polish-v5"', 'class="message-toolbar panel v5-toolbar"']),
+        ]
+
+        for path, expected_snippets in pages:
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 200)
+                body = response.get_data(as_text=True)
+                for snippet in expected_snippets:
+                    self.assertIn(snippet, body)
+
+        body = self.client.get("/solicitudes").get_data(as_text=True)
+        self.assertIn('action="/solicitudes/nueva"', body)
+        self.assertIn('action="/queja/', body)
+        body = self.client.get(f"/solicitudes/{ticket_id}").get_data(as_text=True)
+        self.assertIn(f'action="/solicitudes/{ticket_id}/comentarios"', body)
+        self.assertIn(f'action="/queja/{ticket_id}/gestion"', body)
 
     def test_ficha_permita_guardar_contacto_whatsapp_y_usuario(self):
         self.login()
@@ -272,7 +324,7 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("sort=origen", body)
         self.assertIn("sort=alta", body)
         self.assertIn("q=example", body)
-        self.assertIn('class="clientes-mobile-list"', body)
+        self.assertIn('class="clientes-mobile-list v5-mobile-list"', body)
 
         response = self.client.get("/clientes?sort=cliente&dir=asc")
         body = response.get_data(as_text=True)
@@ -330,10 +382,10 @@ class AppRoutesTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
-        self.assertIn('class="dashboard-page page"', body)
+        self.assertIn('class="dashboard-page page polish-v5"', body)
         self.assertIn('class="page-head dashboard-head"', body)
         self.assertIn('class="dashboard-kpi-strip"', body)
-        self.assertIn('class="dashboard-main-grid"', body)
+        self.assertIn('class="dashboard-main-grid v5-dashboard-grid"', body)
         self.assertIn('class="dashboard-action-panel panel"', body)
         self.assertIn("Requiere accion", body)
         self.assertIn('href="/bandeja"', body)
@@ -396,9 +448,9 @@ class AppRoutesTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
-        self.assertIn('class="inbox-page page"', body)
+        self.assertIn('class="inbox-page page polish-v5"', body)
         self.assertIn('class="page-head inbox-head"', body)
-        self.assertIn('class="inbox-buckets"', body)
+        self.assertIn('class="inbox-buckets v5-panel-stack"', body)
         self.assertIn('class="inbox-panel panel tone-danger"', body)
         self.assertIn('class="inbox-row"', body)
         self.assertIn("Bandeja operativa", body)
@@ -438,10 +490,10 @@ class AppRoutesTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
-        self.assertIn('class="customer-page page"', body)
+        self.assertIn('class="customer-page page polish-v5"', body)
         self.assertIn('class="page-head customer-head"', body)
         self.assertIn('class="customer-health-strip"', body)
-        self.assertIn('class="customer-command-grid"', body)
+        self.assertIn('class="customer-command-grid v5-two-column"', body)
         self.assertIn('class="customer-main-column"', body)
         self.assertIn('class="customer-side-column"', body)
         self.assertIn('action="/cliente/cliente-z@example.test/suscripcion"', body)
@@ -909,7 +961,7 @@ class AppRoutesTest(unittest.TestCase):
         response = self.client.get("/solicitudes")
         body = response.get_data(as_text=True)
         self.assertIn('class="requests-table open-requests-table"', body)
-        self.assertIn('class="request-form-panel panel"', body)
+        self.assertIn('class="request-form-panel panel v5-form-panel"', body)
         self.assertIn('class="requests-mobile-list"', body)
         ticket_row = body[body.index(f"Ticket #{ticket_id}"):]
         ticket_row = ticket_row[:ticket_row.index("</tr>")]

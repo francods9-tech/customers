@@ -193,8 +193,24 @@ C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
   - `/bajas` adopta cabecera, filtros de periodo/canal, KPIs y tabla de motivos con formulario inline preservando POST `/bajas/motivo`.
   - `/mensajes` adopta toolbar de busqueda/categoria, panel compacto de alta y lista de mensajes redisenada con copiar/editar/archivar.
   - Se mantiene Flask/Jinja/CSS sin React/Tailwind ni cambios de schema/rutas.
+- Redisenio UI/UX V5 polish profundo:
+  - Todas las pantallas principales adoptan marcador `polish-v5` y una capa visual balanceada para headers, toolbars, KPIs, paneles, tablas y cards mobile.
+  - Pantallas incluidas: `/`, `/clientes`, `/cliente/<email>`, `/bandeja`, `/solicitudes`, `/solicitudes/<id>`, `/colabs`, `/bajas` y `/mensajes`.
+  - Clientes, Solicitudes y Ticket incorporan wrappers dedicados para ordenar mejor la lectura operativa sin cambiar rutas, forms ni schema.
+  - Se mantiene Flask/Jinja/CSS sin React/Tailwind ni dependencias frontend nuevas.
 
 ## Verificacion
+
+Ultima verificacion luego de aplicar Polish V5 profundo:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest tests.test_app_routes.AppRoutesTest.test_polish_v5_renderiza_todas_las_pantallas_principales -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -c "from app import app; print('imports ok', len(list(app.url_map.iter_rules())))"
+git diff --check
+```
+
+Resultado: test focal V5 OK; 76 tests OK; import Flask OK con 40 rutas; `git diff --check` sin errores reales, solo avisos CRLF de Windows. Verificacion visual local con Playwright en 1440px y 390px para `/`, `/clientes`, `/cliente/<email>`, `/bandeja`, `/solicitudes`, `/solicitudes/<id>`, `/colabs`, `/bajas?preset=todo` y `/mensajes`: todas con `polish-v5` y sin overflow horizontal; capturas guardadas en `design-screenshots/polish-v5/`.
 
 Ultima verificacion luego de redisenar Colabs, Bajas y Mensajes:
 
