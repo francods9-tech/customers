@@ -887,4 +887,5 @@ Resultado:
 
 PR/deploy:
 
-- Pendiente en esta foto.
+- PR #67 mergeado a `main` con commit `ab94c16`.
+- Deploy no ejecutado en esta iteracion.
