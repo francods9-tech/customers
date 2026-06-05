@@ -11,9 +11,9 @@
     </div>
     <div class="inbox-summary">
       <span class="tag tag-churn">{{ pendientes.churn|length }} churn</span>
-      <span class="tag tag-warn">{{ pendientes.impago|length }} impagos</span>
-      <span class="tag">{{ pendientes.trial|length }} trials</span>
-      <span class="tag">{{ task_total }} tareas</span>
+      <span class="tag tag-danger">{{ pendientes.impago|length }} impagos</span>
+      <span class="tag tag-warning">{{ pendientes.trial|length }} trials</span>
+      <span class="tag tag-tasks">{{ task_total }} tareas</span>
     </div>
   </div>
 
@@ -106,41 +106,6 @@
   {% endmacro %}
 
   <section class="inbox-ops-panel panel">
-  <details class="task-command-panel compact-task-command" {{ "open" if selected_customer else "" }}>
-    <summary>
-      <span class="btn-primary">Nueva tarea</span>
-    </summary>
-    <form method="post" action="{{ url_for('add_tarea') }}" class="task-create-form">
-      <div>
-        <label>Titulo</label>
-        <input type="text" name="texto" placeholder="Ej: revisar SOP interno" required>
-      </div>
-      <div>
-        <label>Fecha limite</label>
-        <input type="date" name="due_date" value="{{ selected_date }}" required>
-      </div>
-      <div>
-        <label>Asignado</label>
-        <select name="assignee" required>
-          <option value="">Elegir</option>
-          {% for value, label in task_assignees %}
-            <option value="{{ value }}" {% if selected_assignee == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label>Cliente</label>
-        <select name="customer_email">
-          <option value="">Sin cliente</option>
-          {% for email, name in task_customer_options %}
-            <option value="{{ email }}" {% if selected_customer == email %}selected{% endif %}>{{ name }} · {{ email }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <button type="submit">Crear tarea</button>
-    </form>
-  </details>
-
     <form method="get" action="{{ url_for('bandeja') }}" class="filters-form task-filters">
       <label>
         Fecha
@@ -169,10 +134,42 @@
   </section>
 
   <div class="inbox-buckets v5-panel-stack">
-    <details class="inbox-panel panel tone-neutral">
+    <details class="inbox-panel panel tone-tasks"{% if selected_customer %} open{% endif %}>
       <summary class="panel-head">
         <h2>Tareas ({{ task_total }})</h2>
+        <span class="btn-primary task-header-action">Nueva tarea</span>
       </summary>
+      <div class="task-command-panel compact-task-command">
+        <form method="post" action="{{ url_for('add_tarea') }}" class="task-create-form">
+          <div>
+            <label>Titulo</label>
+            <input type="text" name="texto" placeholder="Ej: revisar SOP interno" required>
+          </div>
+          <div>
+            <label>Fecha limite</label>
+            <input type="date" name="due_date" value="{{ selected_date }}" required>
+          </div>
+          <div>
+            <label>Asignado</label>
+            <select name="assignee" required>
+              <option value="">Elegir</option>
+              {% for value, label in task_assignees %}
+                <option value="{{ value }}" {% if selected_assignee == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label>Cliente</label>
+            <select name="customer_email">
+              <option value="">Sin cliente</option>
+              {% for email, name in task_customer_options %}
+                <option value="{{ email }}" {% if selected_customer == email %}selected{% endif %}>{{ name }} - {{ email }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit">Crear tarea</button>
+        </form>
+      </div>
       <div class="task-group-stack">
         <div class="task-group task-group-overdue">
           <h3>Vencidas ({{ task_groups.overdue|length }})</h3>
@@ -232,7 +229,7 @@
             <div class="inbox-row">
               {{ customer_identity(c) }}
               <div class="inbox-meta">
-                <span class="tag tag-warn">{{ c.impago.label }}</span>
+                <span class="tag tag-danger">{{ c.impago.label }}</span>
                 <span class="sub">{{ c.impago.estado_label }} · {{ c.impago.facturas_count }} factura{{ "" if c.impago.facturas_count == 1 else "s" }}</span>
                 {% if c.impago.acceso_free %}<span class="sub warn">acceso free por impago</span>{% endif %}
                 {% if c.impago.monto is not none %}<span class="sub">${{ "%.2f"|format(c.impago.monto) }} pendiente</span>{% endif %}
@@ -254,7 +251,7 @@
       {% endif %}
     </details>
 
-    <details class="inbox-panel panel secondary-panel tone-warning">
+    <details class="inbox-panel panel secondary-panel tone-onboarding">
       <summary class="panel-head">
         <h2>Onboarding pendiente ({{ pendientes.onboarding|length }})</h2>
         {% if pendientes.onboarding %}
@@ -269,7 +266,7 @@
             <div class="inbox-row">
               {{ customer_identity(c) }}
               <div class="inbox-meta">
-                <span class="tag">Bienvenida pendiente</span>
+                <span class="tag tag-onboarding">Bienvenida pendiente</span>
                 <span class="sub">{{ c.plan }} · {{ c.origen_label }}</span>
               </div>
             </div>
@@ -292,7 +289,7 @@
               {{ customer_identity(c) }}
               <div class="inbox-meta">
                 {% if c.trial %}
-                  <span class="tag {{ 'tag-warn' if c.trial.por_vencer }}">{{ c.trial.fecha or "sin fecha" }}</span>
+                  <span class="tag {{ 'tag-warning' if c.trial.por_vencer }}">{{ c.trial.fecha or "sin fecha" }}</span>
                   {% if c.trial.dias is not none %}
                     <span class="sub">{% if c.trial.vencido %}vencido hace {{ -c.trial.dias }} dias{% else %}faltan {{ c.trial.dias }} dias{% endif %}</span>
                   {% endif %}

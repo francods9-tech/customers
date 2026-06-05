@@ -14,6 +14,56 @@ No tocar como fuente de verdad de Claude:
 C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 ```
 
+## Iteracion 2026-06-05 - Bandeja acciones y colores por bucket
+
+Implementado en rama `codex/bandeja-actions-colors`:
+
+- `/bandeja` deja el panel superior solo para filtros `Fecha`, `Asignado`, `Estado` y `Filtrar`.
+- `Nueva tarea` se mueve al header del bucket `Tareas`; al abrir el bucket aparece el formulario de creacion dentro de `Tareas`.
+- `/bandeja?customer=<email>` abre por defecto el bucket `Tareas` y preselecciona el cliente en `Nueva tarea`.
+- Colores por bucket:
+  - `Tareas`: `tone-tasks` / `tag-tasks`.
+  - `Riesgo de churn`: `tone-churn` / `tag-churn`.
+  - `Impagos`: `tone-danger` / `tag-danger`.
+  - `Onboarding pendiente`: `tone-onboarding` / `tag-onboarding`.
+  - `En trial`: `tone-warning` / `tag-warning`.
+- `Filtrar` queda alineado junto a los filtros con ancho natural en desktop y ancho completo en mobile.
+
+Archivos tocados:
+
+- `templates/bandeja.html`
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+python -m unittest discover -s tests -p test_app_routes.py -k "bandeja_usa_layout_operativo" -k "bandeja_premium" -k "bandeja_con_customer_abre" -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests RED focales fallaron inicialmente contra el layout anterior.
+- Tests focales OK.
+- Suite completa: 111 tests OK.
+- `git diff --check` con codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local con Flask test client:
+  - `/bandeja` -> 200, contiene `tone-tasks`, `tone-onboarding`, `tag-tasks`, `tag-danger` y `tag-warning`.
+  - `/bandeja?customer=smoke-bandeja@example.test` -> 200, abre `Tareas` y preselecciona el cliente.
+
+Riesgos / fuera de alcance:
+
+- No se cambiaron rutas, modelos ni endpoints.
+- Browser visual QA no ejecutada: el plugin Browser esta instalado, pero no expuso `node_repl/js` en esta sesion; se verifico por HTML/CSS, tests y smoke local.
+- QA autenticada de produccion queda pendiente hasta deploy.
+
+PR/deploy:
+
+- Pendiente de push, PR, merge y deploy Railway.
+
 ## Iteracion 2026-06-05 - Bandeja colapsable y churn violeta
 
 Implementado en rama `codex/bandeja-collapsible-polish`:
