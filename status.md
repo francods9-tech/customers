@@ -48,12 +48,20 @@ Resultado:
 
 Riesgos / fuera de alcance:
 
-- Para que produccion muestre esos clientes, hace falta deploy y regenerar snapshot con `python -m sync.refresh_job` o esperar el cron.
+- Para que produccion muestre esos clientes, hace falta regenerar snapshot con el boton autenticado `Actualizar datos` o esperar el cron.
 - No se verificaron nombres reales localmente: el clon local no tiene snapshot real cargado (`clientes=0`).
+- Refresh remoto manual no ejecutado: `railway run python -m sync.refresh_job` corre local con variables Railway y falla porque `postgres.railway.internal` no resuelve fuera de Railway; `railway ssh --service customers --environment production -- python --version` y `railway ssh --service customers --environment production python -m sync.refresh_job` quedaron colgados hasta timeout.
 
 PR/deploy:
 
-- Pendiente de push, PR, merge, deploy Railway y refresh snapshot.
+- PR #90 mergeado a `main` con commit `8eef0b6`.
+- Deploy manual ejecutado con `railway up --detach -m "Deploy churn future-period cancellations"`.
+- Deployment Railway `2d5ead92-890d-4240-bc36-60e1b117fe8b` -> Online.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard`.
+  - `/bandeja` sin sesion -> 302 a `/login?next=/bandeja`.
+  - `/bandeja?customer=test@example.com` sin sesion -> 302 a `/login?next=/bandeja`.
 
 ## Iteracion 2026-06-05 - Bandeja acciones y colores por bucket
 
