@@ -4,7 +4,7 @@
 
 <div class="customer-page page polish-v5">
   <div class="page-head customer-head">
-    <div>
+    <div class="customer-head-copy">
       <div class="crumb"><a href="{{ url_for('clientes_list') }}">Clientes</a> / {{ c.nombre }}</div>
       <h1>{{ c.nombre }}</h1>
       {% if c.snapshot_nombre and c.snapshot_nombre != c.nombre %}

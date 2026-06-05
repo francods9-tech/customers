@@ -45,13 +45,23 @@ h2 { font-size: .82rem; margin: 0 0 .85rem; color: var(--muted); text-transform:
 
 main { max-width: 1180px; margin: 0 auto; padding: 1.5rem; }
 
-button, .btn-sync {
+button, .btn-sync, .btn-primary {
   background: var(--accent); color: #fff; border: 0; border-radius: 6px;
   padding: .52rem .85rem; font-size: .9rem; cursor: pointer;
   min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.15;
+  font-weight: 600;
 }
-button:hover { filter: brightness(1.1); }
+button:hover, .btn-primary:hover { filter: brightness(1.06); text-decoration: none; }
+.btn-primary {
+  border: 1px solid var(--accent);
+  color: #fff;
+}
 .btn-sync { background: #fff; border: 1px solid var(--border); color: var(--text); }
+.btn-sync:hover { text-decoration: none; }
 .btn-danger { background: #fff; border: 1px solid #fecaca; color: var(--warn); }
 
 input, select, textarea {
@@ -656,12 +666,23 @@ a:hover { text-decoration: none; }
 .page-head h1 { font-size: 1.55rem; letter-spacing: 0; }
 
 button,
-.btn-sync {
+.btn-sync,
+.btn-primary {
   border-radius: 6px;
   min-height: 34px;
   padding: .45rem .75rem;
   font-size: .88rem;
   font-weight: 600;
+}
+.btn-primary {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: #0ea5d8;
+  border-color: #0ea5d8;
+  filter: none;
 }
 .btn-sync {
   background: var(--panel);
@@ -1271,7 +1292,8 @@ table.grid.clientes-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
-  padding: 1rem 1.1rem;
+  gap: 1.25rem;
+  padding: 1.1rem 1.15rem;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--panel);
@@ -1283,6 +1305,9 @@ table.grid.clientes-grid {
 .customer-head h1 {
   margin-bottom: .2rem;
 }
+.customer-head-copy .muted {
+  margin: .1rem 0;
+}
 .customer-head-badges {
   justify-content: flex-start;
   min-width: 0;
@@ -1291,8 +1316,16 @@ table.grid.clientes-grid {
 .customer-head-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
-  gap: .45rem;
+  gap: .5rem;
+  padding-top: .05rem;
+}
+.customer-head-actions .btn-primary,
+.customer-head-actions .btn-sync {
+  min-height: 38px;
+  min-width: 124px;
+  white-space: nowrap;
 }
 .customer-health-strip {
   display: grid;
@@ -1303,7 +1336,7 @@ table.grid.clientes-grid {
   display: flex;
   flex-wrap: wrap;
   gap: .4rem;
-  margin-top: .75rem;
+  margin-top: .95rem;
 }
 .customer-operational-summary .tag {
   text-decoration: none;
@@ -2280,7 +2313,8 @@ table.grid.clientes-grid {
   .dashboard-channel-panel canvas {
     max-height: 260px;
   }
-  .customer-head-actions .btn-sync {
+  .customer-head-actions .btn-sync,
+  .customer-head-actions .btn-primary {
     width: 100%;
     text-align: center;
   }
