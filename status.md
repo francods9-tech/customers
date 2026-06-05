@@ -68,6 +68,19 @@ Riesgos / fuera de alcance:
 - `whatsapp_status` sigue en modelo/backend por compatibilidad, pero no se edita desde esta UI.
 - QA visual con navegador integrado no ejecutada en esta iteracion; la verificacion visual fue smoke HTML por Flask test client.
 
+PR/deploy:
+
+- PR #82 mergeado a `main` con commit `a5cf61c`.
+- Deploy manual ejecutado con `railway up --detach -m "Deploy ficha cliente polish minimal"`.
+- Deployment Railway `ce4d54fa-ef9a-4083-acb0-81b5b7615cb4` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard`.
+  - `/cliente/test@example.com` sin sesion -> 302 a login.
+  - `/solicitudes?customer=test@example.com` sin sesion -> 302 a login.
+  - `/bandeja?customer=test@example.com` sin sesion -> 302 a login.
+- QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
+
 ## Iteracion 2026-06-05 - Ficha cliente operativa
 
 Implementado en rama `codex/ficha-cliente-operativa`:
