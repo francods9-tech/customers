@@ -897,6 +897,51 @@ PR/deploy:
   - `/bandeja` sin sesion -> 302 a `/login?next=/bandeja`.
 - QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
 
+## Iteracion 2026-06-05 - Clientes cards como filtros
+
+Implementado en rama `codex/clientes-kpi-filter-cards`:
+
+- `/clientes` elimina la fila de chips `Todos / Activos recurrentes / Activos / Trial / Impagos / ...`.
+- La toolbar conserva solo busqueda, origen, tipo, boton `Buscar` y boton `Crear cliente`.
+- Las cards superiores ahora son links de filtro para activos recurrentes, agencias, one time, free colab y colab descuento.
+- La card `Colabs a revisar` se reemplaza por `Bajas`, con total historico excluyendo clientes reactivados y link a `/bajas?preset=todo`.
+- Los conteos de cards de clientes respetan busqueda y origen, pero no se distorsionan por el filtro de card activo.
+
+Archivos tocados:
+
+- `app.py`
+- `templates/clientes.html`
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+python -m unittest discover -s tests -p test_app_routes.py -k "test_clientes_usa_cards_como_filtros_y_no_muestra_chips_de_estado" -k "test_clientes_card_bajas_cuenta_historico_y_enlaza_a_bajas_todo" -v
+python -m unittest discover -s tests -p test_app_routes.py -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests focales OK.
+- `test_app_routes.py`: 66 tests OK.
+- Suite completa: 105 tests OK.
+- `git diff --check` con codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local autenticado con cliente Flask y snapshot temporal:
+  - `/clientes?origen=instagram` renderiza 200.
+  - `segmented-filter` ausente.
+  - Card `Bajas` presente con link `/bajas?preset=todo`.
+  - `Colabs a revisar` ausente.
+  - Card `One time` conserva link de filtro con origen.
+
+Riesgos / fuera de alcance:
+
+- No se cambia schema, rutas backend ni datos reales.
+- QA visual con Browser/Playwright no ejecutada: el navegador integrado no expuso el ejecutor necesario y Playwright no esta instalado en este clon.
+
 ## Iteracion 2026-06-04 - Tareas manuales desde tickets
 
 Implementado en rama `codex/tareas-desde-tickets`:

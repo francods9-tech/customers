@@ -688,6 +688,7 @@ textarea:focus {
 .card,
 .kpi,
 .mini-kpis div,
+.mini-kpis a,
 .table-wrap {
   border-color: var(--border);
   border-radius: 8px;
@@ -740,12 +741,24 @@ textarea:focus {
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: .7rem;
 }
-.mini-kpis div { padding: .8rem .95rem; }
+.mini-kpis div,
+.mini-kpis a {
+  padding: .8rem .95rem;
+}
 .mini-kpis strong {
   color: var(--text);
   font-size: 1.5rem;
 }
 .mini-kpis span { color: var(--muted); }
+.client-kpi-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  text-decoration: none;
+}
+.client-kpi-card.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
 
 .clientes-table-wrap {
   overflow: auto;
