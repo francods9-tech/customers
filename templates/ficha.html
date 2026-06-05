@@ -7,6 +7,9 @@
     <div>
       <div class="crumb"><a href="{{ url_for('clientes_list') }}">Clientes</a> / {{ c.nombre }}</div>
       <h1>{{ c.nombre }}</h1>
+      {% if c.snapshot_nombre and c.snapshot_nombre != c.nombre %}
+        <p class="muted">Antes: {{ c.snapshot_nombre }}</p>
+      {% endif %}
       <p class="muted mono">{{ c.email }}</p>
       <div class="profile-badges customer-head-badges profile-overview-grid">
         <span class="badge badge-{{ c.estado }}">{{ c.estado }}</span>
@@ -14,83 +17,37 @@
         <span class="tag">{{ c.tipo_cliente }}</span>
         <span class="tag">{{ "recurrente" if c.cuenta_activo_recurrente else "no recurrente" }}</span>
       </div>
+      <div class="customer-health-strip customer-operational-summary">
+        {% if atencion.impago %}
+          <span class="tag tag-warn">Impago: {{ atencion.impago.label }}</span>
+        {% endif %}
+        {% if atencion.quejas_abiertas %}
+          <span class="tag tag-warn">{{ atencion.quejas_abiertas }} solicitud{{ "" if atencion.quejas_abiertas == 1 else "es" }} abierta{{ "" if atencion.quejas_abiertas == 1 else "s" }}</span>
+        {% endif %}
+        {% if atencion.churn or atencion.churn_manual %}
+          <span class="tag tag-warn">Riesgo de churn</span>
+        {% endif %}
+        {% if atencion.trial %}
+          <span class="tag tag-warn">Trial {{ atencion.trial.fecha or "" }}</span>
+        {% endif %}
+        {% if atencion.onboarding_pendiente %}
+          <span class="tag tag-warn">Bienvenida pendiente</span>
+        {% endif %}
+        {% if recordatorios_activos %}
+          <a class="tag" href="{{ url_for('bandeja', customer=c.email_key) }}">{{ recordatorios_activos|length }} tarea{{ "" if recordatorios_activos|length == 1 else "s" }} activa{{ "" if recordatorios_activos|length == 1 else "s" }}</a>
+        {% endif %}
+        {% if not atencion.impago and not atencion.quejas_abiertas and not atencion.churn and not atencion.churn_manual and not atencion.trial and not atencion.onboarding_pendiente and not recordatorios_activos %}
+          <span class="tag">Sin pendientes</span>
+        {% endif %}
+      </div>
     </div>
     <div class="customer-head-actions">
-      {% if meta.whatsapp %}
-        <a class="btn-sync" href="https://wa.me/{{ meta.whatsapp|replace(' ', '')|replace('+', '') }}" target="_blank" rel="noopener">WhatsApp</a>
-      {% endif %}
       <a class="btn-primary" href="{{ url_for('quejas_list', customer=c.email_key) }}">Crear solicitud</a>
-      <a class="btn-sync" href="{{ url_for('bandeja', customer=c.email_key) }}">Crear tarea</a>
+      <a class="btn-primary" href="{{ url_for('bandeja', customer=c.email_key) }}">Crear tarea</a>
       <a class="btn-sync" href="{{ url_for('clientes_list') }}">Volver a clientes</a>
-      {% if c.estado != "inactivo" %}
-        <form method="post" action="{{ url_for('inactivar_cliente', email=c.email_key) }}" class="inline">
-          <button class="btn-sync" type="submit">Marcar inactivo</button>
-        </form>
-      {% endif %}
     </div>
   </div>
 
-  <section class="customer-health-strip">
-    {% if atencion.impago %}
-      <div class="attention-card danger">
-        <span>Impago</span>
-        <strong>{{ atencion.impago.label }}</strong>
-        <small>{{ atencion.impago.estado_label }} · {{ atencion.impago.facturas_count }} factura{{ "" if atencion.impago.facturas_count == 1 else "s" }}</small>
-        {% if atencion.impago.acceso_free %}<small>Acceso free por impago</small>{% endif %}
-        {% if atencion.impago.monto is not none %}<small>${{ "%.2f"|format(atencion.impago.monto) }} pendiente</small>{% endif %}
-        {% for factura in atencion.impago.facturas %}
-          <a href="{{ factura.url }}" target="_blank" rel="noopener">Abrir factura {{ loop.index }}</a>
-        {% else %}
-          {% if atencion.impago.factura_url %}<a href="{{ atencion.impago.factura_url }}" target="_blank" rel="noopener">Abrir factura</a>{% endif %}
-        {% endfor %}
-      </div>
-    {% endif %}
-    {% if atencion.quejas_abiertas %}
-      <div class="attention-card danger">
-        <span>Solicitudes abiertas</span>
-        <strong>{{ atencion.quejas_abiertas }}</strong>
-        <a href="{{ url_for('quejas_list') }}">Gestionar</a>
-      </div>
-    {% endif %}
-    {% if atencion.churn or atencion.churn_manual %}
-      <div class="attention-card warn">
-        <span>Riesgo de churn</span>
-        <strong>{{ atencion.churn.label if atencion.churn else "Marcado manualmente" }}</strong>
-        {% if atencion.churn and atencion.churn.dias is not none %}
-          <small>{% if atencion.churn.dias < 0 %}vencio hace {{ -atencion.churn.dias }} dias{% else %}faltan {{ atencion.churn.dias }} dias{% endif %}</small>
-        {% endif %}
-        {% if atencion.churn_manual %}<small>{{ atencion.churn_manual }} marca{{ "" if atencion.churn_manual == 1 else "s" }} manual{{ "" if atencion.churn_manual == 1 else "es" }}</small>{% endif %}
-      </div>
-    {% endif %}
-    {% if atencion.trial %}
-      <div class="attention-card warn">
-        <span>Trial</span>
-        <strong>{{ atencion.trial.fecha or "Sin fecha" }}</strong>
-        {% if atencion.trial.dias is not none %}
-          <small>{% if atencion.trial.vencido %}vencido hace {{ -atencion.trial.dias }} dias{% else %}faltan {{ atencion.trial.dias }} dias{% endif %}</small>
-        {% endif %}
-      </div>
-    {% endif %}
-    {% if c.reactivacion.reactivado %}
-      <div class="attention-card ok">
-        <span>Reactivado</span>
-        <strong>Volvio luego de baja</strong>
-        <small>Ultima baja {{ c.reactivacion.ultima_baja }}</small>
-      </div>
-    {% endif %}
-    {% if atencion.onboarding_pendiente %}
-      <div class="attention-card warn">
-        <span>Bienvenida</span>
-        <strong>Pendiente</strong>
-      </div>
-    {% endif %}
-    {% if not atencion.impago and not atencion.quejas_abiertas and not atencion.churn and not atencion.churn_manual and not atencion.trial and not atencion.onboarding_pendiente %}
-      <div class="attention-card ok">
-        <span>Estado operativo</span>
-        <strong>Sin pendientes</strong>
-      </div>
-    {% endif %}
-  </section>
 
   <span class="attention-panel customer-profile-grid profile-secondary-grid" hidden></span>
 
@@ -158,8 +115,8 @@
         <div class="customer-info-grid">
           <div>
             <dl>
+              <dt>Nombre operativo</dt><dd>{{ meta.manual_nombre or c.nombre }}</dd>
               <dt>WhatsApp</dt><dd>{{ meta.whatsapp or "-" }}</dd>
-              <dt>Estado WhatsApp</dt><dd>{{ whatsapp_status_labels.get(meta.whatsapp_status, meta.whatsapp_status or "Sin dato") }}</dd>
               <dt>Usuario</dt><dd>{{ meta.usuario or "-" }}</dd>
               <dt>Manager</dt><dd>{{ meta.manager or "-" }}</dd>
               <dt>Origen</dt><dd>{{ meta.origen_label }}</dd>
@@ -169,16 +126,12 @@
           <div>
             <form method="post" action="{{ url_for('set_contacto_cliente', email=c.email_key) }}" class="compact-form">
               <div>
-                <label>WhatsApp</label>
-                <input type="text" name="whatsapp" value="{{ meta.whatsapp or '' }}" placeholder="+54 9 11 ...">
+                <label>Nombre operativo</label>
+                <input type="text" name="manual_nombre" value="{{ meta.manual_nombre or '' }}" placeholder="Nombre real o agendado">
               </div>
               <div>
-                <label>Estado WhatsApp</label>
-                <select name="whatsapp_status">
-                  {% for key, label in whatsapp_status_options %}
-                    <option value="{{ key }}" {{ "selected" if meta.whatsapp_status == key }}>{{ label }}</option>
-                  {% endfor %}
-                </select>
+                <label>WhatsApp</label>
+                <input type="text" name="whatsapp" value="{{ meta.whatsapp or '' }}" placeholder="+54 9 11 ...">
               </div>
               <div>
                 <label>Usuario</label>
@@ -232,26 +185,34 @@
 
       <section class="panel">
         <div class="panel-head">
-          <h2>Links reportados por el cliente</h2>
+          <h2>Historial operativo</h2>
         </div>
         {% set reports = salud.manual_reports or {} %}
-        {% if reports.count %}
-          <dl>
-            <dt>Total</dt><dd>{{ reports.count }} reporte{{ "" if reports.count == 1 else "s" }}</dd>
-            <dt>Ultimo reporte</dt><dd>{{ reports.last_reported_at or "-" }}</dd>
-            <dt>Reportes repetidos</dt><dd>{{ reports.repeated_count or 0 }} repetido{{ "" if reports.repeated_count == 1 else "s" }}</dd>
-          </dl>
-        {% else %}
-          <p class="muted">Sin links reportados manualmente por el cliente.</p>
-        {% endif %}
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Actividad reciente</h2>
-        </div>
-        {% if interacciones %}
+        {% if reports.count or interacciones or recordatorios_activos %}
           <ul class="timeline clean-timeline">
+            {% if reports.count %}
+              <li>
+                <div class="timeline-head">
+                  <span class="tag">links reportados</span>
+                  <span class="muted">{{ reports.last_reported_at or "sin fecha" }}</span>
+                </div>
+                <p>{{ reports.count }} reporte{{ "" if reports.count == 1 else "s" }}{% if reports.repeated_count %} · {{ reports.repeated_count }} repetido{{ "" if reports.repeated_count == 1 else "s" }}{% endif %}</p>
+              </li>
+            {% endif %}
+            {% for r in recordatorios_activos %}
+              <li>
+                <div class="timeline-head">
+                  <span class="tag {{ r.status_class }}">tarea</span>
+                  <span class="tag">{{ r.assignee_label }}</span>
+                  <span class="tag {{ 'tag-warn' if r.days is not none and r.days <= 0 }}">{{ r.due_label }}</span>
+                  <span class="muted">{{ r.timing }}</span>
+                  <form method="post" action="{{ url_for('complete_recordatorio', reminder_id=r.id) }}" class="inline">
+                    <button class="btn-sync" type="submit">Completar</button>
+                  </form>
+                </div>
+                <p>{{ r.texto }}</p>
+              </li>
+            {% endfor %}
             {% for i in interacciones %}
               <li>
                 <div class="timeline-head">
@@ -269,22 +230,12 @@
             {% endfor %}
           </ul>
         {% else %}
-          <p class="muted">Sin contactos registrados todavia.</p>
+          <p class="muted">Sin actividad registrada todavia.</p>
         {% endif %}
       </section>
     </div>
 
     <aside class="customer-side-column">
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Acciones</h2>
-        </div>
-        <div class="stack-form">
-          <a class="btn-primary" href="{{ url_for('quejas_list', customer=c.email_key) }}">Crear solicitud</a>
-          <a class="btn-sync" href="{{ url_for('bandeja', customer=c.email_key) }}">Crear tarea</a>
-        </div>
-      </section>
-
       <section class="panel manual-panel">
         <div class="panel-head">
           <h2>Ajuste manual</h2>
@@ -338,50 +289,6 @@
           <button type="submit">Guardar suscripcion</button>
         </form>
         <p class="muted">One time payment y Free por colab no suman como activos recurrentes. Colab con descuento si suma si esta activo.</p>
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Tareas activas</h2>
-          <a class="chip" href="{{ url_for('bandeja', customer=c.email_key) }}">Ver bandeja</a>
-        </div>
-        {% if recordatorios_activos %}
-          <ul class="timeline clean-timeline reminder-list">
-            {% for r in recordatorios_activos %}
-              <li>
-                <div class="timeline-head">
-                  <span class="tag {{ r.status_class }}">{{ r.status_label }}</span>
-                  <span class="tag">{{ r.assignee_label }}</span>
-                  <span class="tag {{ 'tag-warn' if r.days is not none and r.days <= 0 }}">{{ r.due_label }}</span>
-                  <span class="muted">{{ r.timing }}</span>
-                  <form method="post" action="{{ url_for('complete_recordatorio', reminder_id=r.id) }}" class="inline">
-                    <button class="btn-sync" type="submit">Completar</button>
-                  </form>
-                </div>
-                <p>{{ r.texto }}</p>
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="muted">Sin tareas activas.</p>
-        {% endif %}
-
-        {% if recordatorios_completados %}
-          <details class="collab-details reminder-completed">
-            <summary>Completados recientes</summary>
-            <ul class="timeline clean-timeline">
-              {% for r in recordatorios_completados %}
-                <li>
-                  <div class="timeline-head">
-                    <span class="tag">{{ r.due_label }}</span>
-                    <span class="muted">completado</span>
-                  </div>
-                  <p>{{ r.texto }}</p>
-                </li>
-              {% endfor %}
-            </ul>
-          </details>
-        {% endif %}
       </section>
     </aside>
   </div>
