@@ -248,8 +248,14 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn(f'action="/queja/{ticket_id}/gestion"', body)
 
     def test_ficha_permita_guardar_contacto_whatsapp_y_usuario(self):
+        from db import db
+        from db.models import CustomerMeta
+
         self.login()
         self.add_snapshot([self.customer_row()])
+        with self.app.app_context():
+            db.session.add(CustomerMeta(email="cliente-z@example.test", whatsapp_status="manager"))
+            db.session.commit()
 
         response = self.client.get("/cliente/cliente-z@example.test")
         self.assertEqual(response.status_code, 200)
@@ -257,7 +263,9 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn('name="whatsapp"', body)
         self.assertIn('name="usuario"', body)
         self.assertIn('name="manager"', body)
-        self.assertIn('name="whatsapp_status"', body)
+        self.assertIn('name="manual_nombre"', body)
+        self.assertNotIn('name="whatsapp_status"', body)
+        self.assertNotIn("Estado WhatsApp", body)
         self.assertIn("customer-profile-grid", body)
         self.assertIn("profile-overview-grid", body)
         self.assertIn("profile-secondary-grid", body)
@@ -269,18 +277,23 @@ class AppRoutesTest(unittest.TestCase):
                 "whatsapp": "+54 9 11 2222 3333",
                 "usuario": "@clientez",
                 "manager": "Dalila",
-                "whatsapp_status": "activo",
+                "manual_nombre": "Patri Castillo",
             },
         )
 
         self.assertEqual(response.status_code, 302)
         with self.app.app_context():
-            from db.models import CustomerMeta
             meta = CustomerMeta.query.filter_by(email="cliente-z@example.test").one()
             self.assertEqual(meta.whatsapp, "+54 9 11 2222 3333")
             self.assertEqual(meta.usuario, "@clientez")
             self.assertEqual(meta.manager, "Dalila")
-            self.assertEqual(meta.whatsapp_status, "activo")
+            self.assertEqual(meta.manual_nombre, "Patri Castillo")
+            self.assertEqual(meta.whatsapp_status, "manager")
+
+        response = self.client.get("/cliente/cliente-z@example.test")
+        body = response.get_data(as_text=True)
+        self.assertIn("<h1>Patri Castillo</h1>", body)
+        self.assertIn("Antes: Cliente Z", body)
 
     def test_customer_meta_acepta_manager_y_estado_whatsapp(self):
         from db import db
@@ -557,8 +570,8 @@ class AppRoutesTest(unittest.TestCase):
         body = response.get_data(as_text=True)
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn('action="/cliente/ocultable@example.test/inactivar"', body)
-        self.assertIn("Marcar inactivo", body)
+        self.assertNotIn('action="/cliente/ocultable@example.test/inactivar"', body)
+        self.assertNotIn("Marcar inactivo", body)
 
         response = self.client.post("/cliente/ocultable@example.test/inactivar")
         self.assertEqual(response.status_code, 302)
@@ -845,7 +858,7 @@ class AppRoutesTest(unittest.TestCase):
         response = self.client.get("/cliente/cliente-z@example.test")
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
-        self.assertIn("Tareas", body)
+        self.assertIn("Crear tarea", body)
         self.assertIn('href="/bandeja?customer=cliente-z@example.test"', body)
         self.assertNotIn('action="/cliente/cliente-z@example.test/recordatorios"', body)
 
@@ -872,7 +885,7 @@ class AppRoutesTest(unittest.TestCase):
         body = response.get_data(as_text=True)
         self.assertIn('class="customer-page page polish-v5"', body)
         self.assertIn('class="page-head customer-head"', body)
-        self.assertIn('class="customer-health-strip"', body)
+        self.assertIn('class="customer-health-strip customer-operational-summary"', body)
         self.assertIn('class="customer-command-grid v5-two-column"', body)
         self.assertIn('class="customer-main-column"', body)
         self.assertIn('class="customer-side-column"', body)
@@ -899,7 +912,7 @@ class AppRoutesTest(unittest.TestCase):
                 whatsapp="+54 9 11 1111 2222",
                 usuario="@operativo",
                 manager="Dalila",
-                whatsapp_status="no_responde",
+                manual_nombre="Nombre Operativo",
             ))
             db.session.add(Interaccion(
                 customer_email="operativo@example.test",
@@ -945,20 +958,23 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("Pirateria pendiente", body)
         self.assertIn("Suplantaciones gestionadas", body)
         self.assertIn("Contacto e identificacion", body)
+        self.assertIn("<h1>Nombre Operativo</h1>", body)
+        self.assertIn("Antes: Cliente Operativo", body)
         self.assertIn("Dalila", body)
-        self.assertIn("No responde", body)
-        self.assertIn("Links reportados por el cliente", body)
+        self.assertNotIn("Estado WhatsApp", body)
+        self.assertNotIn("Links reportados por el cliente", body)
         self.assertIn("3 reportes", body)
         self.assertIn("2026-06-02", body)
         self.assertIn("1 repetido", body)
         self.assertNotIn("pirata.example.test", body)
-        self.assertIn("Actividad reciente", body)
+        self.assertIn("Historial operativo", body)
         self.assertIn("Nota operativa", body)
         self.assertIn("Pide revisar enlaces", body)
-        self.assertIn("Tareas activas", body)
         self.assertIn("Llamar", body)
         self.assertIn('href="/solicitudes?customer=operativo@example.test"', body)
         self.assertIn('href="/bandeja?customer=operativo@example.test"', body)
+        self.assertNotIn("<h2>Acciones</h2>", body)
+        self.assertNotIn("Marcar inactivo", body)
         self.assertNotIn("Nuevo contacto o solicitud", body)
         self.assertNotIn('action="/cliente/operativo@example.test/interaccion"', body)
         self.assertNotIn('action="/cliente/operativo@example.test/recordatorios"', body)

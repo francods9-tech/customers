@@ -14,6 +14,60 @@ No tocar como fuente de verdad de Claude:
 C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 ```
 
+## Iteracion 2026-06-05 - Ficha cliente polish minimal
+
+Implementado en rama `codex/ficha-cliente-polish`:
+
+- `/cliente/<email>` queda mas limpia y orientada a lectura operativa:
+  - Header con acciones principales `Crear solicitud`, `Crear tarea` y `Volver a clientes`; se quita el boton visible `Marcar inactivo`.
+  - El estado operativo se integra al header como tags compactos: impago, solicitudes abiertas, churn, trial, bienvenida pendiente, tareas activas o `Sin pendientes`.
+  - Se elimina el panel lateral duplicado `Acciones`.
+  - Se elimina el panel lateral separado `Tareas activas`; las tareas activas viven en el resumen operativo y en el historial.
+- `Contacto e identificacion` cambia el foco:
+  - Se oculta el selector `Estado WhatsApp` de la UI porque no representaba el caso real de nombre agendado.
+  - Se usa `CustomerMeta.manual_nombre` como `Nombre operativo` editable desde la ficha.
+  - Si el nombre operativo reemplaza al nombre del snapshot, el header muestra `Antes: <nombre snapshot>`.
+  - El backend conserva `whatsapp_status` si llega desde clientes existentes o rutas legacy; ya no se resetea al guardar contacto desde la ficha.
+- `Links reportados por el cliente` y `Actividad reciente` se unifican en `Historial operativo`:
+  - Muestra resumen de links reportados sin URLs.
+  - Muestra tareas activas compactas con accion `Completar`.
+  - Mantiene notas, solicitudes, quejas, churn y upsell de `Interaccion`.
+
+Archivos tocados:
+
+- `app.py`
+- `templates/ficha.html`
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+python -m unittest discover -s tests -p "test_app_routes.py" -k "ficha_permita_guardar_contacto" -k "ficha_operativa" -k "ficha_permita_marcar_cliente" -k "ficha_usa_layout_core" -v
+python -m unittest discover -s tests -p "test_app_routes.py" -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests RED focales fallaron inicialmente contra la UI anterior.
+- Tests focales OK.
+- `test_app_routes.py`: 70 tests OK.
+- Suite completa: 110 tests OK.
+- `git diff --check` con codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local con Flask test client:
+  - `/cliente/smoke-polish@example.test` -> 200.
+  - Contiene `Patri Castillo`, `Antes: Francisco Pardo`, acciones principales, `Historial operativo`, tarea y ticket de prueba.
+  - No contiene `Marcar inactivo`, panel `Acciones`, `Estado WhatsApp`, `Links reportados por el cliente` ni `Tareas activas`.
+
+Riesgos / fuera de alcance:
+
+- El endpoint legacy `POST /cliente/<email>/inactivar` sigue existiendo y testeado; solo se retiro el boton visible de la ficha.
+- `whatsapp_status` sigue en modelo/backend por compatibilidad, pero no se edita desde esta UI.
+- QA visual con navegador integrado no ejecutada en esta iteracion; la verificacion visual fue smoke HTML por Flask test client.
+
 ## Iteracion 2026-06-05 - Ficha cliente operativa
 
 Implementado en rama `codex/ficha-cliente-operativa`:

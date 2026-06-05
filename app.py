@@ -489,6 +489,7 @@ def _clientes_enriquecidos():
             continue
         c["email_key"] = email
         c["email"] = c.get("email") or email
+        c["snapshot_nombre"] = c.get("nombre") or c.get("email") or email
         m = metas.get(email)
         _apply_manual_identity(c, m)
         c.update(customer_rules.enrich_customer(c, m))
@@ -1577,11 +1578,13 @@ def inactivar_cliente(email):
 @login_required
 def set_contacto_cliente(email):
     meta = _get_or_create_meta(email.lower())
+    meta.manual_nombre = (request.form.get("manual_nombre") or "").strip()
     meta.whatsapp = (request.form.get("whatsapp") or "").strip()
     meta.usuario = (request.form.get("usuario") or "").strip()
     meta.manager = (request.form.get("manager") or "").strip()
-    status = request.form.get("whatsapp_status") or "sin_dato"
-    meta.whatsapp_status = status if status in WHATSAPP_STATUS_LABELS else "sin_dato"
+    if "whatsapp_status" in request.form:
+        status = request.form.get("whatsapp_status") or "sin_dato"
+        meta.whatsapp_status = status if status in WHATSAPP_STATUS_LABELS else "sin_dato"
     db.session.commit()
     flash("Contacto actualizado", "ok")
     return redirect(url_for("cliente", email=email))

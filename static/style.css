@@ -1299,6 +1299,15 @@ table.grid.clientes-grid {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: .75rem;
 }
+.customer-operational-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin-top: .75rem;
+}
+.customer-operational-summary .tag {
+  text-decoration: none;
+}
 .customer-command-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(340px, .85fr);
