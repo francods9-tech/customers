@@ -52,6 +52,18 @@ Riesgos / fuera de alcance:
 - No se cambio backend, datos ni rutas.
 - QA visual con navegador integrado no ejecutada: la herramienta de navegador no quedo expuesta en esta sesion; se verifico por HTML/CSS y tests.
 
+PR/deploy:
+
+- PR #84 mergeado a `main` con commit `e325876`.
+- Deploy manual ejecutado con `railway up --detach -m "Deploy ficha UI polish buttons"`.
+- Deployment Railway `e292ac40-3d42-444c-939d-1b4157f8a779` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard`.
+  - `/cliente/test@example.com` sin sesion -> 302 a login.
+  - `/solicitudes?customer=test@example.com` sin sesion -> 302 a login.
+  - `/bandeja?customer=test@example.com` sin sesion -> 302 a login.
+
 ## Iteracion 2026-06-05 - Ficha cliente polish minimal
 
 Implementado en rama `codex/ficha-cliente-polish`:
