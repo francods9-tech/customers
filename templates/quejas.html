@@ -36,11 +36,15 @@
   {% endif %}
 </section>
 
-<details class="request-create-panel panel v5-form-panel"{% if selected_customer %} open{% endif %}>
-  <summary class="panel-head">
-    <h2>Crear solicitud</h2>
-    <span class="btn-primary request-header-action">Crear solicitud</span>
-  </summary>
+<section class="request-board panel v5-board-panel">
+  <div class="panel-head">
+    <h2>Abiertas ({{ abiertas|length }})</h2>
+    <div class="request-board-actions">
+      <span class="muted">Ordenadas por antiguedad</span>
+    </div>
+  </div>
+<details class="request-create-inline v5-form-panel"{% if selected_customer %} open{% endif %}>
+  <summary class="btn-primary request-header-action">Crear solicitud</summary>
   {% if clientes %}
   <form method="post" action="{{ url_for('add_solicitud_directa') }}" class="new-request-form">
     <input type="search" data-customer-search data-target="new-request-customer" placeholder="Buscar cliente, email o WhatsApp">
@@ -94,11 +98,6 @@
   {% endif %}
 </details>
 
-<section class="panel request-board v5-board-panel">
-  <div class="panel-head">
-    <h2>Abiertas ({{ abiertas|length }})</h2>
-    <span class="muted">Ordenadas por antiguedad</span>
-  </div>
   {% if abiertas %}
   <div class="request-list open-request-list">
     {% for q in abiertas %}
@@ -122,6 +121,8 @@
         </div>
       </div>
       <div class="request-row-actions">
+        <details class="request-actions-menu">
+          <summary>Gestionar</summary>
         <div class="ticket-list-actions">
         <form method="post" action="{{ url_for('set_queja_gestion', qid=q.id) }}" class="inline">
           <select name="estado_gestion">
@@ -143,6 +144,7 @@
           <button class="btn-danger" type="submit">Eliminar</button>
         </form>
         </div>
+        </details>
       </div>
     </article>
     {% endfor %}
