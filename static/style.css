@@ -1679,15 +1679,18 @@ table.grid.clientes-grid {
   text-transform: none;
   letter-spacing: 0;
 }
-.request-form-panel {
+.request-form-panel,
+.request-create-panel {
   border-color: #dbeafe;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
 }
-.request-form-panel .new-request-form {
+.request-form-panel .new-request-form,
+.request-create-panel .new-request-form {
   grid-template-columns: minmax(210px, 1.05fr) minmax(250px, 1.35fr) 125px 160px 145px auto;
   align-items: start;
 }
-.request-form-panel .new-request-form button {
+.request-form-panel .new-request-form button,
+.request-create-panel .new-request-form button {
   white-space: nowrap;
 }
 .requests-table-wrap {
@@ -2074,8 +2077,101 @@ table.grid.clientes-grid {
 .requests-page .requests-period {
   justify-content: flex-start;
 }
+.requests-page .requests-kpi-strip {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+.requests-page .requests-kpi-strip > div {
+  min-height: 64px;
+  padding: .75rem .9rem;
+}
+.requests-page .requests-kpi-strip strong {
+  font-size: 1.25rem;
+}
+.requests-page .requests-kpi-strip span {
+  font-size: .76rem;
+}
+.requests-chart-panel {
+  padding: .9rem 1rem;
+}
 .requests-chart-panel canvas {
-  max-height: 300px;
+  max-height: 220px;
+}
+.request-create-panel {
+  padding: 0;
+}
+.request-create-panel > summary {
+  min-height: 52px;
+  padding: .85rem 1rem;
+  margin: 0;
+  cursor: pointer;
+  list-style: none;
+}
+.request-create-panel > summary::-webkit-details-marker {
+  display: none;
+}
+.request-create-panel > summary::marker {
+  content: "";
+}
+.request-create-panel .new-request-form,
+.request-create-panel > .muted {
+  margin: 0;
+  padding: 0 1rem 1rem;
+}
+.request-header-action {
+  pointer-events: none;
+}
+.request-list {
+  display: grid;
+  gap: .65rem;
+}
+.request-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, auto);
+  gap: .9rem;
+  align-items: start;
+  padding: .85rem 0;
+  border-top: 1px solid var(--border-soft);
+}
+.request-list .request-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.request-row-main {
+  min-width: 0;
+}
+.request-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+.request-client {
+  display: inline-block;
+  margin-top: .2rem;
+  font-weight: 600;
+}
+.request-row .request-text {
+  max-width: none;
+  margin: .35rem 0 0;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.request-row-actions {
+  min-width: 0;
+}
+.request-row .ticket-list-actions {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: .45rem;
+}
+.request-row .ticket-list-actions .inline {
+  margin: 0;
+  gap: .4rem;
+}
+.request-row .ticket-list-actions select {
+  min-width: 135px;
 }
 .request-board .panel-head,
 .v5-board-panel .panel-head {
@@ -2098,6 +2194,40 @@ table.grid.clientes-grid {
 .ticket-page .ticket-sidebar {
   position: sticky;
   top: 84px;
+}
+.ticket-layout-compact {
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, .78fr);
+  gap: 1rem;
+}
+.ticket-side-panel {
+  display: grid;
+  gap: .95rem;
+  padding: 1rem;
+}
+.ticket-side-section {
+  display: grid;
+  gap: .65rem;
+  padding-top: .95rem;
+  border-top: 1px solid var(--border-soft);
+}
+.ticket-side-section:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.ticket-side-section h2,
+.ticket-task-panel summary h2 {
+  margin: 0;
+  font-size: .9rem;
+}
+.ticket-task-panel summary {
+  cursor: pointer;
+  list-style: none;
+}
+.ticket-task-panel summary::-webkit-details-marker {
+  display: none;
+}
+.ticket-task-panel summary::marker {
+  content: "";
 }
 .customer-page .customer-head,
 .customer-page .customer-command-grid,
@@ -2214,23 +2344,29 @@ table.grid.clientes-grid {
   .clientes-mobile-list {
     display: grid;
   }
-  .request-form-panel .new-request-form {
+  .request-form-panel .new-request-form,
+  .request-create-panel .new-request-form {
     grid-template-columns: 1fr;
   }
-  .request-form-panel .new-request-form textarea {
+  .request-form-panel .new-request-form textarea,
+  .request-create-panel .new-request-form textarea {
     grid-column: auto;
   }
-  .requests-table-wrap {
-    display: none;
+  .request-row {
+    grid-template-columns: 1fr;
   }
-  .requests-mobile-list {
-    display: grid;
+  .request-row-top {
+    align-items: flex-start;
   }
-  .request-card .ticket-list-actions {
+  .request-row .ticket-list-actions {
     width: 100%;
+    justify-content: flex-start;
   }
-  .request-card .ticket-list-actions .inline {
+  .request-row .ticket-list-actions .inline,
+  .request-row .ticket-list-actions select,
+  .request-row .ticket-list-actions button {
     min-width: 0;
+    width: 100%;
   }
   .ticket-page-head,
   .page-head {
@@ -2244,6 +2380,7 @@ table.grid.clientes-grid {
     min-width: 0;
   }
   .ticket-layout,
+  .ticket-layout-compact,
   .ticket-comment-form {
     grid-template-columns: 1fr;
   }

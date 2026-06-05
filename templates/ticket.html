@@ -24,7 +24,7 @@
   </div>
 </div>
 
-<div class="ticket-layout v5-two-column">
+<div class="ticket-layout ticket-layout-compact">
   <section class="panel ticket-thread">
     <div class="panel-head">
       <h2>Conversacion interna</h2>
@@ -71,11 +71,10 @@
     </div>
   </section>
 
-  <aside class="ticket-sidebar">
-    <section class="panel">
-      <div class="panel-head">
-        <h2>Propiedades</h2>
-      </div>
+  <aside class="ticket-sidebar ticket-sidebar-compact">
+    <section class="ticket-side-panel panel">
+      <div class="ticket-side-section">
+      <h2>Propiedades</h2>
       <dl>
         <dt>Cliente</dt><dd><a href="{{ url_for('cliente', email=ticket.customer_email) }}">{{ nombre }}</a></dd>
         <dt>Email</dt><dd class="mono">{{ ticket.customer_email }}</dd>
@@ -88,12 +87,10 @@
         <dt>Equipo</dt><dd>{{ ctx.team_label }}</dd>
         {% endif %}
       </dl>
-    </section>
-
-    <section class="panel">
-      <div class="panel-head">
-        <h2>Gestion</h2>
       </div>
+
+      <div class="ticket-side-section">
+      <h2>Gestion</h2>
       {% if ticket.resuelta %}
         <form method="post" action="{{ url_for('reabrir_ticket', qid=ticket.id) }}" class="ticket-action-row">
           <span>Este ticket estuvo abierto {{ ctx.duration.dias }} dias.</span>
@@ -121,13 +118,13 @@
           <button type="submit">Marcar resuelto</button>
         </form>
       {% endif %}
-    </section>
+      </div>
 
     {% if not ticket.resuelta %}
-    <section class="panel v5-form-panel ticket-task-panel">
-      <div class="panel-head">
+      <details class="ticket-side-section ticket-task-panel" open>
+      <summary>
         <h2>Crear tarea</h2>
-      </div>
+      </summary>
       <form method="post" action="{{ url_for('add_ticket_task', qid=ticket.id) }}" class="ticket-form">
         <label>Titulo / accion</label>
         <textarea name="texto" placeholder="Ej: responder al cliente con avance" required></textarea>
@@ -142,8 +139,9 @@
         </select>
         <button type="submit">Crear tarea</button>
       </form>
-    </section>
+      </details>
     {% endif %}
+    </section>
   </aside>
 </div>
 </div>

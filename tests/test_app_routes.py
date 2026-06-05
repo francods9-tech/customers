@@ -225,8 +225,8 @@ class AppRoutesTest(unittest.TestCase):
             ("/clientes", ['class="clients-page page polish-v5"', 'class="client-toolbar v5-toolbar"']),
             ("/cliente/cliente-v5@example.test", ['class="customer-page page polish-v5"', 'class="customer-command-grid v5-two-column"']),
             ("/bandeja", ['class="inbox-page page polish-v5"', 'class="inbox-buckets v5-panel-stack"']),
-            ("/solicitudes", ['class="requests-page page polish-v5"', 'class="request-form-panel panel v5-form-panel"']),
-            (f"/solicitudes/{ticket_id}", ['class="ticket-page page polish-v5"', 'class="ticket-layout v5-two-column"']),
+            ("/solicitudes", ['class="requests-page page polish-v5"', 'class="request-create-panel panel v5-form-panel"']),
+            (f"/solicitudes/{ticket_id}", ['class="ticket-page page polish-v5"', 'class="ticket-layout ticket-layout-compact"']),
             ("/colabs", ['class="collabs-page page polish-v5"', 'class="collab-form-panel panel v5-form-panel"']),
             ("/bajas?preset=todo", ['class="churn-page page polish-v5"', 'class="churn-toolbar periodo-bar v5-toolbar"']),
             ("/mensajes", ['class="messages-page page polish-v5"', 'class="message-toolbar panel v5-toolbar"']),
@@ -1858,7 +1858,9 @@ class AppRoutesTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
-        self.assertIn("Nueva solicitud", body)
+        self.assertIn("Crear solicitud", body)
+        self.assertIn('class="request-create-panel panel v5-form-panel"', body)
+        self.assertIn('class="btn-primary request-header-action"', body)
         self.assertNotIn("Nueva categoria", body)
         self.assertNotIn("Categorias</h2>", body)
         self.assertNotIn("/quejas/categorias", body)
@@ -1928,11 +1930,11 @@ class AppRoutesTest(unittest.TestCase):
 
         response = self.client.get("/solicitudes")
         body = response.get_data(as_text=True)
-        self.assertIn('class="requests-table open-requests-table"', body)
-        self.assertIn('class="request-form-panel panel v5-form-panel"', body)
-        self.assertIn('class="requests-mobile-list"', body)
+        self.assertIn('class="request-list open-request-list"', body)
+        self.assertIn('class="request-create-panel panel v5-form-panel"', body)
+        self.assertNotIn('class="requests-table open-requests-table"', body)
         ticket_row = body[body.index(f"Ticket #{ticket_id}"):]
-        ticket_row = ticket_row[:ticket_row.index("</tr>")]
+        ticket_row = ticket_row[:ticket_row.index("</article>")]
         self.assertIn("OPERACIONES", ticket_row)
         self.assertIn("Eliminar", ticket_row)
         self.assertEqual(ticket_row.count("Actualizar"), 1)
@@ -1980,7 +1982,7 @@ class AppRoutesTest(unittest.TestCase):
 
         response = self.client.get("/solicitudes")
         body = response.get_data(as_text=True)
-        self.assertIn('class="requests-table open-requests-table"', body)
+        self.assertIn('class="request-list open-request-list"', body)
         self.assertIn(f"Ticket #{ticket_id}", body)
         self.assertIn("8 dias", body)
         self.assertIn("age-warn", body)
@@ -1991,7 +1993,8 @@ class AppRoutesTest(unittest.TestCase):
         response = self.client.get(f"/solicitudes/{ticket_id}")
         body = response.get_data(as_text=True)
         self.assertIn("ticket-thread", body)
-        self.assertIn('class="ticket-sidebar"', body)
+        self.assertIn('class="ticket-sidebar ticket-sidebar-compact"', body)
+        self.assertIn('class="ticket-side-panel panel"', body)
         self.assertIn('class="ticket-comment-form"', body)
         self.assertIn('name="agente"', body)
         for agente in ("Luis", "Dalila", "Nicky", "Frank"):
@@ -2286,10 +2289,10 @@ class AppRoutesTest(unittest.TestCase):
 
         response = self.client.get("/solicitudes")
         body = response.get_data(as_text=True)
-        self.assertIn('class="requests-table resolved-requests-table"', body)
+        self.assertIn('class="request-list resolved-request-list"', body)
         self.assertIn(f"Ticket #{ticket_id}", body)
         ticket_row = body[body.index(f"Ticket #{ticket_id}"):]
-        ticket_row = ticket_row[:ticket_row.index("</tr>")]
+        ticket_row = ticket_row[:ticket_row.index("</article>")]
         self.assertIn("4 dias abierto", body)
         self.assertIn("status-resuelta", body)
         self.assertIn("Reabrir", body)

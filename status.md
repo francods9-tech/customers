@@ -14,6 +14,49 @@ No tocar como fuente de verdad de Claude:
 C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 ```
 
+## Iteracion 2026-06-05 - Solicitudes UI minimalista
+
+Implementado en rama `codex/solicitudes-minimal-ui`:
+
+- `/solicitudes` mueve la carga manual a un panel desplegable `Crear solicitud`, alineado con el patron de `Nueva tarea` en Bandeja.
+- El listado de solicitudes abiertas y resueltas deja la tabla ancha y pasa a filas compactas con cliente, resumen, tags operativos y acciones inline.
+- `/solicitudes/<id>` mantiene conversacion, gestion y creacion de tareas, pero compacta la columna lateral en una sola superficie con secciones internas.
+- KPIs y grafico de solicitudes bajan peso visual para priorizar la mesa operativa.
+
+Archivos tocados:
+
+- `templates/quejas.html`
+- `templates/ticket.html`
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+python -m unittest discover -s tests -p test_app_routes.py -k "solicitudes_muestra_formulario" -k "solicitudes_abiertas" -k "ticket_muestra_numero" -v
+python -m unittest discover -s tests -p test_app_routes.py -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests RED focales fallaron inicialmente contra el layout anterior.
+- Focales OK.
+- `test_app_routes.py`: 71 tests OK.
+- Suite completa: 112 tests OK.
+- `git diff --check` con codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local con Flask test client:
+  - `/solicitudes` autenticado -> 200.
+  - Contiene `request-create-panel` y lista/estado vacio de solicitudes.
+
+Riesgos / fuera de alcance:
+
+- No se cambiaron rutas, modelos, endpoints ni reglas de negocio.
+- QA visual con navegador integrado no ejecutada: la herramienta Browser no expuso `node_repl/js` utilizable en esta sesion; se verifico por HTML/CSS, tests y smoke local.
+- Produccion/Railway pendiente de PR merge + deploy.
+
 ## Iteracion 2026-06-05 - Churn incluye canceladas con periodo futuro
 
 Implementado en rama `codex/churn-canceled-period-end`:
