@@ -55,7 +55,17 @@ Riesgos / fuera de alcance:
 
 - No se cambiaron rutas, modelos, endpoints ni reglas de negocio.
 - QA visual con navegador integrado no ejecutada: la herramienta Browser no expuso `node_repl/js` utilizable en esta sesion; se verifico por HTML/CSS, tests y smoke local.
-- Produccion/Railway pendiente de PR merge + deploy.
+
+PR/deploy:
+
+- PR #92 mergeado a `main` con commit `a2cb1cc`.
+- Deploy manual ejecutado con `railway up --detach -m "Deploy solicitudes minimal UI"`.
+- Deployment Railway `4aa1598c-9891-41c9-adb9-41e829ff842b` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard`.
+  - `/solicitudes` sin sesion -> 302 a login.
+- QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
 
 ## Iteracion 2026-06-05 - Churn incluye canceladas con periodo futuro
 
