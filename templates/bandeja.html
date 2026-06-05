@@ -10,6 +10,7 @@
       <p class="muted">Tareas del equipo y alertas operativas en un solo lugar.</p>
     </div>
     <div class="inbox-summary">
+      <span class="tag tag-churn">{{ pendientes.churn|length }} churn</span>
       <span class="tag tag-warn">{{ pendientes.impago|length }} impagos</span>
       <span class="tag">{{ pendientes.trial|length }} trials</span>
       <span class="tag">{{ task_total }} tareas</span>
@@ -104,7 +105,8 @@
     {% endif %}
   {% endmacro %}
 
-  <details class="task-command-panel compact-task-command">
+  <section class="inbox-ops-panel panel">
+  <details class="task-command-panel compact-task-command" {{ "open" if selected_customer else "" }}>
     <summary>
       <span class="btn-primary">Nueva tarea</span>
     </summary>
@@ -139,7 +141,6 @@
     </form>
   </details>
 
-  <section class="panel task-filter-panel">
     <form method="get" action="{{ url_for('bandeja') }}" class="filters-form task-filters">
       <label>
         Fecha
@@ -168,10 +169,10 @@
   </section>
 
   <div class="inbox-buckets v5-panel-stack">
-    <section class="inbox-panel panel tone-neutral">
-      <div class="panel-head">
+    <details class="inbox-panel panel tone-neutral">
+      <summary class="panel-head">
         <h2>Tareas ({{ task_total }})</h2>
-      </div>
+      </summary>
       <div class="task-group-stack">
         <div class="task-group task-group-overdue">
           <h3>Vencidas ({{ task_groups.overdue|length }})</h3>
@@ -192,19 +193,19 @@
           </div>
         {% endif %}
       </div>
-    </section>
+    </details>
 
-    <section class="inbox-panel panel secondary-panel tone-warning">
-      <div class="panel-head">
+    <details class="inbox-panel panel secondary-panel tone-churn">
+      <summary class="panel-head">
         <h2>Riesgo de churn ({{ pendientes.churn|length }})</h2>
-      </div>
+      </summary>
       {% if pendientes.churn %}
         <div class="inbox-list">
           {% for c in pendientes.churn %}
             <div class="inbox-row">
               {{ customer_identity(c) }}
               <div class="inbox-meta">
-                <span class="tag tag-warn">{{ c.churn_risk.label }}</span>
+                <span class="tag tag-churn">{{ c.churn_risk.label }}</span>
                 {% if c.churn_risk.dias is not none %}
                   <span class="sub">{% if c.churn_risk.dias < 0 %}vencio hace {{ -c.churn_risk.dias }} dias{% else %}faltan {{ c.churn_risk.dias }} dias{% endif %}</span>
                 {% endif %}
@@ -218,13 +219,13 @@
       {% else %}
         {{ empty_state() }}
       {% endif %}
-    </section>
+    </details>
 
-    <section class="inbox-panel panel secondary-panel tone-danger">
-      <div class="panel-head">
+    <details class="inbox-panel panel secondary-panel tone-danger">
+      <summary class="panel-head">
         <h2>Impagos ({{ pendientes.impago|length }})</h2>
         <a class="chip" href="{{ url_for('clientes_list', estado='impago') }}">Ver clientes</a>
-      </div>
+      </summary>
       {% if pendientes.impago %}
         <div class="inbox-list">
           {% for c in pendientes.impago %}
@@ -251,18 +252,17 @@
       {% else %}
         {{ empty_state() }}
       {% endif %}
-    </section>
+    </details>
 
-    {#
-    <section class="inbox-panel panel tone-neutral">
-      <div class="panel-head">
+    <details class="inbox-panel panel secondary-panel tone-warning">
+      <summary class="panel-head">
         <h2>Onboarding pendiente ({{ pendientes.onboarding|length }})</h2>
         {% if pendientes.onboarding %}
           <form method="post" action="{{ url_for('marcar_bienvenidos') }}" class="inline">
             <button class="btn-sync" type="submit">Marcar a todos como bienvenidos</button>
           </form>
         {% endif %}
-      </div>
+      </summary>
       {% if pendientes.onboarding %}
         <div class="inbox-list">
           {% for c in pendientes.onboarding %}
@@ -278,14 +278,13 @@
       {% else %}
         {{ empty_state() }}
       {% endif %}
-    </section>
+    </details>
 
-    #}
-    <section class="inbox-panel panel secondary-panel tone-warning">
-      <div class="panel-head">
+    <details class="inbox-panel panel secondary-panel tone-warning">
+      <summary class="panel-head">
         <h2>En trial ({{ pendientes.trial|length }})</h2>
         <a class="chip" href="{{ url_for('clientes_list', estado='trial') }}">Ver clientes</a>
-      </div>
+      </summary>
       {% if pendientes.trial %}
         <div class="inbox-list">
           {% for c in pendientes.trial %}
@@ -305,7 +304,7 @@
       {% else %}
         {{ empty_state() }}
       {% endif %}
-    </section>
+    </details>
 
   </div>
 </div>

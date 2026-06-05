@@ -791,8 +791,18 @@ class AppRoutesTest(unittest.TestCase):
         body = response.get_data(as_text=True)
         self.assertIn('class="inbox-page page polish-v5"', body)
         self.assertIn('class="page-head inbox-head"', body)
+        self.assertIn('class="inbox-summary"', body)
+        self.assertIn('class="tag tag-churn"', body)
+        self.assertIn("0 churn", body)
         self.assertIn('class="inbox-buckets v5-panel-stack"', body)
+        self.assertIn('class="inbox-ops-panel panel"', body)
+        self.assertIn('class="task-command-panel compact-task-command"', body)
+        self.assertLess(body.index('class="inbox-ops-panel panel"'), body.index('class="task-command-panel compact-task-command"'))
+        self.assertLess(body.index('class="task-command-panel compact-task-command"'), body.index('class="filters-form task-filters"'))
+        self.assertIn('class="inbox-panel panel secondary-panel tone-churn"', body)
         self.assertIn('class="inbox-panel panel secondary-panel tone-danger"', body)
+        self.assertIn("<details", body)
+        self.assertIn("<summary", body)
         self.assertIn('class="inbox-row"', body)
         self.assertIn("Bandeja operativa", body)
         self.assertIn("Cliente Impago", body)
@@ -800,6 +810,8 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("Completar", body)
 
     def test_bandeja_premium_colapsa_nueva_tarea_y_no_duplica_onboarding(self):
+        from pathlib import Path
+
         from db import db
         from db.models import CustomerReminder
 
@@ -839,15 +851,36 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("Hoy (", body)
         self.assertIn("Proximas (", body)
         self.assertNotIn("Para la fecha", body)
-        self.assertNotIn("Onboarding pendiente", body)
+        self.assertIn("Onboarding pendiente (", body)
         self.assertIn("Bienvenida pendiente", body)
         self.assertLess(body.index("Tareas ("), body.index("Riesgo de churn"))
         self.assertLess(body.index("Riesgo de churn"), body.index("Impagos ("))
-        self.assertLess(body.index("Impagos ("), body.index("En trial ("))
+        self.assertLess(body.index("Impagos ("), body.index("Onboarding pendiente ("))
+        self.assertLess(body.index("Onboarding pendiente ("), body.index("En trial ("))
         self.assertIn('class="task-group task-group-overdue"', body)
-        self.assertIn('class="inbox-panel panel secondary-panel tone-warning"', body)
+        self.assertIn('class="inbox-panel panel secondary-panel tone-churn"', body)
         self.assertIn('class="inbox-panel panel secondary-panel tone-danger"', body)
         self.assertIn("Sin pendientes.", body)
+
+        css = Path("static/style.css").read_text(encoding="utf-8")
+        self.assertIn(".tag-churn", css)
+        self.assertIn(".inbox-panel.tone-churn .panel-head", css)
+        self.assertIn(".inbox-ops-panel", css)
+        filters_button_rule_start = css.index(".task-filters button")
+        filters_button_rule = css[filters_button_rule_start:css.index("}", filters_button_rule_start)]
+        self.assertIn("width: auto", filters_button_rule)
+
+    def test_bandeja_con_customer_abre_nueva_tarea_en_panel_operativo(self):
+        self.login()
+        self.add_snapshot([self.customer_row(nombre="Ana Cliente", email="ana@example.test")])
+
+        response = self.client.get("/bandeja?customer=ana@example.test")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn('class="inbox-ops-panel panel"', body)
+        self.assertIn('class="task-command-panel compact-task-command" open', body)
+        self.assertIn('value="ana@example.test" selected>Ana Cliente', body)
 
     def test_ficha_crea_tarea_con_fecha_texto_y_asignado(self):
         from db.models import CustomerReminder
