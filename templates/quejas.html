@@ -46,7 +46,7 @@
     <input type="search" data-customer-search data-target="new-request-customer" placeholder="Buscar cliente, email o WhatsApp">
     <select id="new-request-customer" name="customer_email" required>
       {% for cliente in clientes %}
-      <option value="{{ cliente.email }}">{{ cliente.nombre }} · {{ cliente.email }}</option>
+      <option value="{{ cliente.email }}" {% if selected_customer == cliente.email %}selected{% endif %}>{{ cliente.nombre }} · {{ cliente.email }}</option>
       {% endfor %}
     </select>
     <div class="customer-search-index" hidden>

@@ -256,14 +256,21 @@ class AppRoutesTest(unittest.TestCase):
         body = response.get_data(as_text=True)
         self.assertIn('name="whatsapp"', body)
         self.assertIn('name="usuario"', body)
+        self.assertIn('name="manager"', body)
+        self.assertIn('name="whatsapp_status"', body)
         self.assertIn("customer-profile-grid", body)
         self.assertIn("profile-overview-grid", body)
         self.assertIn("profile-secondary-grid", body)
-        self.assertIn("client-action-form", body)
+        self.assertNotIn("client-action-form", body)
 
         response = self.client.post(
             "/cliente/cliente-z@example.test/contacto",
-            data={"whatsapp": "+54 9 11 2222 3333", "usuario": "@clientez"},
+            data={
+                "whatsapp": "+54 9 11 2222 3333",
+                "usuario": "@clientez",
+                "manager": "Dalila",
+                "whatsapp_status": "activo",
+            },
         )
 
         self.assertEqual(response.status_code, 302)
@@ -272,6 +279,24 @@ class AppRoutesTest(unittest.TestCase):
             meta = CustomerMeta.query.filter_by(email="cliente-z@example.test").one()
             self.assertEqual(meta.whatsapp, "+54 9 11 2222 3333")
             self.assertEqual(meta.usuario, "@clientez")
+            self.assertEqual(meta.manager, "Dalila")
+            self.assertEqual(meta.whatsapp_status, "activo")
+
+    def test_customer_meta_acepta_manager_y_estado_whatsapp(self):
+        from db import db
+        from db.models import CustomerMeta
+
+        with self.app.app_context():
+            db.session.add(CustomerMeta(
+                email="manager-status@example.test",
+                manager="Frank",
+                whatsapp_status="manager",
+            ))
+            db.session.commit()
+
+            meta = CustomerMeta.query.filter_by(email="manager-status@example.test").one()
+            self.assertEqual(meta.manager, "Frank")
+            self.assertEqual(meta.whatsapp_status, "manager")
 
     def test_clientes_busca_por_usuario_y_whatsapp_con_placeholder_simple(self):
         from db import db
@@ -437,6 +462,8 @@ class AppRoutesTest(unittest.TestCase):
 
         self.assertIn("manual_customer BOOLEAN NOT NULL DEFAULT FALSE", source)
         self.assertNotIn("manual_customer BOOLEAN NOT NULL DEFAULT 0", source)
+        self.assertIn("manager VARCHAR(120) NOT NULL DEFAULT ''", source)
+        self.assertIn("whatsapp_status VARCHAR(32) NOT NULL DEFAULT 'sin_dato'", source)
 
     def test_crear_cliente_manual_persiste_aparece_y_abre_ficha(self):
         from db.models import CustomerMeta
@@ -819,8 +846,8 @@ class AppRoutesTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
         self.assertIn("Tareas", body)
-        self.assertIn('name="due_date"', body)
-        self.assertIn('name="assignee"', body)
+        self.assertIn('href="/bandeja?customer=cliente-z@example.test"', body)
+        self.assertNotIn('action="/cliente/cliente-z@example.test/recordatorios"', body)
 
         response = self.client.post(
             "/cliente/cliente-z@example.test/recordatorios",
@@ -851,8 +878,90 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn('class="customer-side-column"', body)
         self.assertIn('action="/cliente/cliente-z@example.test/suscripcion"', body)
         self.assertIn('action="/cliente/cliente-z@example.test/contacto"', body)
-        self.assertIn('action="/cliente/cliente-z@example.test/interaccion"', body)
-        self.assertIn('action="/cliente/cliente-z@example.test/recordatorios"', body)
+        self.assertNotIn('action="/cliente/cliente-z@example.test/interaccion"', body)
+        self.assertNotIn('action="/cliente/cliente-z@example.test/recordatorios"', body)
+
+    def test_ficha_operativa_muestra_salud_contacto_links_y_no_urls_reportadas(self):
+        import app as app_module
+        from db import db
+        from db.models import CustomerMeta, CustomerReminder, Interaccion
+
+        self.login()
+        customer = {
+            **self.customer_row(nombre="Cliente Operativo", email="operativo@example.test"),
+            "account_ids": ["acc-1"],
+            "cuenta_activo_recurrente": True,
+        }
+        self.add_snapshot([customer])
+        with self.app.app_context():
+            db.session.add(CustomerMeta(
+                email="operativo@example.test",
+                whatsapp="+54 9 11 1111 2222",
+                usuario="@operativo",
+                manager="Dalila",
+                whatsapp_status="no_responde",
+            ))
+            db.session.add(Interaccion(
+                customer_email="operativo@example.test",
+                tipo="nota",
+                texto="Nota operativa",
+            ))
+            db.session.add(Interaccion(
+                customer_email="operativo@example.test",
+                tipo="solicitud",
+                texto="Pide revisar enlaces",
+                categoria="envia_links",
+            ))
+            db.session.add(CustomerReminder(
+                customer_email="operativo@example.test",
+                texto="Llamar",
+                due_date="2026-06-12",
+                assignee="Luis",
+            ))
+            db.session.commit()
+
+        original = app_module.salud_de_cuentas
+        app_module.salud_de_cuentas = lambda account_ids: {
+            "checks": [{"accountId": "acc-1", "status": "ok", "resultCount": 3}],
+            "detected_pendientes": 2,
+            "detected_gestionados": 4,
+            "impersonations_pendientes": 1,
+            "impersonations_gestionadas": 5,
+            "manual_reports": {
+                "count": 3,
+                "last_reported_at": "2026-06-02",
+                "repeated_count": 1,
+                "sample_url": "https://pirata.example.test/video",
+            },
+        }
+        try:
+            response = self.client.get("/cliente/operativo@example.test")
+        finally:
+            app_module.salud_de_cuentas = original
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn("Suscripcion y salud", body)
+        self.assertIn("Pirateria pendiente", body)
+        self.assertIn("Suplantaciones gestionadas", body)
+        self.assertIn("Contacto e identificacion", body)
+        self.assertIn("Dalila", body)
+        self.assertIn("No responde", body)
+        self.assertIn("Links reportados por el cliente", body)
+        self.assertIn("3 reportes", body)
+        self.assertIn("2026-06-02", body)
+        self.assertIn("1 repetido", body)
+        self.assertNotIn("pirata.example.test", body)
+        self.assertIn("Actividad reciente", body)
+        self.assertIn("Nota operativa", body)
+        self.assertIn("Pide revisar enlaces", body)
+        self.assertIn("Tareas activas", body)
+        self.assertIn("Llamar", body)
+        self.assertIn('href="/solicitudes?customer=operativo@example.test"', body)
+        self.assertIn('href="/bandeja?customer=operativo@example.test"', body)
+        self.assertNotIn("Nuevo contacto o solicitud", body)
+        self.assertNotIn('action="/cliente/operativo@example.test/interaccion"', body)
+        self.assertNotIn('action="/cliente/operativo@example.test/recordatorios"', body)
 
     def test_bandeja_muestra_tareas_activas_y_permite_completarlas(self):
         from db import db
@@ -1683,6 +1792,34 @@ class AppRoutesTest(unittest.TestCase):
         self.assertNotIn('name="pelota"', body)
         self.assertNotIn('name="agente"', body)
         self.assertLess(body.index("Ana"), body.index("Zeta"))
+
+    def test_solicitudes_con_customer_preselecciona_cliente(self):
+        self.login()
+        self.add_snapshot([
+            {"nombre": "Zeta", "email": "zeta@example.test", "email_key": "zeta@example.test"},
+            {"nombre": "Ana", "email": "ana@example.test", "email_key": "ana@example.test"},
+        ])
+
+        response = self.client.get("/solicitudes?customer=ana@example.test")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        option = '<option value="ana@example.test" selected>Ana'
+        self.assertIn(option, body)
+
+    def test_bandeja_con_customer_preselecciona_cliente_en_nueva_tarea(self):
+        self.login()
+        self.add_snapshot([
+            {"nombre": "Zeta", "email": "zeta@example.test", "email_key": "zeta@example.test"},
+            {"nombre": "Ana", "email": "ana@example.test", "email_key": "ana@example.test"},
+        ])
+
+        response = self.client.get("/bandeja?customer=ana@example.test")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        option = '<option value="ana@example.test" selected>Ana'
+        self.assertIn(option, body)
 
     def test_solicitudes_abiertas_actualizan_estado_importancia_y_se_pueden_eliminar(self):
         import datetime as dt

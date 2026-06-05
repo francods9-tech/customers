@@ -59,6 +59,8 @@ class CustomerMeta(db.Model):
     tipo_cliente = db.Column(db.String(32), nullable=False, default="")
     whatsapp = db.Column(db.String(80), nullable=False, default="")
     usuario = db.Column(db.String(120), nullable=False, default="")
+    manager = db.Column(db.String(120), nullable=False, default="")
+    whatsapp_status = db.Column(db.String(32), nullable=False, default="sin_dato")
     colab_descuento = db.Column(db.String(80), nullable=False, default="")
     colab_acuerdo = db.Column(db.Text, nullable=False, default="")
     colab_inicio = db.Column(db.String(10), nullable=False, default="")

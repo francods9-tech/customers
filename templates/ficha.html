@@ -19,8 +19,9 @@
       {% if meta.whatsapp %}
         <a class="btn-sync" href="https://wa.me/{{ meta.whatsapp|replace(' ', '')|replace('+', '') }}" target="_blank" rel="noopener">WhatsApp</a>
       {% endif %}
+      <a class="btn-primary" href="{{ url_for('quejas_list', customer=c.email_key) }}">Crear solicitud</a>
+      <a class="btn-sync" href="{{ url_for('bandeja', customer=c.email_key) }}">Crear tarea</a>
       <a class="btn-sync" href="{{ url_for('clientes_list') }}">Volver a clientes</a>
-      <a class="btn-sync" href="{{ url_for('quejas_list') }}">Solicitudes</a>
       {% if c.estado != "inactivo" %}
         <form method="post" action="{{ url_for('inactivar_cliente', email=c.email_key) }}" class="inline">
           <button class="btn-sync" type="submit">Marcar inactivo</button>
@@ -97,52 +98,100 @@
     <div class="customer-main-column">
       <section class="panel">
         <div class="panel-head">
-          <h2>Suscripcion</h2>
+          <h2>Suscripcion y salud</h2>
           {% if c.manual_plan or c.manual_estado %}<span class="tag tag-warn">Ajuste manual</span>{% endif %}
         </div>
-        <dl>
-          <dt>Plan</dt><dd>{{ c.plan }}</dd>
-          <dt>Estado</dt><dd>{{ c.estado }}</dd>
-          <dt>Tipo cliente</dt><dd>{{ c.tipo_cliente }}</dd>
-          <dt>Activo recurrente</dt><dd>{{ "Si" if c.cuenta_activo_recurrente else "No" }}</dd>
-          {% if c.colab.es_colab %}
+        <div class="customer-info-grid">
+          <div>
+            <h3>Suscripcion</h3>
+            <dl>
+              <dt>Plan</dt><dd>{{ c.plan }}</dd>
+              <dt>Estado</dt><dd>{{ c.estado }}</dd>
+              <dt>Tipo cliente</dt><dd>{{ c.tipo_cliente }}</dd>
+              <dt>Activo recurrente</dt><dd>{{ "Si" if c.cuenta_activo_recurrente else "No" }}</dd>
+              <dt>Ciclo</dt><dd>{{ "Anual" if c.anual else "Mensual" }}</dd>
+              <dt>Alta</dt><dd>{{ c.fecha_alta or "-" }} {% if c.dias_de_alta is not none %}<span class="muted">({{ c.dias_de_alta }} dias)</span>{% endif %}</dd>
+              {% if c.trial %}
+                <dt>Fin trial</dt><dd>{{ c.trial.fecha or "-" }} {% if c.trial.dias is not none %}<span class="muted">({{ c.trial.dias }} dias)</span>{% endif %}</dd>
+              {% endif %}
+              {% if c.reactivacion.reactivado %}
+                <dt>Reactivacion</dt><dd>Activo hoy; ultima baja {{ c.reactivacion.ultima_baja }}</dd>
+              {% endif %}
+            </dl>
+          </div>
+          <div>
+            <h3>Salud de cuenta</h3>
+            <dl>
+              <dt>Pirateria pendiente</dt><dd>{{ salud.detected_pendientes }}</dd>
+              <dt>Pirateria gestionada</dt><dd>{{ salud.detected_gestionados }}</dd>
+              <dt>Suplantaciones pendientes</dt><dd>{{ salud.impersonations_pendientes }}</dd>
+              <dt>Suplantaciones gestionadas</dt><dd>{{ salud.impersonations_gestionadas or 0 }}</dd>
+            </dl>
+          </div>
+          <div>
+            <h3>Health checks</h3>
+            {% if salud.checks %}
+              {% for ch in salud.checks %}
+                <div class="health-row">
+                  <span class="badge badge-{{ 'impago' if ch.status == 'compromised' else 'activo' }}">{{ ch.status }}</span>
+                  <span class="muted">{{ ch.resultCount }} resultados en Google</span>
+                </div>
+              {% endfor %}
+            {% else %}
+              <p class="muted">Sin chequeos registrados.</p>
+            {% endif %}
+          </div>
+        </div>
+        {% if c.colab.es_colab %}
+          <dl>
             <dt>Colab</dt><dd>{{ c.colab.label or c.tipo_cliente }}</dd>
             <dt>Acuerdo</dt><dd>{{ c.colab.acuerdo or "-" }}</dd>
             <dt>Revision</dt><dd>{{ c.colab.revision or "-" }} {% if c.colab.revision_pendiente %}<span class="tag tag-warn">{{ c.colab.dias_revision }} dias</span>{% endif %}</dd>
-          {% endif %}
-          <dt>Ciclo</dt><dd>{{ "Anual" if c.anual else "Mensual" }}</dd>
-          <dt>Alta</dt><dd>{{ c.fecha_alta or "-" }} {% if c.dias_de_alta is not none %}<span class="muted">({{ c.dias_de_alta }} dias)</span>{% endif %}</dd>
-          {% if c.trial %}
-            <dt>Fin trial</dt><dd>{{ c.trial.fecha or "-" }} {% if c.trial.dias is not none %}<span class="muted">({{ c.trial.dias }} dias)</span>{% endif %}</dd>
-          {% endif %}
-          {% if c.reactivacion.reactivado %}
-            <dt>Reactivacion</dt><dd>Activo hoy; ultima baja {{ c.reactivacion.ultima_baja }}</dd>
-          {% endif %}
-        </dl>
+          </dl>
+        {% endif %}
       </section>
 
       <section class="panel">
         <div class="panel-head">
-          <h2>Contacto, origen y salud</h2>
+          <h2>Contacto e identificacion</h2>
         </div>
         <div class="customer-info-grid">
           <div>
-            <h3>Contacto</h3>
+            <dl>
+              <dt>WhatsApp</dt><dd>{{ meta.whatsapp or "-" }}</dd>
+              <dt>Estado WhatsApp</dt><dd>{{ whatsapp_status_labels.get(meta.whatsapp_status, meta.whatsapp_status or "Sin dato") }}</dd>
+              <dt>Usuario</dt><dd>{{ meta.usuario or "-" }}</dd>
+              <dt>Manager</dt><dd>{{ meta.manager or "-" }}</dd>
+              <dt>Origen</dt><dd>{{ meta.origen_label }}</dd>
+              <dt>Bienvenida</dt><dd>{{ "Hecha" if meta.onboarding_hecho else "Pendiente" }}</dd>
+            </dl>
+          </div>
+          <div>
             <form method="post" action="{{ url_for('set_contacto_cliente', email=c.email_key) }}" class="compact-form">
               <div>
                 <label>WhatsApp</label>
                 <input type="text" name="whatsapp" value="{{ meta.whatsapp or '' }}" placeholder="+54 9 11 ...">
               </div>
               <div>
+                <label>Estado WhatsApp</label>
+                <select name="whatsapp_status">
+                  {% for key, label in whatsapp_status_options %}
+                    <option value="{{ key }}" {{ "selected" if meta.whatsapp_status == key }}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
                 <label>Usuario</label>
                 <input type="text" name="usuario" value="{{ meta.usuario or '' }}" placeholder="@usuario, handle o alias">
+              </div>
+              <div>
+                <label>Manager</label>
+                <input type="text" name="manager" value="{{ meta.manager or '' }}" placeholder="Responsable operativo">
               </div>
               <button type="submit">Guardar contacto</button>
             </form>
           </div>
-
           <div>
-            <h3>Origen y bienvenida</h3>
             <form method="post" action="{{ url_for('set_origen', email=c.email_key) }}" class="stack-form">
               <label>Origen</label>
               <select name="origen_base" data-origin-base onchange="toggleOriginDetails()">
@@ -178,31 +227,28 @@
               </form>
             </div>
           </div>
-
-          <div>
-            <h3>Salud de cuenta</h3>
-            {% if salud.checks %}
-              {% for ch in salud.checks %}
-                <div class="health-row">
-                  <span class="badge badge-{{ 'impago' if ch.status == 'compromised' else 'activo' }}">{{ ch.status }}</span>
-                  <span class="muted">{{ ch.resultCount }} resultados en Google</span>
-                </div>
-              {% endfor %}
-            {% else %}
-              <p class="muted">Sin chequeos registrados.</p>
-            {% endif %}
-            <dl>
-              <dt>Pirateria pendiente</dt><dd>{{ salud.detected_pendientes }}</dd>
-              <dt>Pirateria gestionada</dt><dd>{{ salud.detected_gestionados }}</dd>
-              <dt>Suplantaciones pendientes</dt><dd>{{ salud.impersonations_pendientes }}</dd>
-            </dl>
-          </div>
         </div>
       </section>
 
       <section class="panel">
         <div class="panel-head">
-          <h2>Historial</h2>
+          <h2>Links reportados por el cliente</h2>
+        </div>
+        {% set reports = salud.manual_reports or {} %}
+        {% if reports.count %}
+          <dl>
+            <dt>Total</dt><dd>{{ reports.count }} reporte{{ "" if reports.count == 1 else "s" }}</dd>
+            <dt>Ultimo reporte</dt><dd>{{ reports.last_reported_at or "-" }}</dd>
+            <dt>Reportes repetidos</dt><dd>{{ reports.repeated_count or 0 }} repetido{{ "" if reports.repeated_count == 1 else "s" }}</dd>
+          </dl>
+        {% else %}
+          <p class="muted">Sin links reportados manualmente por el cliente.</p>
+        {% endif %}
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Actividad reciente</h2>
         </div>
         {% if interacciones %}
           <ul class="timeline clean-timeline">
@@ -229,6 +275,16 @@
     </div>
 
     <aside class="customer-side-column">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Acciones</h2>
+        </div>
+        <div class="stack-form">
+          <a class="btn-primary" href="{{ url_for('quejas_list', customer=c.email_key) }}">Crear solicitud</a>
+          <a class="btn-sync" href="{{ url_for('bandeja', customer=c.email_key) }}">Crear tarea</a>
+        </div>
+      </section>
+
       <section class="panel manual-panel">
         <div class="panel-head">
           <h2>Ajuste manual</h2>
@@ -286,80 +342,9 @@
 
       <section class="panel">
         <div class="panel-head">
-          <h2>Nuevo contacto o solicitud</h2>
-          <a class="chip" href="{{ url_for('quejas_list') }}">Ver hoja</a>
+          <h2>Tareas activas</h2>
+          <a class="chip" href="{{ url_for('bandeja', customer=c.email_key) }}">Ver bandeja</a>
         </div>
-        <form method="post" action="{{ url_for('add_interaccion', email=c.email_key) }}" class="nota-form client-action-form">
-          <div>
-            <label>Tipo</label>
-            <select name="tipo">
-              <option value="nota">Nota</option>
-              <option value="onboarding">Onboarding</option>
-              <option value="queja">Queja</option>
-              <option value="solicitud">Solicitud</option>
-              <option value="churn">Riesgo de baja</option>
-              <option value="upsell">Upsell</option>
-            </select>
-          </div>
-          <div>
-            <label>Categoria</label>
-            <select name="categoria">
-              <option value="">Si aplica</option>
-              {% for cat in categorias %}
-                <option value="{{ cat.key }}">{{ cat.label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div>
-            <label>Estado</label>
-            <select name="estado_gestion">
-              {% for key, label in estados_solicitud %}
-                <option value="{{ key }}">{{ label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div>
-            <label>Importancia</label>
-            <select name="importancia">
-              {% for key, label in importancias %}
-                <option value="{{ key }}" {{ "selected" if key == "media" }}>{{ label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="action-detail">
-            <label>Detalle</label>
-            <textarea name="texto" placeholder="Que paso en este contacto?" required></textarea>
-          </div>
-          <button type="submit">Agregar</button>
-        </form>
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Tareas</h2>
-          <a class="chip" href="{{ url_for('bandeja') }}">Ver bandeja</a>
-        </div>
-        <form method="post" action="{{ url_for('add_recordatorio', email=c.email_key) }}" class="nota-form client-action-form">
-          <div>
-            <label>Fecha limite</label>
-            <input type="date" name="due_date" required>
-          </div>
-          <div>
-            <label>Asignado</label>
-            <select name="assignee">
-              <option value="">Sin asignar</option>
-              {% for value, label in task_assignees %}
-                <option value="{{ value }}">{{ label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="action-detail">
-            <label>Que hay que hacer</label>
-            <textarea name="texto" placeholder="Ej: escribirle para revisar avance, enviar propuesta, confirmar pago..." required></textarea>
-          </div>
-          <button type="submit">Crear tarea</button>
-        </form>
-
         {% if recordatorios_activos %}
           <ul class="timeline clean-timeline reminder-list">
             {% for r in recordatorios_activos %}

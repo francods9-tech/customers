@@ -131,7 +131,7 @@
         <select name="customer_email">
           <option value="">Sin cliente</option>
           {% for email, name in task_customer_options %}
-            <option value="{{ email }}">{{ name }} · {{ email }}</option>
+            <option value="{{ email }}" {% if selected_customer == email %}selected{% endif %}>{{ name }} · {{ email }}</option>
           {% endfor %}
         </select>
       </div>

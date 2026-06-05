@@ -1,6 +1,6 @@
 # Estado Traqeer AM Dashboard Codex
 
-Fecha: 2026-06-04.
+Fecha: 2026-06-05.
 
 Carpeta de trabajo aislada:
 
@@ -13,6 +13,62 @@ No tocar como fuente de verdad de Claude:
 ```text
 C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 ```
+
+## Iteracion 2026-06-05 - Ficha cliente operativa
+
+Implementado en rama `codex/ficha-cliente-operativa`:
+
+- `/cliente/<email>` se reorganiza como ficha de lectura operativa:
+  - Header con acciones `Crear solicitud` y `Crear tarea`.
+  - Bloque unificado `Suscripcion y salud` con plan, estado, tipo, alta/trial, activo recurrente, pirateria, suplantaciones y health checks.
+  - Bloque `Contacto e identificacion` con WhatsApp, usuario, manager y estado de WhatsApp.
+  - Bloque `Links reportados por el cliente` como resumen sin exponer URLs.
+  - `Historial` renombrado a `Actividad reciente`.
+  - Tareas activas quedan como lectura compacta; se quitaron formularios inline de nueva solicitud/tarea.
+- `CustomerMeta` agrega `manager` y `whatsapp_status` con migracion local compatible con Postgres.
+- `sync.health.salud_de_cuentas()` agrega `impersonations_gestionadas` y resumen `manual_reports`.
+- `/solicitudes?customer=<email>` preselecciona cliente en `Nueva solicitud`.
+- `/bandeja?customer=<email>` preselecciona cliente en `Nueva tarea`.
+
+Archivos tocados:
+
+- `app.py`
+- `db/models.py`
+- `sync/health.py`
+- `templates/ficha.html`
+- `templates/quejas.html`
+- `templates/bandeja.html`
+- `tests/test_app_routes.py`
+- `tests/test_health.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+python -m unittest discover -s tests -p "test_app_routes.py" -k "customer_meta_acepta" -k "ficha_permita_guardar_contacto" -k "ficha_operativa" -k "solicitudes_con_customer" -k "bandeja_con_customer" -v
+python -m unittest discover -s tests -p "test_health.py" -v
+python -m unittest discover -s tests -p "test_app_routes.py" -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests RED focales fallaron inicialmente por campos/modelo, preseleccion y salud faltantes.
+- Tests focales OK.
+- `test_app_routes.py`: 70 tests OK.
+- Suite completa: 110 tests OK.
+- `git diff --check` con codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local con Flask test client:
+  - `/cliente/smoke-ficha@example.test` -> 200, contiene bloques nuevos y links con `customer`.
+  - `/solicitudes?customer=smoke-ficha@example.test` -> 200, cliente preseleccionado.
+  - `/bandeja?customer=smoke-ficha@example.test` -> 200, cliente preseleccionado.
+
+Riesgos / fuera de alcance:
+
+- No se elimino el backend legacy `POST /cliente/<email>/interaccion` ni `POST /cliente/<email>/recordatorios`; solo se quitaron los formularios inline de la ficha.
+- El resumen de links manuales depende de metadata en Mongo (`reportedByRole`, `reportedAt`/`reported_at`, `repeated`/`duplicate`) y no expone URLs.
+- No se ejecuto QA visual con navegador real en esta iteracion; la verificacion fue HTML/smoke por test client.
 
 ## Hecho
 

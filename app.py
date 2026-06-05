@@ -58,6 +58,14 @@ TASK_ASSIGNEE_VALUES = {key for key, _ in TASK_ASSIGNEE_OPTIONS}
 ONBOARDING_TASK_SOURCE = "onboarding"
 ONBOARDING_TASK_ASSIGNEE = "Nicky"
 ONBOARDING_TASK_TEXT = "Bienvenida pendiente"
+WHATSAPP_STATUS_OPTIONS = [
+    ("sin_dato", "Sin dato"),
+    ("activo", "Activo"),
+    ("no_responde", "No responde"),
+    ("manager", "Manager"),
+    ("otro", "Otro"),
+]
+WHATSAPP_STATUS_LABELS = dict(WHATSAPP_STATUS_OPTIONS)
 
 
 def _ensure_local_schema():
@@ -75,6 +83,8 @@ def _ensure_local_schema():
         "tipo_cliente": "ALTER TABLE customer_meta ADD COLUMN tipo_cliente VARCHAR(32) NOT NULL DEFAULT ''",
         "whatsapp": "ALTER TABLE customer_meta ADD COLUMN whatsapp VARCHAR(80) NOT NULL DEFAULT ''",
         "usuario": "ALTER TABLE customer_meta ADD COLUMN usuario VARCHAR(120) NOT NULL DEFAULT ''",
+        "manager": "ALTER TABLE customer_meta ADD COLUMN manager VARCHAR(120) NOT NULL DEFAULT ''",
+        "whatsapp_status": "ALTER TABLE customer_meta ADD COLUMN whatsapp_status VARCHAR(32) NOT NULL DEFAULT 'sin_dato'",
         "colab_descuento": "ALTER TABLE customer_meta ADD COLUMN colab_descuento VARCHAR(80) NOT NULL DEFAULT ''",
         "colab_acuerdo": "ALTER TABLE customer_meta ADD COLUMN colab_acuerdo TEXT NOT NULL DEFAULT ''",
         "colab_inicio": "ALTER TABLE customer_meta ADD COLUMN colab_inicio VARCHAR(10) NOT NULL DEFAULT ''",
@@ -962,6 +972,9 @@ def quejas_list():
     snap = ultimo_snapshot() or {}
     nombre_por_email = {c["email_key"]: c["nombre"] for c in snap.get("clientes", [])}
     clientes = _clientes_snapshot(snap)
+    selected_customer = (request.args.get("customer") or "").strip().lower()
+    if selected_customer not in {c["email"] for c in clientes}:
+        selected_customer = ""
     categorias = _complaint_categories()
     category_map = _complaint_category_map()
     stats = complaint_rules.complaint_stats(abiertas + resueltas)
@@ -976,6 +989,7 @@ def quejas_list():
                            serie_solicitudes=serie_solicitudes,
                            clientes=clientes,
                            presets=metrics.PRESETS, label=label,
+                           selected_customer=selected_customer,
                            equipos=complaint_rules.TEAM_OPTIONS,
                            estados_solicitud=complaint_rules.REQUEST_STATUS_OPTIONS,
                            team_labels=complaint_rules.TEAM_LABELS,
@@ -1377,6 +1391,9 @@ def bandeja():
     task_rows = task_query.order_by(CustomerReminder.due_date.asc(), CustomerReminder.created_at.asc()).all()
     task_groups = _task_groups(task_rows, selected_date, nombre_por_email)
     task_total = sum(len(v) for v in task_groups.values())
+    selected_customer = (request.args.get("customer") or "").strip().lower()
+    if selected_customer not in {c["email_key"] for c in clientes}:
+        selected_customer = ""
     return render_template("bandeja.html", pendientes=pendientes,
                            nombres=nombre_por_email,
                            recordatorios=[item for group in task_groups.values() for item in group],
@@ -1384,6 +1401,7 @@ def bandeja():
                            selected_date=selected_date.isoformat(),
                            selected_assignee=assignee,
                            selected_status=status,
+                           selected_customer=selected_customer,
                            task_assignees=TASK_ASSIGNEE_OPTIONS,
                            task_total=task_total,
                            task_customer_options=[(c["email_key"], c["nombre"]) for c in clientes])
@@ -1500,6 +1518,8 @@ def cliente(email):
                            estados=customer_rules.STATUS_OPTIONS,
                            tipos=customer_rules.TYPE_OPTIONS,
                            atencion=atencion, categorias=_complaint_categories(),
+                           whatsapp_status_options=WHATSAPP_STATUS_OPTIONS,
+                           whatsapp_status_labels=WHATSAPP_STATUS_LABELS,
                            equipos=complaint_rules.TEAM_OPTIONS,
                            estados_solicitud=complaint_rules.REQUEST_STATUS_OPTIONS,
                            importancias=complaint_rules.IMPORTANCE_OPTIONS,
@@ -1559,6 +1579,9 @@ def set_contacto_cliente(email):
     meta = _get_or_create_meta(email.lower())
     meta.whatsapp = (request.form.get("whatsapp") or "").strip()
     meta.usuario = (request.form.get("usuario") or "").strip()
+    meta.manager = (request.form.get("manager") or "").strip()
+    status = request.form.get("whatsapp_status") or "sin_dato"
+    meta.whatsapp_status = status if status in WHATSAPP_STATUS_LABELS else "sin_dato"
     db.session.commit()
     flash("Contacto actualizado", "ok")
     return redirect(url_for("cliente", email=email))
