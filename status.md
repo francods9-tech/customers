@@ -942,6 +942,19 @@ Riesgos / fuera de alcance:
 - No se cambia schema, rutas backend ni datos reales.
 - QA visual con Browser/Playwright no ejecutada: el navegador integrado no expuso el ejecutor necesario y Playwright no esta instalado en este clon.
 
+PR/deploy:
+
+- PR #78 mergeado a `main` con commit `af97afc`.
+- Railway CLI fue reautenticado y actualizado de 4.44.0 a 5.1.0 porque 4.44.0 hacia timeout contra `backboard.railway.com/graphql/v2`.
+- Proyecto Railway linkeado localmente: `pretty-freedom`, environment `production`, service `customers`.
+- Deploy manual ejecutado con `railway up --detach -m "Deploy Clientes cards filters"`.
+- Deployment Railway `b971cae6-2c31-4ec3-94ac-cff9987b8a43` -> Online.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard`.
+  - `/clientes` sin sesion -> 302 a login.
+- QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
+
 ## Iteracion 2026-06-04 - Tareas manuales desde tickets
 
 Implementado en rama `codex/tareas-desde-tickets`:
