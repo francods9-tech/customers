@@ -14,6 +14,50 @@ No tocar como fuente de verdad de Claude:
 C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 ```
 
+## Iteracion 2026-06-05 - Bandeja colapsable y churn violeta
+
+Implementado en rama `codex/bandeja-collapsible-polish`:
+
+- `/bandeja` compacta la operacion en buckets colapsables por defecto:
+  - `Tareas`, `Riesgo de churn`, `Impagos`, `Onboarding pendiente` y `En trial`.
+  - `Onboarding pendiente` vuelve como bucket propio con accion masiva, manteniendo tambien las tareas automaticas de bienvenida.
+- El header suma chip `churn` en violeta junto a impagos, trials y tareas.
+- `Riesgo de churn` usa `tone-churn` y tags `tag-churn` para no confundirse con amarillo de trials/onboarding.
+- `Nueva tarea` queda dentro de un panel operativo junto a filtros.
+- `/bandeja?customer=<email>` abre `Nueva tarea` por defecto y conserva cliente preseleccionado.
+- El boton `Filtrar` vuelve a ancho natural en desktop; en mobile conserva ancho completo.
+
+Archivos tocados:
+
+- `templates/bandeja.html`
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+python -m unittest discover -s tests -p "test_app_routes.py" -k "bandeja_usa_layout_operativo" -k "bandeja_premium" -k "bandeja_con_customer_abre" -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests RED focales fallaron inicialmente contra la Bandeja anterior.
+- Tests focales OK.
+- Suite completa: 111 tests OK.
+- `git diff --check` con codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local con Flask test client:
+  - `/bandeja?customer=smoke-bandeja2@example.test` -> 200.
+  - Contiene chip `1 churn`, `tag-churn` y `Nueva tarea` abierta con cliente preseleccionado.
+
+Riesgos / fuera de alcance:
+
+- No se cambiaron modelos, endpoints ni reglas de negocio.
+- La accion masiva de onboarding queda dentro del bucket colapsable; las tareas automaticas de bienvenida siguen apareciendo en `Tareas`.
+- QA visual con navegador integrado no ejecutada: la herramienta de navegador no quedo expuesta; se verifico por HTML/CSS y tests.
+
 ## Iteracion 2026-06-05 - Ficha cliente botones y UI polish
 
 Implementado en rama `codex/ficha-ui-polish-buttons`:

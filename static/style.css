@@ -1044,9 +1044,21 @@ table.grid.clientes-grid {
   justify-content: flex-end;
   gap: .45rem;
 }
+.tag-churn {
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+  color: #6d28d9;
+}
 .tasks-page {
   display: grid;
   gap: 1rem;
+}
+.inbox-ops-panel {
+  display: grid;
+  grid-template-columns: minmax(180px, auto) minmax(0, 1fr);
+  gap: .9rem;
+  align-items: end;
+  margin-bottom: 0;
 }
 .task-command-panel {
   display: block;
@@ -1128,9 +1140,14 @@ table.grid.clientes-grid {
   font-weight: 600;
 }
 .task-filters input,
-.task-filters select,
-.task-filters button {
+.task-filters select {
   width: 100%;
+  margin: 0;
+}
+.task-filters button {
+  width: auto;
+  min-width: 132px;
+  justify-self: end;
   margin: 0;
 }
 .task-group-stack {
@@ -1169,17 +1186,41 @@ table.grid.clientes-grid {
   overflow: hidden;
 }
 .inbox-panel .panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
   min-height: 50px;
   margin: 0;
   padding: .8rem 1rem;
   border-bottom: 1px solid var(--border);
   background: var(--panel);
+  cursor: pointer;
+  list-style: none;
+}
+.inbox-panel .panel-head::-webkit-details-marker {
+  display: none;
+}
+.inbox-panel .panel-head h2::before {
+  content: "▸";
+  display: inline-block;
+  width: 1rem;
+  color: var(--muted);
+}
+.inbox-panel[open] .panel-head h2::before {
+  content: "▾";
 }
 .inbox-panel.tone-danger .panel-head {
   background: #fff7f7;
 }
 .inbox-panel.tone-warning .panel-head {
   background: #fffbeb;
+}
+.inbox-panel.tone-churn .panel-head {
+  background: #f5f3ff;
+}
+.inbox-panel.tone-churn {
+  border-color: #ddd6fe;
 }
 .inbox-list {
   display: grid;
@@ -2220,6 +2261,9 @@ table.grid.clientes-grid {
   }
   .inbox-page {
     min-width: 0;
+  }
+  .inbox-ops-panel {
+    grid-template-columns: 1fr;
   }
   .inbox-page .panel-head {
     flex-wrap: wrap;
