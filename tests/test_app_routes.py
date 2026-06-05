@@ -225,7 +225,7 @@ class AppRoutesTest(unittest.TestCase):
             ("/clientes", ['class="clients-page page polish-v5"', 'class="client-toolbar v5-toolbar"']),
             ("/cliente/cliente-v5@example.test", ['class="customer-page page polish-v5"', 'class="customer-command-grid v5-two-column"']),
             ("/bandeja", ['class="inbox-page page polish-v5"', 'class="inbox-buckets v5-panel-stack"']),
-            ("/solicitudes", ['class="requests-page page polish-v5"', 'class="request-create-panel panel v5-form-panel"']),
+            ("/solicitudes", ['class="requests-page page polish-v5"', 'class="request-board panel v5-board-panel"']),
             (f"/solicitudes/{ticket_id}", ['class="ticket-page page polish-v5"', 'class="ticket-layout ticket-layout-compact"']),
             ("/colabs", ['class="collabs-page page polish-v5"', 'class="collab-form-panel panel v5-form-panel"']),
             ("/bajas?preset=todo", ['class="churn-page page polish-v5"', 'class="churn-toolbar periodo-bar v5-toolbar"']),
@@ -1859,7 +1859,9 @@ class AppRoutesTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
         self.assertIn("Crear solicitud", body)
-        self.assertIn('class="request-create-panel panel v5-form-panel"', body)
+        self.assertIn('class="request-board panel v5-board-panel"', body)
+        self.assertIn('class="request-create-inline v5-form-panel"', body)
+        self.assertNotIn('class="request-create-panel panel v5-form-panel"', body)
         self.assertIn('class="btn-primary request-header-action"', body)
         self.assertNotIn("Nueva categoria", body)
         self.assertNotIn("Categorias</h2>", body)
@@ -1931,13 +1933,15 @@ class AppRoutesTest(unittest.TestCase):
         response = self.client.get("/solicitudes")
         body = response.get_data(as_text=True)
         self.assertIn('class="request-list open-request-list"', body)
-        self.assertIn('class="request-create-panel panel v5-form-panel"', body)
+        self.assertIn('class="request-create-inline v5-form-panel"', body)
         self.assertNotIn('class="requests-table open-requests-table"', body)
         ticket_row = body[body.index(f"Ticket #{ticket_id}"):]
         ticket_row = ticket_row[:ticket_row.index("</article>")]
         self.assertIn("OPERACIONES", ticket_row)
         self.assertIn("Eliminar", ticket_row)
         self.assertEqual(ticket_row.count("Actualizar"), 1)
+        self.assertIn('class="request-actions-menu"', ticket_row)
+        self.assertIn("Gestionar", ticket_row)
         self.assertNotIn('name="categoria"', ticket_row)
 
         response = self.client.post(

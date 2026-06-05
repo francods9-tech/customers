@@ -2099,6 +2099,36 @@ table.grid.clientes-grid {
 .request-create-panel {
   padding: 0;
 }
+.request-create-inline {
+  display: grid;
+  gap: .75rem;
+  margin: -.15rem 0 .9rem;
+  padding-bottom: .9rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+.request-create-inline > summary {
+  width: fit-content;
+  cursor: pointer;
+  list-style: none;
+}
+.request-create-inline > summary::-webkit-details-marker {
+  display: none;
+}
+.request-create-inline > summary::marker {
+  content: "";
+}
+.request-create-inline .new-request-form {
+  margin: 0;
+  padding: 0;
+  grid-template-columns: minmax(210px, 1.05fr) minmax(250px, 1.35fr) 125px 160px 145px auto;
+  align-items: start;
+}
+.request-create-inline .new-request-form button {
+  white-space: nowrap;
+}
+.request-create-inline > .muted {
+  margin: 0;
+}
 .request-create-panel > summary {
   min-height: 52px;
   padding: .85rem 1rem;
@@ -2118,7 +2148,13 @@ table.grid.clientes-grid {
   padding: 0 1rem 1rem;
 }
 .request-header-action {
-  pointer-events: none;
+  white-space: nowrap;
+}
+.request-board-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .65rem;
 }
 .request-list {
   display: grid;
@@ -2158,6 +2194,28 @@ table.grid.clientes-grid {
 }
 .request-row-actions {
   min-width: 0;
+}
+.request-actions-menu {
+  display: grid;
+  justify-items: end;
+  gap: .55rem;
+}
+.request-actions-menu > summary {
+  min-height: 34px;
+  padding: .42rem .7rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+.request-actions-menu > summary::-webkit-details-marker {
+  display: none;
+}
+.request-actions-menu > summary::marker {
+  content: "";
 }
 .request-row .ticket-list-actions {
   min-width: 0;
@@ -2345,12 +2403,22 @@ table.grid.clientes-grid {
     display: grid;
   }
   .request-form-panel .new-request-form,
-  .request-create-panel .new-request-form {
+  .request-create-panel .new-request-form,
+  .request-create-inline .new-request-form {
     grid-template-columns: 1fr;
   }
   .request-form-panel .new-request-form textarea,
-  .request-create-panel .new-request-form textarea {
+  .request-create-panel .new-request-form textarea,
+  .request-create-inline .new-request-form textarea {
     grid-column: auto;
+  }
+  .request-board-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .request-create-inline > summary {
+    width: 100%;
+    justify-content: center;
   }
   .request-row {
     grid-template-columns: 1fr;
@@ -2361,6 +2429,12 @@ table.grid.clientes-grid {
   .request-row .ticket-list-actions {
     width: 100%;
     justify-content: flex-start;
+  }
+  .request-actions-menu {
+    justify-items: stretch;
+  }
+  .request-actions-menu > summary {
+    text-align: center;
   }
   .request-row .ticket-list-actions .inline,
   .request-row .ticket-list-actions select,

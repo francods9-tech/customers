@@ -14,6 +14,46 @@ No tocar como fuente de verdad de Claude:
 C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 ```
 
+## Iteracion 2026-06-05 - Solicitudes acciones compactas
+
+Implementado en rama `codex/solicitudes-actions-compact`:
+
+- `Crear solicitud` deja de vivir en una barra/panel separado y queda integrado dentro del panel `Abiertas`.
+- Cada ticket abierto reduce ruido visual: las acciones de estado, importancia, resolver y eliminar quedan plegadas bajo `Gestionar`.
+- El listado conserva los tags operativos visibles, pero deja los controles accionables fuera de la primera lectura.
+
+Archivos tocados:
+
+- `templates/quejas.html`
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+python -m unittest discover -s tests -p test_app_routes.py -k "solicitudes_muestra_formulario" -k "solicitudes_abiertas" -v
+python -m unittest discover -s tests -p test_app_routes.py -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests RED focales fallaron inicialmente contra el panel separado y acciones siempre visibles.
+- Focales OK.
+- `test_app_routes.py`: 71 tests OK.
+- Suite completa: 112 tests OK.
+- `git diff --check` con codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local con Flask test client:
+  - `/solicitudes` autenticado -> 200.
+  - Contiene `request-create-inline`, no contiene `request-create-panel`, y contiene `request-actions-menu` o estado vacio.
+
+Riesgos / fuera de alcance:
+
+- No se cambiaron rutas, modelos, endpoints ni reglas de negocio.
+- Produccion/Railway pendiente de PR merge + deploy.
+
 ## Iteracion 2026-06-05 - Solicitudes UI minimalista
 
 Implementado en rama `codex/solicitudes-minimal-ui`:
