@@ -58,11 +58,18 @@ Riesgos / fuera de alcance:
 
 - No se cambiaron rutas, modelos ni endpoints.
 - Browser visual QA no ejecutada: el plugin Browser esta instalado, pero no expuso `node_repl/js` en esta sesion; se verifico por HTML/CSS, tests y smoke local.
-- QA autenticada de produccion queda pendiente hasta deploy.
+- QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
 
 PR/deploy:
 
-- Pendiente de push, PR, merge y deploy Railway.
+- PR #88 mergeado a `main` con commit `aa0ff7d`.
+- Deploy manual ejecutado con `railway up --detach -m "Deploy bandeja actions colors"`.
+- Deployment Railway `0bf61e04-3838-42cc-8416-8764ccd74449` -> Online.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard`.
+  - `/bandeja` sin sesion -> 302 a `/login?next=/bandeja`.
+  - `/bandeja?customer=test@example.com` sin sesion -> 302 a `/login?next=/bandeja`.
 
 ## Iteracion 2026-06-05 - Bandeja colapsable y churn violeta
 
