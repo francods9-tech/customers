@@ -885,6 +885,11 @@ class AppRoutesTest(unittest.TestCase):
         body = response.get_data(as_text=True)
         self.assertIn('class="customer-page page polish-v5"', body)
         self.assertIn('class="page-head customer-head"', body)
+        self.assertIn('class="customer-head-copy"', body)
+        self.assertIn('class="customer-head-actions"', body)
+        self.assertIn('class="btn-primary" href="/solicitudes?customer=cliente-z@example.test"', body)
+        self.assertIn('class="btn-primary" href="/bandeja?customer=cliente-z@example.test"', body)
+        self.assertIn('class="btn-sync" href="/clientes"', body)
         self.assertIn('class="customer-health-strip customer-operational-summary"', body)
         self.assertIn('class="customer-command-grid v5-two-column"', body)
         self.assertIn('class="customer-main-column"', body)
@@ -893,6 +898,10 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn('action="/cliente/cliente-z@example.test/contacto"', body)
         self.assertNotIn('action="/cliente/cliente-z@example.test/interaccion"', body)
         self.assertNotIn('action="/cliente/cliente-z@example.test/recordatorios"', body)
+        with open("static/style.css", encoding="utf-8") as css_file:
+            css = css_file.read()
+        self.assertIn(".btn-primary", css)
+        self.assertIn(".customer-head-actions .btn-primary", css)
 
     def test_ficha_operativa_muestra_salud_contacto_links_y_no_urls_reportadas(self):
         import app as app_module

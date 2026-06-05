@@ -14,6 +14,44 @@ No tocar como fuente de verdad de Claude:
 C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 ```
 
+## Iteracion 2026-06-05 - Ficha cliente botones y UI polish
+
+Implementado en rama `codex/ficha-ui-polish-buttons`:
+
+- La botonera superior de `/cliente/<email>` ahora renderiza `Crear solicitud` y `Crear tarea` como botones primarios reales, no links sueltos.
+- `Volver a clientes` conserva estilo secundario y queda alineado con las acciones principales.
+- Se ajusto el header de ficha con clase `customer-head-copy`, gap consistente, alto minimo de acciones, espaciado de tags y responsive mobile para que los botones ocupen ancho completo.
+- Se agrego cobertura preventiva en `test_ficha_usa_layout_core_en_columnas` para asegurar clases de acciones y estilos `.btn-primary`.
+
+Archivos tocados:
+
+- `templates/ficha.html`
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+python -m unittest discover -s tests -p "test_app_routes.py" -k "ficha_usa_layout_core" -k "ficha_operativa" -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests focales OK.
+- Suite completa: 110 tests OK.
+- `git diff --check` con codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local con Flask test client:
+  - `/cliente/smoke-buttons@example.test` -> 200.
+  - Contiene `customer-head-copy`, `customer-head-actions`, links primarios a `/solicitudes?customer=...` y `/bandeja?customer=...`, secundario a `/clientes` y leyenda `Antes: Francisco Pardo`.
+
+Riesgos / fuera de alcance:
+
+- No se cambio backend, datos ni rutas.
+- QA visual con navegador integrado no ejecutada: la herramienta de navegador no quedo expuesta en esta sesion; se verifico por HTML/CSS y tests.
+
 ## Iteracion 2026-06-05 - Ficha cliente polish minimal
 
 Implementado en rama `codex/ficha-cliente-polish`:
