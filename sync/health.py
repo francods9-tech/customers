@@ -13,8 +13,14 @@ def _db():
     return _client["traqeer"]
 
 
-_VACIO = {"checks": [], "detected_pendientes": 0, "detected_gestionados": 0,
-          "impersonations_pendientes": 0}
+_VACIO = {
+    "checks": [],
+    "detected_pendientes": 0,
+    "detected_gestionados": 0,
+    "impersonations_pendientes": 0,
+    "impersonations_gestionadas": 0,
+    "manual_reports": {"count": 0, "last_reported_at": "", "repeated_count": 0},
+}
 
 
 def salud_de_cuentas(account_ids: list) -> dict:
@@ -43,16 +49,45 @@ def salud_de_cuentas(account_ids: list) -> dict:
             "_id": None,
             "pendientes": {"$sum": {"$cond": [{"$eq": ["$status", "pending"]}, 1, 0]}},
             "gestionados": {"$sum": {"$cond": [{"$in": ["$status", ["removed", "deindexed"]]}, 1, 0]}},
+            "manual_reports_count": {"$sum": {"$cond": [
+                {"$in": ["$metadata.reportedByRole", ["cliente", "customer", "usuario", "user"]]},
+                1,
+                0,
+            ]}},
+            "last_reported_at": {"$max": {"$cond": [
+                {"$in": ["$metadata.reportedByRole", ["cliente", "customer", "usuario", "user"]]},
+                {"$ifNull": ["$metadata.reportedAt", "$metadata.reported_at"]},
+                "",
+            ]}},
+            "repeated_reports": {"$sum": {"$cond": [
+                {"$and": [
+                    {"$in": ["$metadata.reportedByRole", ["cliente", "customer", "usuario", "user"]]},
+                    {"$or": [
+                        {"$eq": ["$metadata.repeated", True]},
+                        {"$eq": ["$metadata.duplicate", True]},
+                    ]},
+                ]},
+                1,
+                0,
+            ]}},
         }},
     ]))
     det = det[0] if det else {"pendientes": 0, "gestionados": 0}
 
     imp = db.impersonations.count_documents(
         {"accountId": {"$in": account_ids}, "status": "pending"})
+    imp_gestionadas = db.impersonations.count_documents(
+        {"accountId": {"$in": account_ids}, "status": {"$in": ["reported", "removed"]}})
 
     return {
         "checks": checks_out,
         "detected_pendientes": det.get("pendientes", 0),
         "detected_gestionados": det.get("gestionados", 0),
         "impersonations_pendientes": imp,
+        "impersonations_gestionadas": imp_gestionadas,
+        "manual_reports": {
+            "count": det.get("manual_reports_count", 0),
+            "last_reported_at": det.get("last_reported_at") or "",
+            "repeated_count": det.get("repeated_reports", 0),
+        },
     }
