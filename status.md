@@ -58,6 +58,18 @@ Riesgos / fuera de alcance:
 - La accion masiva de onboarding queda dentro del bucket colapsable; las tareas automaticas de bienvenida siguen apareciendo en `Tareas`.
 - QA visual con navegador integrado no ejecutada: la herramienta de navegador no quedo expuesta; se verifico por HTML/CSS y tests.
 
+PR/deploy:
+
+- PR #86 mergeado a `main` con commit `64b7f4b`.
+- Deploy manual ejecutado con `railway up --detach -m "Deploy bandeja collapsible polish"`.
+- Deployment Railway `87fed923-bcbd-42a1-a2e8-d75a33050f7f` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard`.
+  - `/bandeja` sin sesion -> 302 a login.
+  - `/bandeja?customer=test@example.com` sin sesion -> 302 a login.
+- QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
+
 ## Iteracion 2026-06-05 - Ficha cliente botones y UI polish
 
 Implementado en rama `codex/ficha-ui-polish-buttons`:
