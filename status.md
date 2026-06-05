@@ -14,6 +14,47 @@ No tocar como fuente de verdad de Claude:
 C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 ```
 
+## Iteracion 2026-06-05 - Churn incluye canceladas con periodo futuro
+
+Implementado en rama `codex/churn-canceled-period-end`:
+
+- Causa raiz: `build_snapshot()` solo agregaba a `clientes` las suscripciones Stripe `active`, `trialing`, `past_due` y `unpaid`.
+- Las suscripciones `status="canceled"` se usaban solo para eventos de `bajas`; si Stripe ya las habia marcado como `canceled` pero conservaban `current_period_end` futuro, no entraban al snapshot de clientes y por eso `/bandeja` no podia mostrarlas en `Riesgo de churn`.
+- Fix: al recorrer `status="canceled"`, si `_scheduled_cancellation_info()` detecta fecha futura y hubo pago real, el cliente se mantiene como `activo` con `cancelacion_programada=True` y no se registra todavia como baja efectiva.
+
+Archivos tocados:
+
+- `sync/snapshot.py`
+- `tests/test_jobs.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+python -m unittest discover -s tests -p test_jobs.py -k "future_period_end" -v
+python -m unittest discover -s tests -p test_jobs.py -v
+python -m unittest discover -s tests -p test_customer_rules.py -k "churn" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "bandeja_muestra_cancelaciones" -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Test RED nuevo fallo inicialmente porque el cliente cancelado con periodo futuro no aparecia en `payload["clientes"]`.
+- Tests focales OK.
+- Suite completa: 112 tests OK.
+- `git diff --check` con codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+
+Riesgos / fuera de alcance:
+
+- Para que produccion muestre esos clientes, hace falta deploy y regenerar snapshot con `python -m sync.refresh_job` o esperar el cron.
+- No se verificaron nombres reales localmente: el clon local no tiene snapshot real cargado (`clientes=0`).
+
+PR/deploy:
+
+- Pendiente de push, PR, merge, deploy Railway y refresh snapshot.
+
 ## Iteracion 2026-06-05 - Bandeja acciones y colores por bucket
 
 Implementado en rama `codex/bandeja-actions-colors`:

@@ -1,6 +1,7 @@
 import io
 import unittest
 from contextlib import redirect_stdout
+from types import SimpleNamespace
 from unittest.mock import patch
 
 
@@ -63,6 +64,89 @@ class JobsTest(unittest.TestCase):
         self.assertEqual(result["resumen"]["activos"], 0)
         self.assertEqual(result["resumen"]["impago"], 1)
         add.assert_called_once()
+
+    def test_build_snapshot_includes_canceled_subscription_with_future_period_end_as_churn_risk(self):
+        import datetime as dt
+
+        from sync import snapshot
+
+        now = dt.datetime(2026, 6, 5, tzinfo=dt.timezone.utc)
+        period_end = int(dt.datetime(2026, 6, 20, tzinfo=dt.timezone.utc).timestamp())
+        canceled_at = int(now.timestamp())
+
+        class FakeList:
+            def __init__(self, rows):
+                self.data = rows
+                self._rows = rows
+
+            def auto_paging_iter(self):
+                return iter(self._rows)
+
+            def __iter__(self):
+                return iter(self._rows)
+
+        class FakeCollection:
+            def find(self, *args, **kwargs):
+                return []
+
+            def aggregate(self, *args, **kwargs):
+                return []
+
+        class FakeMongo:
+            def __init__(self, *args, **kwargs):
+                self._db = SimpleNamespace(
+                    users=FakeCollection(),
+                    accounts=FakeCollection(),
+                    subscriptions=FakeCollection(),
+                )
+
+            def __getitem__(self, name):
+                return self._db
+
+        class FakeSubscription:
+            customer = "cus_cancel_period_end"
+
+            def __getitem__(self, key):
+                if key == "items":
+                    return {"data": [{"price": {"recurring": {"interval": "month"}}}]}
+                raise KeyError(key)
+
+            def to_dict(self):
+                return {
+                    "customer": self.customer,
+                    "status": "canceled",
+                    "cancel_at_period_end": True,
+                    "current_period_end": period_end,
+                    "canceled_at": canceled_at,
+                }
+
+        def subscription_list(status, *args, **kwargs):
+            if status == "canceled":
+                return FakeList([FakeSubscription()])
+            return FakeList([])
+
+        def invoice_list(*args, **kwargs):
+            if kwargs.get("customer") == "cus_cancel_period_end" and kwargs.get("status") == "paid":
+                return FakeList([SimpleNamespace(amount_paid=9900, created=canceled_at)])
+            return FakeList([])
+
+        def customer_retrieve(customer_id):
+            self.assertEqual(customer_id, "cus_cancel_period_end")
+            return SimpleNamespace(email="cancel-futuro@example.test", name="Cancel Futuro")
+
+        with patch.dict("os.environ", {"MONGO_URI": "mongodb://example", "STRIPE_SECRET_KEY": "sk_test"}):
+            with patch.object(snapshot, "MongoClient", FakeMongo):
+                with patch.object(snapshot, "NOW", return_value=now):
+                    with patch.object(snapshot.stripe.Subscription, "list", side_effect=subscription_list):
+                        with patch.object(snapshot.stripe.Invoice, "list", side_effect=invoice_list):
+                            with patch.object(snapshot.stripe.Customer, "retrieve", side_effect=customer_retrieve):
+                                payload = snapshot.build_snapshot()
+
+        customer = next(c for c in payload["clientes"] if c["email_key"] == "cancel-futuro@example.test")
+        self.assertEqual(customer["estado"], "activo")
+        self.assertTrue(customer["cancelacion_programada"])
+        self.assertEqual(customer["cancelacion_fecha"], "20/06/2026")
+        self.assertEqual(payload["resumen"]["activos"], 1)
 
     def test_active_recurrent_diff_reports_removed_customer(self):
         from scripts.active_recurrent_diff import diff_recurrent_customers

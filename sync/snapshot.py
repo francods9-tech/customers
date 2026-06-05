@@ -332,6 +332,31 @@ def build_snapshot() -> dict:
     bajas_vistos = set()
     for sub in stripe.Subscription.list(status="canceled", limit=100).auto_paging_iter():
         sd = sub.to_dict()
+        scheduled_info = _scheduled_cancellation_info(sub, now)
+        if scheduled_info:
+            pagas = stripe.Invoice.list(customer=sub.customer, status="paid", limit=1)
+            if not pagas.data or (pagas.data[0].amount_paid or 0) <= 0:
+                continue
+            cus = stripe.Customer.retrieve(sub.customer)
+            email = (cus.email or "").lower()
+            name = cus.name or cus.email or "?"
+            nl = name.lower()
+            if email in EXCLUIR_EMAILS or nl in EXCLUIR_NOMBRES:
+                continue
+            if nl in CERRAR_ACCESO_NOMBRES or nl in COLAB_NOMBRES or email in COLAB_EMAILS:
+                continue
+            if nl in ONETIME_NOMBRES or email in YA_CANCELADOS_EMAILS:
+                continue
+            if email in emails_vistos or sub.customer in clientes_stripe:
+                continue
+            clientes_stripe.add(sub.customer)
+            emails_vistos.add(email)
+            items = sub["items"]["data"]
+            anual = any(i["price"]["recurring"]["interval"] == "year" for i in items)
+            info = db_info(email)
+            plan = PLAN_OVERRIDE_EMAILS.get(email) or _plan_label(info["plan"])
+            clientes.append(_row(name, cus.email, plan, info["fecha_alta"], "activo", anual, extra=scheduled_info))
+            continue
         cancel_ts = sd.get("ended_at") or sd.get("canceled_at") or 0
         if not cancel_ts:
             continue
