@@ -70,6 +70,20 @@ Riesgos / fuera de alcance:
 - El resumen de links manuales depende de metadata en Mongo (`reportedByRole`, `reportedAt`/`reported_at`, `repeated`/`duplicate`) y no expone URLs.
 - No se ejecuto QA visual con navegador real en esta iteracion; la verificacion fue HTML/smoke por test client.
 
+Deploy Railway posterior:
+
+- PR #80 mergeado a `main` con commit `d162648`.
+- Deploy manual ejecutado con `railway up --detach -m "Deploy ficha cliente operativa"`.
+- Deployment Railway `28f1e58c-9acf-433a-9902-ceea218cbe72` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard`.
+  - `/clientes` sin sesion -> 302 a `/login?next=/clientes`.
+  - `/cliente/test@example.com` sin sesion -> 302 a login.
+  - `/solicitudes?customer=test@example.com` sin sesion -> 302 a login.
+  - `/bandeja?customer=test@example.com` sin sesion -> 302 a login.
+- QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
+
 ## Hecho
 
 - Riesgo de churn:
