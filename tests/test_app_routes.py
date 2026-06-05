@@ -311,6 +311,63 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("Ana", body)
         self.assertNotIn("Mia", body)
 
+    def test_clientes_usa_cards_como_filtros_y_no_muestra_chips_de_estado(self):
+        self.login()
+        self.add_snapshot([
+            {**self.customer_row(nombre="Agencia Norte", email="agencia@example.test"), "tipo_cliente_key": "agencia", "tipo_cliente": "Agencia", "origen": "instagram"},
+            {**self.customer_row(nombre="One Shot", email="one-time@example.test"), "tipo_cliente_key": "one_time", "tipo_cliente": "One time payment", "cuenta_activo_recurrente": False, "origen": "instagram"},
+            {**self.customer_row(nombre="Free Partner", email="free-colab@example.test"), "tipo_cliente_key": "free_colab", "tipo_cliente": "Free por colab", "cuenta_activo_recurrente": False, "origen": "instagram"},
+            {**self.customer_row(nombre="Colab Paid", email="colab-paid@example.test"), "tipo_cliente_key": "colab_descuento", "tipo_cliente": "Colab con descuento", "origen": "instagram"},
+        ])
+
+        response = self.client.get("/clientes?origen=instagram&q=example")
+        body = response.get_data(as_text=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('class="segmented-filter"', body)
+        self.assertNotIn("Pausados impago", body)
+        self.assertNotIn("Inactivos impago", body)
+        self.assertIn('placeholder="Buscar cliente"', body)
+        self.assertIn('name="origen"', body)
+        self.assertIn('name="tipo"', body)
+        self.assertIn("Crear cliente", body)
+        self.assertIn('href="/clientes?recurrente=1&amp;origen=instagram&amp;q=example"', body)
+        self.assertIn('href="/clientes?tipo=agencia&amp;origen=instagram&amp;q=example"', body)
+        self.assertIn('href="/clientes?tipo=one_time&amp;origen=instagram&amp;q=example"', body)
+        self.assertIn('href="/clientes?tipo=free_colab&amp;origen=instagram&amp;q=example"', body)
+        self.assertIn('href="/clientes?tipo=colab_descuento&amp;origen=instagram&amp;q=example"', body)
+        self.assertNotIn("Colabs a revisar", body)
+
+    def test_clientes_card_bajas_cuenta_historico_y_enlaza_a_bajas_todo(self):
+        from db import db
+        from db.models import Snapshot
+
+        self.login()
+        with self.app.app_context():
+            db.session.add(Snapshot(payload={
+                "test_marker": "solicitudes_directas",
+                "generado": "2026-06-03T00:00:00+00:00",
+                "clientes": [
+                    self.customer_row(nombre="Activo Reactivado", email="activo-reactivado@example.test"),
+                    {**self.customer_row(nombre="Cliente Actual", email="actual@example.test"), "email_key": "actual@example.test"},
+                ],
+                "eventos": {"altas": [], "bajas": [
+                    {"nombre": "Baja Real", "email": "baja-real@example.test", "fecha": "2026-05-01T00:00:00+00:00"},
+                    {"nombre": "Activo Reactivado", "email": "activo-reactivado@example.test", "fecha": "2026-05-02T00:00:00+00:00"},
+                ]},
+                "resumen": {},
+            }))
+            db.session.commit()
+
+        response = self.client.get("/clientes")
+        body = response.get_data(as_text=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("<span>Bajas</span>", body)
+        bajas_block = body[body.index("<span>Bajas</span>") - 80:body.index("<span>Bajas</span>") + 40]
+        self.assertIn('href="/bajas?preset=todo"', bajas_block)
+        self.assertIn("<strong>1</strong>", bajas_block)
+
     def test_clientes_ordena_por_columnas_y_preserva_filtros(self):
         self.login()
         self.add_snapshot([

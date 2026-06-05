@@ -22,19 +22,6 @@
   </div>
 {% else %}
   <div class="client-toolbar v5-toolbar">
-    <div class="segmented-filter">
-      <a class="chip {{ 'chip-on' if not estado and not tipo and not recurrente }}" href="{{ url_for('clientes_list', origen=origen, q=q) }}">Todos</a>
-      <a class="chip {{ 'chip-on' if recurrente }}" href="{{ url_for('clientes_list', recurrente=1, origen=origen, q=q) }}">Activos recurrentes</a>
-      <a class="chip {{ 'chip-on' if estado == 'activo' and not recurrente }}" href="{{ url_for('clientes_list', estado='activo', origen=origen, tipo=tipo, q=q) }}">Activos</a>
-      <a class="chip {{ 'chip-on' if estado == 'trial' }}" href="{{ url_for('clientes_list', estado='trial', origen=origen, tipo=tipo, q=q) }}">En trial</a>
-      <a class="chip {{ 'chip-on' if estado == 'impago' }}" href="{{ url_for('clientes_list', estado='impago', origen=origen, tipo=tipo, q=q) }}">Impagos</a>
-      <a class="chip {{ 'chip-on' if estado == 'pausado_impago' }}" href="{{ url_for('clientes_list', estado='pausado_impago', origen=origen, tipo=tipo, q=q) }}">Pausados impago</a>
-      <a class="chip {{ 'chip-on' if estado == 'inactivo_impago' }}" href="{{ url_for('clientes_list', estado='inactivo_impago', origen=origen, tipo=tipo, q=q) }}">Inactivos impago</a>
-      <a class="chip {{ 'chip-on' if estado == 'inactivo' }}" href="{{ url_for('clientes_list', estado='inactivo', origen=origen, tipo=tipo, q=q) }}">Inactivos</a>
-      <a class="chip {{ 'chip-on' if tipo == 'one_time' }}" href="{{ url_for('clientes_list', tipo='one_time', origen=origen, q=q) }}">One time</a>
-      <a class="chip {{ 'chip-on' if tipo == 'free_colab' }}" href="{{ url_for('clientes_list', tipo='free_colab', origen=origen, q=q) }}">Free colab</a>
-      <a class="chip {{ 'chip-on' if tipo == 'colab_descuento' }}" href="{{ url_for('clientes_list', tipo='colab_descuento', origen=origen, q=q) }}">Colab descuento</a>
-    </div>
     <form method="get" class="client-filters">
       {% if estado %}<input type="hidden" name="estado" value="{{ estado }}">{% endif %}
       {% if recurrente %}<input type="hidden" name="recurrente" value="1">{% endif %}
@@ -112,12 +99,11 @@
   </div>
 
   <div class="mini-kpis clients-kpi-strip">
-    <div><strong>{{ resumen.activos_recurrentes }}</strong><span>Activos recurrentes</span></div>
-    <div><strong>{{ resumen.agencias }}</strong><span>Agencias</span></div>
-    <div><strong>{{ resumen.one_time }}</strong><span>One time</span></div>
-    <div><strong>{{ resumen.free_colab }}</strong><span>Free colab</span></div>
-    <div><strong>{{ resumen.colab_descuento }}</strong><span>Colab descuento</span></div>
-    <div><strong>{{ resumen.colabs_revision_pendiente }}</strong><span>Colabs a revisar</span></div>
+    {% for card in cards %}
+      <a class="client-kpi-card kpi-link {{ 'active' if card.active }}" href="{{ card.href }}">
+        <strong>{{ card.valor }}</strong><span>{{ card.label }}</span>
+      </a>
+    {% endfor %}
   </div>
 
   <div class="table-wrap clientes-table-wrap v5-table-surface">

@@ -720,6 +720,9 @@ def clientes_list():
         base_clientes = snap["clientes"]
         if estado != "inactivo":
             base_clientes = [c for c in base_clientes if not _is_manually_inactive(c)]
+        resumen_clientes = customer_rules.filter_customers(
+            base_clientes, origen=origen, q=q,
+        )
         clientes = customer_rules.filter_customers(
             base_clientes, estado=estado, origen=origen, tipo=tipo, q=q,
             recurrente=recurrente,
@@ -738,7 +741,53 @@ def clientes_list():
         if origen == "sin_asignar":
             titulo = "Clientes sin origen asignado"
         snap["clientes"] = clientes
-    resumen = customer_rules.customer_summary(snap["clientes"]) if snap else {}
+        resumen = customer_rules.customer_summary(resumen_clientes)
+        bajas_todo = len(customer_rules.remove_reactivated_cancellations(
+            snap.get("eventos", {}).get("bajas", []),
+            snap.get("clientes", []),
+        ))
+    else:
+        resumen = {}
+        bajas_todo = 0
+    card_base_args = {k: v for k, v in {"origen": origen, "q": q}.items() if v}
+    cards = [
+        {
+            "label": "Activos recurrentes",
+            "valor": resumen.get("activos_recurrentes", 0),
+            "href": url_for("clientes_list", recurrente=1, **card_base_args),
+            "active": recurrente,
+        },
+        {
+            "label": "Agencias",
+            "valor": resumen.get("agencias", 0),
+            "href": url_for("clientes_list", tipo="agencia", **card_base_args),
+            "active": tipo == "agencia" and not recurrente and not estado,
+        },
+        {
+            "label": "One time",
+            "valor": resumen.get("one_time", 0),
+            "href": url_for("clientes_list", tipo="one_time", **card_base_args),
+            "active": tipo == "one_time" and not recurrente and not estado,
+        },
+        {
+            "label": "Free colab",
+            "valor": resumen.get("free_colab", 0),
+            "href": url_for("clientes_list", tipo="free_colab", **card_base_args),
+            "active": tipo == "free_colab" and not recurrente and not estado,
+        },
+        {
+            "label": "Colab descuento",
+            "valor": resumen.get("colab_descuento", 0),
+            "href": url_for("clientes_list", tipo="colab_descuento", **card_base_args),
+            "active": tipo == "colab_descuento" and not recurrente and not estado,
+        },
+        {
+            "label": "Bajas",
+            "valor": bajas_todo,
+            "href": url_for("bajas_list", preset="todo"),
+            "active": False,
+        },
+    ]
     base_args = {
         "estado": estado,
         "origen": origen,
@@ -761,6 +810,7 @@ def clientes_list():
                            titulo=titulo, estado=estado, origen=origen,
                            tipo=tipo, q=q, recurrente=recurrente,
                            sort=sort_key, dir=sort_dir, sort_links=sort_links,
+                           cards=cards,
                            manual_fecha_default=dt.datetime.now(MADRID_TZ).date().isoformat())
 
 
