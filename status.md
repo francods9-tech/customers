@@ -52,7 +52,17 @@ Resultado:
 Riesgos / fuera de alcance:
 
 - No se cambiaron rutas, modelos, endpoints ni reglas de negocio.
-- Produccion/Railway pendiente de PR merge + deploy.
+
+PR/deploy:
+
+- PR #94 mergeado a `main` con commit `17d455a`.
+- Deploy manual ejecutado con `railway up --detach -m "Deploy solicitudes compact actions"`.
+- Deployment Railway `3a44ea4f-86d8-480d-8e06-ec4726b10c87` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard`.
+  - `/solicitudes` sin sesion -> 302 a login.
+- QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
 
 ## Iteracion 2026-06-05 - Solicitudes UI minimalista
 
