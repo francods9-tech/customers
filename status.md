@@ -14,6 +14,47 @@ No tocar como fuente de verdad de Claude:
 C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 ```
 
+## Iteracion 2026-06-06 - Hotfix filtros mobile
+
+Implementado en rama `codex/mobile-filter-visual-fix`:
+
+- Inicio mobile mantiene los filtros plegados, pero al abrirlos aumenta padding, gap y tamano de chips para que no quede todo apretado.
+- Los controles custom de Inicio mobile pasan a una columna dentro del desplegable.
+- Bandeja operativa mobile fuerza inputs/selects de filtros a `width: 100%`, `min-width: 0` y `box-sizing: border-box` para que la fecha no salga de la caja.
+- No se cambiaron rutas, endpoints, modelos, validaciones, redirects ni logica de negocio.
+
+Archivos tocados:
+
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion local:
+
+```powershell
+python -m unittest discover -s tests -p test_app_routes.py -k "dashboard_mobile_inicio" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "bandeja_mobile" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "dashboard" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "bandeja" -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests RED focales fallaron inicialmente por padding/gaps compactos en Inicio y ausencia de regla mobile para inputs/selects de Bandeja.
+- Focal Inicio mobile OK.
+- Focal Bandeja mobile OK.
+- Tests dashboard: 11 tests OK.
+- Tests bandeja: 12 tests OK.
+- Smoke local con Flask en `127.0.0.1:5073` y Playwright headless mobile 390px para `/` y `/bandeja`: Inicio abierto sin overflow, controles custom en una columna con mayor espacio, y fecha de Bandeja dentro del panel. Se uso snapshot temporal `mobile_visual_fix_smoke`, eliminado al cierre; artefactos de smoke y servidor local tambien eliminados.
+
+Riesgos / fuera de alcance:
+
+- No se hizo deploy Railway todavia.
+- QA autenticada de produccion no ejecutada todavia.
+- No hay `AGENTS.md` ni `changelog.mdx` en este checkout; continuidad registrada en `status.md`.
+
 ## Iteracion 2026-06-06 - Filtros mobile limpios
 
 Implementado en rama `codex/mobile-filters-clean`:

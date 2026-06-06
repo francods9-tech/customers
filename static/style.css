@@ -2681,7 +2681,7 @@ table.grid.clientes-grid {
   .dashboard-period-mobile-details {
     display: block;
     width: 100%;
-    padding: .6rem;
+    padding: .75rem;
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--panel);
@@ -2709,7 +2709,8 @@ table.grid.clientes-grid {
     content: "-";
   }
   .dashboard-period-mobile-details .dashboard-period-mobile {
-    margin-top: .6rem;
+    margin-top: .75rem;
+    gap: .65rem;
   }
   .dashboard-period-compact {
     gap: .4rem;
@@ -2717,20 +2718,20 @@ table.grid.clientes-grid {
   .dashboard-period-compact .presets {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: .3rem;
+    gap: .45rem;
   }
   .dashboard-period-compact .chip {
-    min-height: 30px;
-    padding: .28rem .35rem;
+    min-height: 36px;
+    padding: .42rem .5rem;
     justify-content: center;
     text-align: center;
-    font-size: .72rem;
+    font-size: .78rem;
     line-height: 1.15;
   }
   .dashboard-period-compact .periodo-custom {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: .35rem;
+    grid-template-columns: 1fr;
+    gap: .5rem;
   }
   .dashboard-period-compact .periodo-custom input,
   .dashboard-period-compact .periodo-custom select,
@@ -2808,6 +2809,12 @@ table.grid.clientes-grid {
   }
   .inbox-ops-panel .task-filters label {
     min-width: 0;
+  }
+  .inbox-ops-panel .task-filters input,
+  .inbox-ops-panel .task-filters select {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
   .inbox-ops-panel .task-filters button {
     width: 100%;

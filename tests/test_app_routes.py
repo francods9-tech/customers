@@ -777,18 +777,28 @@ class AppRoutesTest(unittest.TestCase):
         details_rule_start = mobile_css.index(".dashboard-period-mobile-details")
         details_rule = mobile_css[details_rule_start:mobile_css.index("}", details_rule_start)]
         self.assertIn("display: block", details_rule)
-        self.assertIn("padding: .6rem", details_rule)
+        self.assertIn("padding: .75rem", details_rule)
+
+        mobile_form_rule_start = mobile_css.index(".dashboard-period-mobile-details .dashboard-period-mobile")
+        mobile_form_rule = mobile_css[mobile_form_rule_start:mobile_css.index("}", mobile_form_rule_start)]
+        self.assertIn("margin-top: .75rem", mobile_form_rule)
+        self.assertIn("gap: .65rem", mobile_form_rule)
 
         presets_rule_start = mobile_css.index(".dashboard-period-compact .presets")
         presets_rule = mobile_css[presets_rule_start:mobile_css.index("}", presets_rule_start)]
         self.assertIn("grid-template-columns: repeat(3, minmax(0, 1fr))", presets_rule)
-        self.assertIn("gap: .3rem", presets_rule)
+        self.assertIn("gap: .45rem", presets_rule)
 
         chip_rule_start = mobile_css.index(".dashboard-period-compact .chip")
         chip_rule = mobile_css[chip_rule_start:mobile_css.index("}", chip_rule_start)]
-        self.assertIn("min-height: 30px", chip_rule)
-        self.assertIn("padding: .28rem .35rem", chip_rule)
-        self.assertIn("font-size: .72rem", chip_rule)
+        self.assertIn("min-height: 36px", chip_rule)
+        self.assertIn("padding: .42rem .5rem", chip_rule)
+        self.assertIn("font-size: .78rem", chip_rule)
+
+        custom_rule_start = mobile_css.index(".dashboard-period-compact .periodo-custom")
+        custom_rule = mobile_css[custom_rule_start:mobile_css.index("}", custom_rule_start)]
+        self.assertIn("grid-template-columns: 1fr", custom_rule)
+        self.assertIn("gap: .5rem", custom_rule)
 
         kpi_rule_start = mobile_css.index(".dashboard-kpi-grid")
         kpi_rule = mobile_css[kpi_rule_start:mobile_css.index("}", kpi_rule_start)]
@@ -981,6 +991,13 @@ class AppRoutesTest(unittest.TestCase):
         mobile_filter_label_start = mobile_css.index(".inbox-ops-panel .task-filters label")
         mobile_filter_label_rule = mobile_css[mobile_filter_label_start:mobile_css.index("}", mobile_filter_label_start)]
         self.assertIn("min-width: 0", mobile_filter_label_rule)
+
+        self.assertIn(".inbox-ops-panel .task-filters input", mobile_css)
+        mobile_filter_controls_start = mobile_css.index(".inbox-ops-panel .task-filters input")
+        mobile_filter_controls_rule = mobile_css[mobile_filter_controls_start:mobile_css.index("}", mobile_filter_controls_start)]
+        self.assertIn("width: 100%", mobile_filter_controls_rule)
+        self.assertIn("min-width: 0", mobile_filter_controls_rule)
+        self.assertIn("box-sizing: border-box", mobile_filter_controls_rule)
 
         mobile_filter_button_start = mobile_css.index(".inbox-ops-panel .task-filters button")
         mobile_filter_button_rule = mobile_css[mobile_filter_button_start:mobile_css.index("}", mobile_filter_button_start)]
