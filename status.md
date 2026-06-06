@@ -24,7 +24,13 @@ Resultado:
 - Test RED focal fallo inicialmente porque `.sidebar-footer` seguia con `gap: .55rem`.
 - Focal base shell OK.
 - Focal sidebar administracion OK.
+- Suite completa: 123 tests OK.
 - `git diff --check`: codigo 0; solo avisos CRLF esperados de Git en Windows.
+- PR #116 mergeado a `main` con squash commit `74bdc1c`.
+- Deploy manual ejecutado desde `main` con `railway deployment up -m "Deploy compact sidebar footer buttons"`.
+- Deployment Railway `c9be5ae1-02e8-41c2-af7c-c8f6623bb47a` -> Online.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
 
 Riesgos / pendiente:
 
