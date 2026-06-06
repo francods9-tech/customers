@@ -1,6 +1,6 @@
 # Estado Traqeer AM Dashboard Codex
 
-Fecha: 2026-06-05.
+Fecha: 2026-06-06.
 
 Carpeta de trabajo aislada:
 
@@ -55,7 +55,16 @@ Resultado:
 Riesgos / fuera de alcance:
 
 - Browser visual QA no ejecutada: el plugin Browser esta instalado, pero no expuso `node_repl/js` utilizable en esta sesion.
-- PR/deploy pendiente.
+
+PR/deploy:
+
+- PR #96 mergeado a `main` con commit `6b54f1e`.
+- Deploy manual ejecutado con `railway up --detach -m "Deploy ticket actionable links"`.
+- Deployment Railway `d7820e62-c482-441a-9fa6-6ee2c2864497` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard`.
+- QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
 
 ## Iteracion 2026-06-05 - Solicitudes acciones compactas
 
