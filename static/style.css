@@ -580,7 +580,7 @@ a:hover { text-decoration: none; }
 
 .sidebar-footer {
   display: grid;
-  gap: .55rem;
+  gap: .42rem;
   padding: .75rem;
   border-top: 1px solid var(--border);
 }
@@ -609,13 +609,14 @@ a:hover { text-decoration: none; }
 .sidebar-action .btn-sync,
 .sidebar-logout {
   width: 100%;
-  min-height: 34px;
+  min-height: 28px;
+  padding: .32rem .5rem;
+  font-size: .78rem;
   justify-content: center;
 }
 .sidebar-logout {
   display: inline-flex;
   align-items: center;
-  padding: .45rem .55rem;
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--muted);
