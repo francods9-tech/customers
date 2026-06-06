@@ -1,0 +1,5 @@
+<nav class="admin-tabs" aria-label="Administracion">
+  <a href="{{ url_for('bajas_list') }}" class="admin-tab {{ 'active' if request.endpoint == 'bajas_list' }}">Bajas</a>
+  <a href="{{ url_for('colabs_list') }}" class="admin-tab {{ 'active' if request.endpoint == 'colabs_list' }}">Colabs</a>
+  <a href="{{ url_for('mensajes_list') }}" class="admin-tab {{ 'active' if request.endpoint == 'mensajes_list' }}">Mensajes</a>
+</nav>

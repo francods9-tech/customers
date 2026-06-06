@@ -1472,6 +1472,36 @@ table.grid.clientes-grid {
 .messages-head {
   margin-bottom: 0;
 }
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  padding: .25rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+.admin-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: .42rem .75rem;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: .88rem;
+  font-weight: 600;
+}
+.admin-tab:hover {
+  background: var(--panel-2);
+  color: var(--text);
+  text-decoration: none;
+}
+.admin-tab.active {
+  background: var(--accent-soft);
+  color: var(--accent-2);
+}
 .collabs-kpi-strip,
 .churn-kpi-strip {
   margin: 0;
@@ -1480,6 +1510,47 @@ table.grid.clientes-grid {
 .message-form-panel,
 .message-toolbar {
   margin-bottom: 0;
+}
+.admin-collapsible {
+  padding: .85rem 1rem;
+}
+.admin-collapsible > summary {
+  width: fit-content;
+  cursor: pointer;
+  list-style: none;
+  color: var(--text);
+  font-size: .95rem;
+  font-weight: 700;
+}
+.admin-collapsible > summary::-webkit-details-marker {
+  display: none;
+}
+.admin-collapsible > summary::marker {
+  content: "";
+}
+.admin-collapsible > summary::after {
+  content: "+";
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-left: .45rem;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: .85rem;
+}
+.admin-collapsible[open] > summary::after {
+  content: "-";
+}
+.admin-collapsible > .muted {
+  margin: .35rem 0 .75rem;
+}
+.admin-collapsible:not([open]) > .muted {
+  margin-bottom: 0;
+}
+.admin-collapsible form {
+  margin-top: .75rem;
 }
 .admin-creator-form {
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1616,6 +1687,24 @@ table.grid.clientes-grid {
 .message-toolbar .wiki-filters input,
 .message-toolbar .wiki-filters select,
 .message-toolbar .wiki-filters button {
+  margin: 0;
+}
+.message-category-details {
+  margin-top: .75rem;
+  padding: .7rem 0 0;
+  border-top: 1px solid var(--border-soft);
+}
+.message-category-details .category-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+  margin-top: .65rem;
+}
+.message-category-details .category-form input {
+  min-width: 220px;
+  margin: 0;
+}
+.message-category-details .category-form button {
   margin: 0;
 }
 .admin-message-form {

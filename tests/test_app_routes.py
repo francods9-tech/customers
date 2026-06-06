@@ -114,8 +114,13 @@ class AppRoutesTest(unittest.TestCase):
         body = response.get_data(as_text=True)
         self.assertIn('class="collabs-page page polish-v5"', body)
         self.assertIn('class="page-head collabs-head"', body)
+        self.assertIn('class="admin-tabs"', body)
+        self.assertIn('href="/bajas"', body)
+        self.assertIn('href="/colabs" class="admin-tab active"', body)
+        self.assertIn('href="/mensajes"', body)
         self.assertIn('class="collabs-kpi-strip mini-kpis"', body)
-        self.assertIn('class="collab-form-panel panel v5-form-panel"', body)
+        self.assertIn('class="collab-form-panel panel v5-form-panel admin-collapsible"', body)
+        self.assertIn("<summary>Agregar creador</summary>", body)
         self.assertIn('action="/colabs/creadores"', body)
         self.assertIn('class="creator-pipeline"', body)
         self.assertIn("Test UI Creator", body)
@@ -158,6 +163,10 @@ class AppRoutesTest(unittest.TestCase):
         body = response.get_data(as_text=True)
         self.assertIn('class="churn-page page polish-v5"', body)
         self.assertIn('class="page-head churn-head"', body)
+        self.assertIn('class="admin-tabs"', body)
+        self.assertIn('href="/bajas" class="admin-tab active"', body)
+        self.assertIn('href="/colabs"', body)
+        self.assertIn('href="/mensajes"', body)
         self.assertIn('class="churn-toolbar periodo-bar v5-toolbar"', body)
         self.assertIn('class="churn-kpi-strip mini-kpis"', body)
         self.assertIn('class="churn-table"', body)
@@ -187,9 +196,18 @@ class AppRoutesTest(unittest.TestCase):
         body = response.get_data(as_text=True)
         self.assertIn('class="messages-page page polish-v5"', body)
         self.assertIn('class="page-head messages-head"', body)
+        self.assertIn('class="admin-tabs"', body)
+        self.assertIn('href="/bajas"', body)
+        self.assertIn('href="/colabs"', body)
+        self.assertIn('href="/mensajes" class="admin-tab active"', body)
         self.assertIn('class="message-toolbar panel v5-toolbar"', body)
+        self.assertIn('type="search"', body)
+        self.assertIn('placeholder="Buscar por titulo, texto o tag"', body)
+        self.assertIn('class="message-category-details admin-collapsible"', body)
+        self.assertIn("<summary>Nueva categoria</summary>", body)
         self.assertIn('action="/mensajes/categorias"', body)
-        self.assertIn('class="message-form-panel panel"', body)
+        self.assertIn('class="message-form-panel panel admin-collapsible"', body)
+        self.assertIn("<summary>Nuevo mensaje</summary>", body)
         self.assertIn('action="/mensajes"', body)
         self.assertIn('class="message-list redesigned-message-list"', body)
         self.assertIn("Test UI Mensaje", body)
@@ -227,7 +245,7 @@ class AppRoutesTest(unittest.TestCase):
             ("/bandeja", ['class="inbox-page page polish-v5"', 'class="inbox-buckets v5-panel-stack"']),
             ("/solicitudes", ['class="requests-page page polish-v5"', 'class="request-board panel v5-board-panel"']),
             (f"/solicitudes/{ticket_id}", ['class="ticket-page page polish-v5"', 'class="ticket-layout ticket-layout-compact"']),
-            ("/colabs", ['class="collabs-page page polish-v5"', 'class="collab-form-panel panel v5-form-panel"']),
+            ("/colabs", ['class="collabs-page page polish-v5"', 'class="collab-form-panel panel v5-form-panel admin-collapsible"']),
             ("/bajas?preset=todo", ['class="churn-page page polish-v5"', 'class="churn-toolbar periodo-bar v5-toolbar"']),
             ("/mensajes", ['class="messages-page page polish-v5"', 'class="message-toolbar panel v5-toolbar"']),
         ]
@@ -1515,6 +1533,22 @@ class AppRoutesTest(unittest.TestCase):
         body = response.get_data(as_text=True)
         self.assertIn('href="/bandeja">Bandeja', body)
         self.assertNotIn('href="/tareas">Tareas', body)
+
+    def test_base_sidebar_unifica_links_de_administracion(self):
+        self.login()
+        self.add_snapshot([self.customer_row(nombre="Admin Base", email="admin-base@example.test")])
+
+        for path in ("/bajas", "/colabs", "/mensajes"):
+            with self.subTest(path=path):
+                response = self.client.get(path)
+
+                self.assertEqual(response.status_code, 200)
+                body = response.get_data(as_text=True)
+                sidebar = body[body.index('class="sidebar"'):body.index("</aside>")]
+                self.assertIn('href="/bajas" class="nav-item active">Administración</a>', sidebar)
+                self.assertNotIn('href="/colabs">Colabs</a>', sidebar)
+                self.assertNotIn('href="/bajas">Bajas</a>', sidebar)
+                self.assertNotIn('href="/mensajes">Mensajes</a>', sidebar)
 
     def test_base_shell_autenticado_usa_logo_sin_topbar_ni_buscador_global(self):
         self.login()
