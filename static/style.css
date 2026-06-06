@@ -2804,6 +2804,7 @@ table.grid.clientes-grid {
   }
   .inbox-ops-panel .task-filters.client-filters {
     width: 100%;
+    min-width: 0;
     grid-template-columns: 1fr;
     align-items: end;
   }
@@ -2814,7 +2815,12 @@ table.grid.clientes-grid {
   .inbox-ops-panel .task-filters select {
     width: 100%;
     min-width: 0;
+    max-width: 100%;
     box-sizing: border-box;
+  }
+  .inbox-ops-panel .task-filters input[type="date"] {
+    min-width: 0;
+    max-width: 100%;
   }
   .inbox-ops-panel .task-filters button {
     width: 100%;

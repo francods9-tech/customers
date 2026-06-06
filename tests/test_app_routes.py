@@ -1031,6 +1031,7 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn(".inbox-ops-panel .task-filters.client-filters", mobile_css)
         mobile_filters_start = mobile_css.index(".inbox-ops-panel .task-filters.client-filters")
         mobile_filters_rule = mobile_css[mobile_filters_start:mobile_css.index("}", mobile_filters_start)]
+        self.assertIn("min-width: 0", mobile_filters_rule)
         self.assertIn("grid-template-columns: 1fr", mobile_filters_rule)
         self.assertIn("align-items: end", mobile_filters_rule)
 
@@ -1043,7 +1044,14 @@ class AppRoutesTest(unittest.TestCase):
         mobile_filter_controls_rule = mobile_css[mobile_filter_controls_start:mobile_css.index("}", mobile_filter_controls_start)]
         self.assertIn("width: 100%", mobile_filter_controls_rule)
         self.assertIn("min-width: 0", mobile_filter_controls_rule)
+        self.assertIn("max-width: 100%", mobile_filter_controls_rule)
         self.assertIn("box-sizing: border-box", mobile_filter_controls_rule)
+
+        self.assertIn(".inbox-ops-panel .task-filters input[type=\"date\"]", mobile_css)
+        mobile_date_start = mobile_css.index(".inbox-ops-panel .task-filters input[type=\"date\"]")
+        mobile_date_rule = mobile_css[mobile_date_start:mobile_css.index("}", mobile_date_start)]
+        self.assertIn("min-width: 0", mobile_date_rule)
+        self.assertIn("max-width: 100%", mobile_date_rule)
 
         mobile_filter_button_start = mobile_css.index(".inbox-ops-panel .task-filters button")
         mobile_filter_button_rule = mobile_css[mobile_filter_button_start:mobile_css.index("}", mobile_filter_button_start)]
