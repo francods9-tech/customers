@@ -2664,33 +2664,57 @@ table.grid.clientes-grid {
     justify-content: flex-start;
   }
   .dashboard-period-compact {
-    gap: .55rem;
+    gap: .4rem;
+    padding: .6rem;
   }
   .dashboard-period-compact .presets {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .3rem;
   }
   .dashboard-period-compact .chip {
+    min-height: 30px;
+    padding: .28rem .35rem;
     justify-content: center;
     text-align: center;
+    font-size: .72rem;
+    line-height: 1.15;
   }
   .dashboard-period-compact .periodo-custom {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: .5rem;
+    gap: .35rem;
+  }
+  .dashboard-period-compact .periodo-custom input,
+  .dashboard-period-compact .periodo-custom select,
+  .dashboard-period-compact .periodo-custom button {
+    min-height: 32px;
+    padding: .35rem .45rem;
+    font-size: .78rem;
   }
   .dashboard-period-compact .periodo-custom input[type="date"] {
     min-width: 0;
   }
   .dashboard-period-compact .periodo-custom select,
   .dashboard-period-compact .periodo-custom button {
-    grid-column: 1 / -1;
+    grid-column: auto;
   }
   .dashboard-period-compact .periodo-custom button {
     width: 100%;
   }
   .dashboard-kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .5rem;
+  }
+  .dashboard-kpi-strip .kpi {
+    padding: .65rem .7rem;
+  }
+  .dashboard-kpi-strip .kpi-label,
+  .dashboard-kpi-strip .kpi-delta {
+    font-size: .72rem;
+  }
+  .dashboard-kpi-strip .kpi-val {
+    font-size: 1.45rem;
   }
   .dashboard-main-grid,
   .dashboard-secondary-grid,
@@ -2799,9 +2823,6 @@ table.grid.clientes-grid {
 @media (max-width: 520px) {
   .page-head h1 { font-size: 1.35rem; }
   .mini-kpis {
-    grid-template-columns: 1fr;
-  }
-  .dashboard-kpi-strip {
     grid-template-columns: 1fr;
   }
   .dashboard-channel-panel canvas {

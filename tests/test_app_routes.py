@@ -752,6 +752,40 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("align-items: stretch", ops_rule)
         self.assertIn(".dashboard-state-panel", css)
 
+    def test_dashboard_mobile_inicio_compacta_filtros_y_kpis_en_dos_columnas(self):
+        from pathlib import Path
+
+        css = Path("static/style.css").read_text(encoding="utf-8")
+        mobile_css = css[css.index("@media (max-width: 820px)"):]
+
+        period_rule_start = mobile_css.index(".dashboard-period-compact")
+        period_rule = mobile_css[period_rule_start:mobile_css.index("}", period_rule_start)]
+        self.assertIn("padding: .6rem", period_rule)
+        self.assertIn("gap: .4rem", period_rule)
+
+        presets_rule_start = mobile_css.index(".dashboard-period-compact .presets")
+        presets_rule = mobile_css[presets_rule_start:mobile_css.index("}", presets_rule_start)]
+        self.assertIn("grid-template-columns: repeat(3, minmax(0, 1fr))", presets_rule)
+        self.assertIn("gap: .3rem", presets_rule)
+
+        chip_rule_start = mobile_css.index(".dashboard-period-compact .chip")
+        chip_rule = mobile_css[chip_rule_start:mobile_css.index("}", chip_rule_start)]
+        self.assertIn("min-height: 30px", chip_rule)
+        self.assertIn("padding: .28rem .35rem", chip_rule)
+        self.assertIn("font-size: .72rem", chip_rule)
+
+        kpi_rule_start = mobile_css.index(".dashboard-kpi-grid")
+        kpi_rule = mobile_css[kpi_rule_start:mobile_css.index("}", kpi_rule_start)]
+        self.assertIn("grid-template-columns: repeat(2, minmax(0, 1fr))", kpi_rule)
+        self.assertIn("gap: .5rem", kpi_rule)
+
+        kpi_card_rule_start = mobile_css.index(".dashboard-kpi-strip .kpi")
+        kpi_card_rule = mobile_css[kpi_card_rule_start:mobile_css.index("}", kpi_card_rule_start)]
+        self.assertIn("padding: .65rem .7rem", kpi_card_rule)
+
+        narrow_css = css[css.index("@media (max-width: 520px)"):]
+        self.assertNotIn(".dashboard-kpi-strip {\n    grid-template-columns: 1fr", narrow_css)
+
     def test_bandeja_muestra_cancelaciones_programadas_y_riesgos_manuales_de_churn(self):
         import datetime as dt
 
