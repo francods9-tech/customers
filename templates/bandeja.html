@@ -105,8 +105,8 @@
     {% endif %}
   {% endmacro %}
 
-  <section class="inbox-ops-panel panel">
-    <form method="get" action="{{ url_for('bandeja') }}" class="filters-form task-filters">
+  <section class="inbox-ops-panel client-toolbar v5-toolbar panel">
+    <form method="get" action="{{ url_for('bandeja') }}" class="filters-form task-filters client-filters">
       <label>
         Fecha
         <input type="date" name="date" value="{{ selected_date }}">

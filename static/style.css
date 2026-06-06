@@ -893,6 +893,9 @@ table.grid.clientes-grid {
   margin: 0;
   justify-content: flex-end;
 }
+.dashboard-period-mobile-details {
+  display: none;
+}
 .dashboard-period .presets,
 .dashboard-period .periodo-custom {
   justify-content: flex-end;
@@ -1074,6 +1077,15 @@ table.grid.clientes-grid {
   align-items: end;
   justify-content: flex-start;
   margin-bottom: 0;
+}
+.inbox-ops-panel.client-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .75rem;
+  align-items: stretch;
+}
+.inbox-ops-panel .task-filters.client-filters {
+  grid-template-columns: minmax(160px, 220px) minmax(180px, 240px) minmax(160px, 220px) auto;
 }
 .task-command-panel {
   display: block;
@@ -2663,9 +2675,44 @@ table.grid.clientes-grid {
     width: 100%;
     justify-content: flex-start;
   }
+  .dashboard-period-desktop {
+    display: none;
+  }
+  .dashboard-period-mobile-details {
+    display: block;
+    width: 100%;
+    padding: .6rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    box-shadow: var(--shadow);
+  }
+  .dashboard-period-mobile-details > summary {
+    cursor: pointer;
+    list-style: none;
+    color: var(--text);
+    font-size: .86rem;
+    font-weight: 700;
+  }
+  .dashboard-period-mobile-details > summary::-webkit-details-marker {
+    display: none;
+  }
+  .dashboard-period-mobile-details > summary::marker {
+    content: "";
+  }
+  .dashboard-period-mobile-details > summary::after {
+    content: "+";
+    margin-left: .45rem;
+    color: var(--muted);
+  }
+  .dashboard-period-mobile-details[open] > summary::after {
+    content: "-";
+  }
+  .dashboard-period-mobile-details .dashboard-period-mobile {
+    margin-top: .6rem;
+  }
   .dashboard-period-compact {
     gap: .4rem;
-    padding: .6rem;
   }
   .dashboard-period-compact .presets {
     display: grid;
@@ -2729,6 +2776,10 @@ table.grid.clientes-grid {
   .inbox-ops-panel {
     grid-template-columns: 1fr;
   }
+  .inbox-ops-panel.client-toolbar {
+    display: grid;
+    padding: .75rem;
+  }
   .inbox-page .panel-head {
     flex-wrap: wrap;
   }
@@ -2750,18 +2801,17 @@ table.grid.clientes-grid {
   .inbox-page .task-edit-form button {
     width: 100%;
   }
-  .inbox-ops-panel .task-filters {
+  .inbox-ops-panel .task-filters.client-filters {
     width: 100%;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     align-items: end;
   }
   .inbox-ops-panel .task-filters label {
     min-width: 0;
   }
   .inbox-ops-panel .task-filters button {
-    width: auto;
+    width: 100%;
     min-width: 0;
-    grid-column: auto;
     justify-self: stretch;
   }
   .inbox-page .inbox-meta {

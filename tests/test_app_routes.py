@@ -722,7 +722,7 @@ class AppRoutesTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
         self.assertIn('class="dashboard-kpi-strip dashboard-kpi-grid"', body)
-        self.assertIn('class="periodo-bar dashboard-period dashboard-period-compact"', body)
+        self.assertIn('class="periodo-bar dashboard-period dashboard-period-compact dashboard-period-desktop"', body)
         self.assertIn('class="dashboard-main-grid dashboard-chart-row v5-dashboard-grid"', body)
         self.assertIn('class="dashboard-main-grid dashboard-ops-row v5-dashboard-grid"', body)
         self.assertIn('class="panel dashboard-chart-panel dashboard-channel-panel"', body)
@@ -752,16 +752,32 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("align-items: stretch", ops_rule)
         self.assertIn(".dashboard-state-panel", css)
 
-    def test_dashboard_mobile_inicio_compacta_filtros_y_kpis_en_dos_columnas(self):
+    def test_dashboard_mobile_inicio_pliega_filtros_y_kpis_en_dos_columnas(self):
         from pathlib import Path
+
+        self.login()
+        self.add_snapshot([self.customer_row(nombre="Cliente Activo", email="activo-mobile@example.test")])
+
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn('class="periodo-bar dashboard-period dashboard-period-compact dashboard-period-desktop"', body)
+        self.assertIn('class="dashboard-period-mobile-details"', body)
+        self.assertIn("<summary>Filtros</summary>", body)
+        self.assertIn('class="periodo-bar dashboard-period dashboard-period-compact dashboard-period-mobile"', body)
 
         css = Path("static/style.css").read_text(encoding="utf-8")
         mobile_css = css[css.index("@media (max-width: 820px)"):]
 
-        period_rule_start = mobile_css.index(".dashboard-period-compact")
-        period_rule = mobile_css[period_rule_start:mobile_css.index("}", period_rule_start)]
-        self.assertIn("padding: .6rem", period_rule)
-        self.assertIn("gap: .4rem", period_rule)
+        desktop_rule_start = mobile_css.index(".dashboard-period-desktop")
+        desktop_rule = mobile_css[desktop_rule_start:mobile_css.index("}", desktop_rule_start)]
+        self.assertIn("display: none", desktop_rule)
+
+        details_rule_start = mobile_css.index(".dashboard-period-mobile-details")
+        details_rule = mobile_css[details_rule_start:mobile_css.index("}", details_rule_start)]
+        self.assertIn("display: block", details_rule)
+        self.assertIn("padding: .6rem", details_rule)
 
         presets_rule_start = mobile_css.index(".dashboard-period-compact .presets")
         presets_rule = mobile_css[presets_rule_start:mobile_css.index("}", presets_rule_start)]
@@ -850,16 +866,16 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn('class="tag tag-tasks"', body)
         self.assertIn("0 churn", body)
         self.assertIn('class="inbox-buckets v5-panel-stack"', body)
-        self.assertIn('class="inbox-ops-panel panel"', body)
-        ops_panel = body[body.index('class="inbox-ops-panel panel"'):body.index('class="inbox-buckets v5-panel-stack"')]
+        self.assertIn('class="inbox-ops-panel client-toolbar v5-toolbar panel"', body)
+        ops_panel = body[body.index('class="inbox-ops-panel client-toolbar v5-toolbar panel"'):body.index('class="inbox-buckets v5-panel-stack"')]
         self.assertNotIn("Nueva tarea", ops_panel)
-        self.assertIn('class="filters-form task-filters"', ops_panel)
+        self.assertIn('class="filters-form task-filters client-filters"', ops_panel)
         self.assertIn("Fecha", ops_panel)
         self.assertIn("Asignado", ops_panel)
         self.assertIn("Estado", ops_panel)
         self.assertIn(">Filtrar</button>", ops_panel)
         self.assertIn('class="task-command-panel compact-task-command"', body)
-        self.assertLess(body.index('class="filters-form task-filters"'), body.index('class="task-command-panel compact-task-command"'))
+        self.assertLess(body.index('class="filters-form task-filters client-filters"'), body.index('class="task-command-panel compact-task-command"'))
         self.assertIn('class="inbox-panel panel tone-tasks"', body)
         self.assertIn('class="inbox-panel panel secondary-panel tone-churn"', body)
         self.assertIn('class="inbox-panel panel secondary-panel tone-danger"', body)
@@ -944,16 +960,22 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("width: auto", filters_button_rule)
         self.assertIn("justify-self: start", filters_button_rule)
 
-    def test_bandeja_mobile_muestra_filtros_compactos_sin_boton_full_width(self):
+    def test_bandeja_mobile_usa_filtros_tipo_clientes(self):
         from pathlib import Path
 
         css = Path("static/style.css").read_text(encoding="utf-8")
         mobile_css = css[css.index("@media (max-width: 820px)"):]
 
-        self.assertIn(".inbox-ops-panel .task-filters", mobile_css)
-        mobile_filters_start = mobile_css.index(".inbox-ops-panel .task-filters")
+        self.assertIn(".inbox-ops-panel.client-toolbar", mobile_css)
+        mobile_panel_start = mobile_css.index(".inbox-ops-panel.client-toolbar")
+        mobile_panel_rule = mobile_css[mobile_panel_start:mobile_css.index("}", mobile_panel_start)]
+        self.assertIn("padding: .75rem", mobile_panel_rule)
+        self.assertIn("display: grid", mobile_panel_rule)
+
+        self.assertIn(".inbox-ops-panel .task-filters.client-filters", mobile_css)
+        mobile_filters_start = mobile_css.index(".inbox-ops-panel .task-filters.client-filters")
         mobile_filters_rule = mobile_css[mobile_filters_start:mobile_css.index("}", mobile_filters_start)]
-        self.assertIn("grid-template-columns: repeat(2, minmax(0, 1fr))", mobile_filters_rule)
+        self.assertIn("grid-template-columns: 1fr", mobile_filters_rule)
         self.assertIn("align-items: end", mobile_filters_rule)
 
         mobile_filter_label_start = mobile_css.index(".inbox-ops-panel .task-filters label")
@@ -962,9 +984,8 @@ class AppRoutesTest(unittest.TestCase):
 
         mobile_filter_button_start = mobile_css.index(".inbox-ops-panel .task-filters button")
         mobile_filter_button_rule = mobile_css[mobile_filter_button_start:mobile_css.index("}", mobile_filter_button_start)]
-        self.assertIn("width: auto", mobile_filter_button_rule)
+        self.assertIn("width: 100%", mobile_filter_button_rule)
         self.assertIn("min-width: 0", mobile_filter_button_rule)
-        self.assertIn("grid-column: auto", mobile_filter_button_rule)
 
     def test_bandeja_con_customer_abre_tareas_y_nueva_tarea_preseleccionada(self):
         self.login()
@@ -974,7 +995,7 @@ class AppRoutesTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         body = response.get_data(as_text=True)
-        self.assertIn('class="inbox-ops-panel panel"', body)
+        self.assertIn('class="inbox-ops-panel client-toolbar v5-toolbar panel"', body)
         self.assertIn('class="inbox-panel panel tone-tasks" open', body)
         self.assertLess(body.index("Tareas ("), body.index('class="task-command-panel compact-task-command"'))
         self.assertLess(body.index('class="task-command-panel compact-task-command"'), body.index('value="ana@example.test" selected>Ana Cliente'))

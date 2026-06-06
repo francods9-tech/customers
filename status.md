@@ -14,6 +14,50 @@ No tocar como fuente de verdad de Claude:
 C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 ```
 
+## Iteracion 2026-06-06 - Filtros mobile limpios
+
+Implementado en rama `codex/mobile-filters-clean`:
+
+- Inicio en mobile pliega los filtros de periodo/canal dentro de `Filtros`, manteniendo el form desktop visible solo en desktop.
+- Las tarjetas KPI de Inicio siguen en 2 columnas en mobile.
+- Bandeja operativa reutiliza el patron visual de toolbar/filtros de Clientes para que en mobile quede limpia y sin layout raro.
+- No se cambiaron rutas, endpoints, modelos, validaciones, redirects ni logica de negocio.
+
+Archivos tocados:
+
+- `templates/dashboard.html`
+- `templates/bandeja.html`
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion local:
+
+```powershell
+python -m unittest discover -s tests -p test_app_routes.py -k "dashboard_mobile_inicio" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "bandeja_mobile" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "dashboard" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "bandeja" -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests RED focales fallaron inicialmente porque Inicio no tenia filtros plegados mobile y Bandeja no usaba `.inbox-ops-panel.client-toolbar`.
+- Focal Inicio mobile OK.
+- Focal Bandeja mobile OK.
+- Tests dashboard: 11 tests OK.
+- Tests bandeja: 12 tests OK.
+- Suite completa: 120 tests OK.
+- Smoke local con Flask en `127.0.0.1:5072` y Playwright headless mobile 390px para `/` y `/bandeja`: Inicio carga con filtros plegados, al abrirlos sigue sin overflow horizontal, y Bandeja renderiza toolbar tipo Clientes sin overflow. Se uso snapshot temporal `mobile_filters_smoke`, eliminado al cierre; artefactos de smoke y servidor local tambien eliminados.
+
+Riesgos / fuera de alcance:
+
+- No se hizo deploy Railway todavia.
+- QA autenticada de produccion no ejecutada todavia.
+- No hay `AGENTS.md` ni `changelog.mdx` en este checkout; continuidad registrada en `status.md`.
+
 ## Iteracion 2026-06-06 - Inicio mobile minimalista
 
 Implementado en rama `codex/dashboard-mobile-minimal`:
