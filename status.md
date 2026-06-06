@@ -2,6 +2,41 @@
 
 Fecha: 2026-06-06.
 
+## Iteracion 2026-06-06 - Churn Stripe en impagos con cancelacion programada
+
+Implementado en rama `codex/stripe-churn-unpaid-period-end`:
+
+- El snapshot ya leia Stripe para cancelaciones programadas de suscripciones `active` y `canceled` con `current_period_end` futuro.
+- Hueco encontrado: suscripciones Stripe `past_due`/`unpaid` con `cancel_at_period_end=True` entraban como `impago`, pero no arrastraban `cancelacion_programada`.
+- Fix: en el bloque `past_due`/`unpaid`, `build_snapshot()` ahora mezcla `_scheduled_cancellation_info(sub, now)` con la informacion de impago, tanto para clientes ya existentes como para filas nuevas.
+- Resultado esperado: Bandeja puede mostrar esos clientes tambien en `Riesgo de churn`, porque `/bandeja` calcula churn desde `cancelacion_programada` del snapshot.
+
+Verificacion local:
+
+```powershell
+python -m unittest discover -s tests -p test_jobs.py -k "past_due_period_end" -v
+python -m unittest discover -s tests -p test_jobs.py -k "future_period_end" -v
+python -m unittest discover -s tests -p test_customer_rules.py -k "churn" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "bandeja_muestra_cancelaciones" -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Test RED focal fallo inicialmente porque el cliente `past_due` no tenia `cancelacion_programada`.
+- Focal `past_due` con cancelacion al final del periodo OK.
+- Focal `canceled` con periodo futuro OK.
+- Tests churn rules OK.
+- Test Bandeja cancelaciones programadas OK.
+- Suite completa: 123 tests OK.
+- `git diff --check`: codigo 0; solo avisos CRLF esperados de Git en Windows.
+
+Riesgos / pendiente:
+
+- Para que produccion refleje el fix sobre clientes reales, hay que desplegar y ejecutar refresh de snapshot contra Stripe/Mongo en Railway.
+- No hay conector MCP de Stripe publicado en esta sesion; la confirmacion de nombres concretos sigue requiriendo sync/DB operativo o auditoria dentro de Railway.
+
 ## Iteracion 2026-06-06 - Bandeja mobile date overflow
 
 Implementado en rama `codex/bandeja-mobile-churn-period-end`:

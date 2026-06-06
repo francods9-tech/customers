@@ -289,14 +289,16 @@ def build_snapshot() -> dict:
             customer_id = sub.customer if isinstance(sub.customer, str) else getattr(sub.customer, "id", "")
             invoices = _pending_invoice_infos(customer_id, now)
             inv_info = _normalize_unpaid_info({"facturas_pendientes": invoices}) if invoices else _normalize_unpaid_info(_invoice_info(sub, now))
+            scheduled_info = _scheduled_cancellation_info(sub, now)
             # Si ya estaba listado como activo, marcarlo como impago (estado mas urgente)
             existing = next((c for c in clientes if c["email_key"] == email), None)
             if existing:
                 existing["estado"] = "impago"
                 existing.update(inv_info)
+                existing.update(scheduled_info)
                 continue
             clientes.append(_row(name, cus.email, _plan_label(info["plan"]),
-                                 info["fecha_alta"], "impago", extra=inv_info))
+                                 info["fecha_alta"], "impago", extra=inv_info | scheduled_info))
 
     clientes.sort(key=lambda c: (c["estado"] != "impago", c["nombre"].lower()))
 
