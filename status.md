@@ -66,6 +66,47 @@ PR/deploy:
   - `/login` -> 200, contiene `Customers Dashboard`.
 - QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
 
+## Iteracion 2026-06-06 - Bandeja mobile filtros compactos
+
+Implementado en rama `codex/inbox-mobile-filters-polish`:
+
+- El panel de filtros de Bandeja en mobile deja de quedar shrink-wrapped a la izquierda.
+- `.inbox-ops-panel .task-filters` ocupa el ancho util del panel y usa dos columnas compactas en mobile.
+- El boton `Filtrar` queda en su celda junto a `Estado`, sin cambiar formularios de creacion/edicion de tareas.
+
+Archivos tocados:
+
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion local:
+
+```powershell
+python -m unittest discover -s tests -p test_app_routes.py -k "bandeja_mobile" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "bandeja" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "base" -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Test focal `bandeja_mobile`: OK.
+- Tests `bandeja`: 12 tests OK.
+- Tests `base`: 5 tests OK.
+- Suite completa: 118 tests OK.
+- `git diff --check`: codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local headless autenticado en `http://127.0.0.1:5038/bandeja` mobile 390px:
+  - Sin overflow horizontal.
+  - Form de filtros ocupa el ancho util del panel.
+  - Columnas balanceadas: Fecha/Asignado arriba, Estado/Filtrar abajo.
+
+Riesgos / fuera de alcance:
+
+- No se cambian rutas, auth, endpoints, schema ni logica de negocio.
+- No se hizo QA autenticada en produccion todavia.
+
 ## Iteracion 2026-06-05 - Solicitudes acciones compactas
 
 Implementado en rama `codex/solicitudes-actions-compact`:

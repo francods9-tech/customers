@@ -892,6 +892,28 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("width: auto", filters_button_rule)
         self.assertIn("justify-self: start", filters_button_rule)
 
+    def test_bandeja_mobile_muestra_filtros_compactos_sin_boton_full_width(self):
+        from pathlib import Path
+
+        css = Path("static/style.css").read_text(encoding="utf-8")
+        mobile_css = css[css.index("@media (max-width: 820px)"):]
+
+        self.assertIn(".inbox-ops-panel .task-filters", mobile_css)
+        mobile_filters_start = mobile_css.index(".inbox-ops-panel .task-filters")
+        mobile_filters_rule = mobile_css[mobile_filters_start:mobile_css.index("}", mobile_filters_start)]
+        self.assertIn("grid-template-columns: repeat(2, minmax(0, 1fr))", mobile_filters_rule)
+        self.assertIn("align-items: end", mobile_filters_rule)
+
+        mobile_filter_label_start = mobile_css.index(".inbox-ops-panel .task-filters label")
+        mobile_filter_label_rule = mobile_css[mobile_filter_label_start:mobile_css.index("}", mobile_filter_label_start)]
+        self.assertIn("min-width: 0", mobile_filter_label_rule)
+
+        mobile_filter_button_start = mobile_css.index(".inbox-ops-panel .task-filters button")
+        mobile_filter_button_rule = mobile_css[mobile_filter_button_start:mobile_css.index("}", mobile_filter_button_start)]
+        self.assertIn("width: auto", mobile_filter_button_rule)
+        self.assertIn("min-width: 0", mobile_filter_button_rule)
+        self.assertIn("grid-column: auto", mobile_filter_button_rule)
+
     def test_bandeja_con_customer_abre_tareas_y_nueva_tarea_preseleccionada(self):
         self.login()
         self.add_snapshot([self.customer_row(nombre="Ana Cliente", email="ana@example.test")])
