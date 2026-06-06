@@ -1694,6 +1694,14 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("Actualizar datos", sidebar)
         self.assertIn('href="/logout"', sidebar)
         self.assertIn("Salir", sidebar)
+        with open("static/style.css", encoding="utf-8") as f:
+            css = f.read()
+        footer_css = css[css.index(".sidebar-footer"):css.index(".sidebar-user")]
+        self.assertIn("gap: .42rem", footer_css)
+        action_css = css[css.index(".sidebar-action .btn-sync"):css.index(".sidebar-logout:hover")]
+        self.assertIn("min-height: 28px", action_css)
+        self.assertIn("padding: .32rem .5rem", action_css)
+        self.assertIn("font-size: .78rem", action_css)
 
     def test_base_shell_mobile_expone_header_hamburger_y_drawer_vertical(self):
         self.login()

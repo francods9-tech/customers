@@ -2,6 +2,34 @@
 
 Fecha: 2026-06-06.
 
+## Iteracion 2026-06-06 - Botones compactos sidebar
+
+Implementado en rama `codex/sidebar-footer-buttons-compact`:
+
+- El footer del sidebar reduce el gap entre elementos.
+- Los botones `Actualizar datos` y `Salir` del sidebar bajan de `min-height: 34px` a `28px`.
+- Ambos botones usan padding y tipografia mas compactos solo dentro del footer del sidebar.
+- No se cambiaron rutas, endpoints, modelos, auth ni logica de negocio.
+
+Verificacion local:
+
+```powershell
+python -m unittest discover -s tests -p test_app_routes.py -k "base_shell" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "sidebar" -v
+git diff --check
+```
+
+Resultado:
+
+- Test RED focal fallo inicialmente porque `.sidebar-footer` seguia con `gap: .55rem`.
+- Focal base shell OK.
+- Focal sidebar administracion OK.
+- `git diff --check`: codigo 0; solo avisos CRLF esperados de Git en Windows.
+
+Riesgos / pendiente:
+
+- Smoke visual con Playwright no ejecutado: no esta instalado `playwright` en Node ni Python dentro de este repo.
+
 ## Iteracion 2026-06-06 - Churn Stripe en impagos con cancelacion programada
 
 Implementado en rama `codex/stripe-churn-unpaid-period-end`:
