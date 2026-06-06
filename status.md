@@ -14,6 +14,49 @@ No tocar como fuente de verdad de Claude:
 C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 ```
 
+## Iteracion 2026-06-06 - Ticket enlaces accionables
+
+Implementado en rama `codex/ticket-link-boxes`:
+
+- La ficha de ticket separa automaticamente texto y URLs en el detalle inicial y comentarios.
+- Los enlaces detectados se muestran en cajas accionables con URL visible, hipervinculo `Abrir enlace` y boton `Copiar`.
+- `Crear tarea` queda plegado por defecto en el lateral del ticket y el layout da mas ancho relativo a la conversacion.
+- No se cambio schema, persistencia, rutas ni endpoints; el parseo se calcula al renderizar.
+
+Archivos tocados:
+
+- `app.py`
+- `templates/ticket.html`
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+python -m unittest discover -s tests -p test_app_routes.py -k "ticket_detalle_separa" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "ticket_detalle_separa" -k "ticket_comentario_renderiza" -k "ticket_link_render" -v
+python -m unittest discover -s tests -p test_app_routes.py -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Test RED focal fallo inicialmente porque no existia `ticket-link-list`.
+- Focales OK.
+- `test_app_routes.py`: 74 tests OK.
+- Suite completa: 115 tests OK.
+- `git diff --check` con codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local con Flask test client y ticket temporal:
+  - `/solicitudes/<ticket_id>` autenticado -> 200.
+  - Contiene `ticket-link-list`, `ticket-copy-button`, `href` seguro del enlace y `Crear tarea` cerrado por defecto.
+
+Riesgos / fuera de alcance:
+
+- Browser visual QA no ejecutada: el plugin Browser esta instalado, pero no expuso `node_repl/js` utilizable en esta sesion.
+- PR/deploy pendiente.
+
 ## Iteracion 2026-06-05 - Solicitudes acciones compactas
 
 Implementado en rama `codex/solicitudes-actions-compact`:

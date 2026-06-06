@@ -2254,18 +2254,18 @@ table.grid.clientes-grid {
   top: 84px;
 }
 .ticket-layout-compact {
-  grid-template-columns: minmax(0, 1.55fr) minmax(320px, .78fr);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
   gap: 1rem;
 }
 .ticket-side-panel {
   display: grid;
-  gap: .95rem;
-  padding: 1rem;
+  gap: .75rem;
+  padding: .9rem;
 }
 .ticket-side-section {
   display: grid;
-  gap: .65rem;
-  padding-top: .95rem;
+  gap: .55rem;
+  padding-top: .8rem;
   border-top: 1px solid var(--border-soft);
 }
 .ticket-side-section:first-child {
@@ -2286,6 +2286,49 @@ table.grid.clientes-grid {
 }
 .ticket-task-panel summary::marker {
   content: "";
+}
+.ticket-link-list {
+  display: grid;
+  gap: .5rem;
+  margin-top: .55rem;
+}
+.ticket-link-list-title {
+  color: var(--muted);
+  font-size: .76rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+.ticket-link-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .65rem;
+  align-items: center;
+  padding: .65rem .75rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+}
+.ticket-link-url {
+  min-width: 0;
+  color: var(--accent-2);
+  font-size: .82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ticket-link-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+.ticket-link-actions .btn-sync,
+.ticket-copy-button {
+  min-height: 30px;
+  padding: .35rem .55rem;
+  white-space: nowrap;
 }
 .customer-page .customer-head,
 .customer-page .customer-command-grid,
@@ -2460,6 +2503,12 @@ table.grid.clientes-grid {
   }
   .ticket-page .ticket-sidebar {
     position: static;
+  }
+  .ticket-link-card {
+    grid-template-columns: 1fr;
+  }
+  .ticket-link-actions {
+    justify-content: flex-start;
   }
   .ticket-comment-form button {
     justify-self: start;

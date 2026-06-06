@@ -1,6 +1,25 @@
 {% extends "base.html" %}
 {% block title %}Ticket #{{ ticket.id }}{% endblock %}
 {% block content %}
+{% macro render_ticket_content(content) %}
+  {% if content.body %}
+  <div class="comment-bubble">{{ content.body }}</div>
+  {% endif %}
+  {% if content.links %}
+  <div class="ticket-link-list" aria-label="Enlaces detectados">
+    <span class="ticket-link-list-title">Enlaces detectados</span>
+    {% for link in content.links %}
+    <div class="ticket-link-card">
+      <span class="ticket-link-url mono">{{ link }}</span>
+      <div class="ticket-link-actions">
+        <a class="btn-sync" href="{{ link }}" target="_blank" rel="noopener noreferrer">Abrir enlace</a>
+        <button class="btn-sync ticket-copy-button" type="button" data-copy-url="{{ link }}">Copiar</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endmacro %}
 
 <div class="ticket-page page polish-v5">
 <div class="page-head ticket-page-head">
@@ -38,7 +57,7 @@
             <strong>Detalle inicial</strong>
             <span>{{ ticket.created_at.strftime("%d/%m/%Y %H:%M") }}</span>
           </div>
-          <div class="comment-bubble">{{ ticket.texto }}</div>
+          {{ render_ticket_content(ticket_content) }}
         </div>
       </article>
 
@@ -51,7 +70,7 @@
               <strong>{{ comment.agente or "Equipo" }}</strong>
               <span>{{ comment.created_at.strftime("%d/%m/%Y %H:%M") }}</span>
             </div>
-            <div class="comment-bubble">{{ comment.texto }}</div>
+            {{ render_ticket_content(comment_content[comment.id]) }}
           </div>
         </article>
         {% endfor %}
@@ -121,7 +140,7 @@
       </div>
 
     {% if not ticket.resuelta %}
-      <details class="ticket-side-section ticket-task-panel" open>
+      <details class="ticket-side-section ticket-task-panel">
       <summary>
         <h2>Crear tarea</h2>
       </summary>
@@ -145,5 +164,34 @@
   </aside>
 </div>
 </div>
+
+<script>
+document.querySelectorAll(".ticket-copy-button").forEach((button) => {
+  button.addEventListener("click", async () => {
+    const text = button.dataset.copyUrl || "";
+    const original = button.textContent;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const area = document.createElement("textarea");
+        area.value = text;
+        area.setAttribute("readonly", "");
+        area.style.position = "fixed";
+        area.style.left = "-9999px";
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand("copy");
+        document.body.removeChild(area);
+      }
+      button.textContent = "Copiado";
+      window.setTimeout(() => { button.textContent = original; }, 1200);
+    } catch (error) {
+      button.textContent = "No copiado";
+      window.setTimeout(() => { button.textContent = original; }, 1200);
+    }
+  });
+});
+</script>
 
 {% endblock %}
