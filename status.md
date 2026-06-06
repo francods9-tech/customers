@@ -2,6 +2,28 @@
 
 Fecha: 2026-06-06.
 
+## Cierre operativo 2026-06-06
+
+Estado final:
+
+- `main` local y `origin/main` quedaron alineados tras PR #117.
+- Produccion Railway quedo online en deployment `c9be5ae1-02e8-41c2-af7c-c8f6623bb47a`.
+- `https://customers-production-8190.up.railway.app/healthz` respondio `200 {"status":"ok"}`.
+- Suite completa verificada: 123 tests OK.
+- `git diff --check` verificado sin errores; solo avisos CRLF normales de Git en Windows.
+
+Cambios cerrados en esta tanda:
+
+- Bandeja mobile: ajuste de overflow del filtro de fecha.
+- Churn Stripe: las suscripciones `past_due`/`unpaid` con `cancel_at_period_end=True` ahora arrastran `cancelacion_programada` al snapshot.
+- Sidebar: botones `Actualizar datos` y `Salir` compactados en el footer.
+
+Pendientes reales:
+
+- Ejecutar refresh de snapshot en produccion para que el fix de churn Stripe se refleje sobre clientes reales ya existentes.
+- Smoke visual autenticado no ejecutado por falta de Playwright instalado en Node/Python dentro de este repo.
+- No hay conector MCP de Stripe publicado en esta sesion; confirmar nombres concretos requiere sync/DB operativo o auditoria dentro de Railway.
+
 ## Iteracion 2026-06-06 - Botones compactos sidebar
 
 Implementado en rama `codex/sidebar-footer-buttons-compact`:
