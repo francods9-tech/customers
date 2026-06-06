@@ -59,7 +59,14 @@ Resultado:
 
 Riesgos / fuera de alcance:
 
-- No se hizo deploy Railway todavia.
+- PR #102 mergeado a `main` con squash commit `0e5015d`.
+- Deploy manual ejecutado desde `main` con `railway deployment up -m "Deploy unified admin navigation"`.
+- Deployment Railway `e524ac79-c1d2-45e1-a3d8-0cdea1394287` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard` y `Traqeer`.
+  - `/bajas`, `/colabs`, `/mensajes` sin sesion -> 302 a `/login?next=...`.
+- QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
 - No hay `AGENTS.md` ni `changelog.mdx` en este checkout; continuidad registrada en `status.md`.
 
 ## Iteracion 2026-06-06 - Ticket enlaces accionables
