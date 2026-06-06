@@ -2027,6 +2027,116 @@ class AppRoutesTest(unittest.TestCase):
             comment = TicketComment.query.filter_by(interaccion_id=ticket_id).one()
             self.assertEqual(comment.agente, "Dalila")
 
+    def test_ticket_detalle_separa_texto_y_enlaces_con_copiar(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        first_url = "https://lovingsiren.com/2026/04/02/leotiska-video-de-zorrita-desnuda-masturbandose-xxx/"
+        second_url = "https://example.com/reporte?ticket=11"
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="solicitud",
+                texto=f"Revisar este enlace {first_url} y tambien este {second_url} para pedir baja.",
+                categoria="envia_links",
+                estado_gestion="abierta",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            )
+            db.session.add(ticket)
+            db.session.commit()
+            ticket_id = ticket.id
+
+        response = self.client.get(f"/solicitudes/{ticket_id}")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn("Revisar este enlace", body)
+        self.assertIn("y tambien este", body)
+        self.assertIn("para pedir baja.", body)
+        self.assertIn('class="ticket-link-list"', body)
+        self.assertEqual(body.count('class="ticket-link-card"'), 2)
+        self.assertIn(f'href="{first_url}" target="_blank" rel="noopener noreferrer"', body)
+        self.assertIn(f'data-copy-url="{first_url}"', body)
+        self.assertIn(f'href="{second_url}" target="_blank" rel="noopener noreferrer"', body)
+        self.assertIn(f'data-copy-url="{second_url}"', body)
+        initial_message = body[body.index("Detalle inicial"):]
+        initial_message = initial_message[:initial_message.index("</article>")]
+        self.assertEqual(initial_message.count(first_url), 3)
+        self.assertEqual(initial_message.count(second_url), 3)
+
+    def test_ticket_comentario_renderiza_enlaces_accionables(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import Interaccion, TicketComment
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        comment_url = "https://example.com/cliente/avance"
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="solicitud",
+                texto="Revisar comentario con link",
+                estado_gestion="abierta",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            )
+            db.session.add(ticket)
+            db.session.flush()
+            db.session.add(TicketComment(
+                interaccion_id=ticket.id,
+                agente="Luis",
+                texto=f"Enviar update usando {comment_url} hoy.",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            ))
+            db.session.commit()
+            ticket_id = ticket.id
+
+        response = self.client.get(f"/solicitudes/{ticket_id}")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        comment_message = body[body.index("Luis"):]
+        comment_message = comment_message[:comment_message.index("</article>")]
+        self.assertIn("Enviar update usando", comment_message)
+        self.assertIn("hoy.", comment_message)
+        self.assertIn('class="ticket-link-card"', comment_message)
+        self.assertIn(f'href="{comment_url}" target="_blank" rel="noopener noreferrer"', comment_message)
+        self.assertIn(f'data-copy-url="{comment_url}"', comment_message)
+
+    def test_ticket_link_render_no_ejecuta_html(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        safe_url = "https://example.com/safe"
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="solicitud",
+                texto=f'<script>alert("x")</script> mirar {safe_url}',
+                estado_gestion="abierta",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            )
+            db.session.add(ticket)
+            db.session.commit()
+            ticket_id = ticket.id
+
+        response = self.client.get(f"/solicitudes/{ticket_id}")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn("&lt;script&gt;alert(&#34;x&#34;)&lt;/script&gt; mirar", body)
+        self.assertNotIn('<script>alert("x")</script>', body)
+        self.assertIn(f'href="{safe_url}" target="_blank" rel="noopener noreferrer"', body)
+
     def test_ticket_comentario_requiere_autor_valido(self):
         import datetime as dt
 

@@ -1,4 +1,5 @@
 import datetime as dt
+import re
 from collections import Counter, defaultdict
 from functools import wraps
 from zoneinfo import ZoneInfo
@@ -24,6 +25,8 @@ from sync.health import salud_de_cuentas
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
+
+URL_RE = re.compile(r"https?://[^\s<>'\"]+")
 
 CHURN_REASON_OPTIONS = [
     ("", "Sin motivo"),
@@ -471,6 +474,31 @@ def _ticket_context(ticket):
             getattr(ticket, "importancia", "") or "Media",
         ),
     }
+
+
+def _ticket_rich_text(text):
+    text = text or ""
+    parts = []
+    links = []
+    last_end = 0
+    trailing = ".,;:!?)]]}"
+    for match in URL_RE.finditer(text):
+        url = match.group(0)
+        while url and url[-1] in trailing:
+            url = url[:-1]
+        if not url:
+            continue
+        url_start = match.start()
+        url_end = match.start() + len(url)
+        segment = text[last_end:url_start]
+        if segment:
+            parts.append(segment)
+        links.append(url)
+        last_end = url_end
+    if last_end < len(text):
+        parts.append(text[last_end:])
+    body = " ".join(part.strip() for part in parts if part.strip())
+    return {"body": body, "links": links}
 
 
 def _clientes_enriquecidos():
@@ -1110,10 +1138,13 @@ def ticket_detail(qid):
     snap = ultimo_snapshot() or {}
     nombres = {c["email_key"]: c["nombre"] for c in snap.get("clientes", [])}
     comments = ticket.comentarios.order_by(TicketComment.created_at.asc()).all()
+    comment_content = {comment.id: _ticket_rich_text(comment.texto) for comment in comments}
     return render_template(
         "ticket.html",
         ticket=ticket,
+        ticket_content=_ticket_rich_text(ticket.texto),
         comments=comments,
+        comment_content=comment_content,
         nombre=nombres.get(ticket.customer_email, ticket.customer_email),
         categorias=_complaint_categories(),
         category_map=_complaint_category_map(),
