@@ -31,10 +31,15 @@ Resultado:
 - Test Bandeja cancelaciones programadas OK.
 - Suite completa: 123 tests OK.
 - `git diff --check`: codigo 0; solo avisos CRLF esperados de Git en Windows.
+- PR #113 mergeado a `main` con squash commit `9dcd548`.
+- Deploy manual ejecutado desde `main` con `railway deployment up -m "Deploy unpaid scheduled cancellation churn fix"`.
+- Deployment Railway `c7d0e6fe-d358-44e2-95fd-4744c482d17f` -> Online.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
 
 Riesgos / pendiente:
 
-- Para que produccion refleje el fix sobre clientes reales, hay que desplegar y ejecutar refresh de snapshot contra Stripe/Mongo en Railway.
+- Para que produccion refleje el fix sobre clientes reales, hay que ejecutar refresh de snapshot contra Stripe/Mongo en Railway o usar el boton autenticado `Actualizar datos`.
 - No hay conector MCP de Stripe publicado en esta sesion; la confirmacion de nombres concretos sigue requiriendo sync/DB operativo o auditoria dentro de Railway.
 
 ## Iteracion 2026-06-06 - Bandeja mobile date overflow
