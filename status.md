@@ -14,6 +14,54 @@ No tocar como fuente de verdad de Claude:
 C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 ```
 
+## Iteracion 2026-06-06 - Administracion unificada
+
+Implementado en rama `codex/admin-nav-unified`:
+
+- La sidebar agrupa `Colabs`, `Bajas` y `Mensajes` en un unico link `Administración` con destino `/bajas`.
+- El estado activo de `Administración` cubre `/bajas`, `/colabs` y `/mensajes`.
+- Se agrego `templates/_admin_tabs.html` con tabs internas `Bajas`, `Colabs`, `Mensajes` y estado activo por ruta.
+- `/colabs` pliega `Agregar creador`; `/mensajes` pliega `Nueva categoria` y `Nuevo mensaje`.
+- Filtros de `/bajas` y busqueda de `/mensajes` siguen visibles; no se cambiaron endpoints, modelos, POSTs, redirects ni logica de negocio.
+
+Archivos tocados:
+
+- `templates/base.html`
+- `templates/_admin_tabs.html`
+- `templates/bajas.html`
+- `templates/colabs.html`
+- `templates/mensajes.html`
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+python -m unittest discover -s tests -p test_app_routes.py -k "base" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "colabs or bajas or mensajes" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "colabs" -k "bajas" -k "mensajes" -v
+python -m unittest discover -s tests -p test_app_routes.py -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests RED focales fallaron inicialmente por links separados en sidebar y ausencia de tabs.
+- `base`: 6 tests OK.
+- `-k "colabs or bajas or mensajes"` no selecciona tests en `unittest` (0 tests); se complemento con `-k` repetido.
+- Foco admin con `-k "colabs" -k "bajas" -k "mensajes"`: 6 tests OK.
+- `test_app_routes.py`: 78 tests OK.
+- Suite completa: 119 tests OK.
+- `git diff --check`: codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local con Flask en `127.0.0.1:5039` y Playwright headless para `/bajas`, `/colabs`, `/mensajes` en 1440px y 390px: tabs visibles y sin overflow horizontal. Se uso snapshot temporal `admin_nav_smoke`, eliminado al cierre; artefactos de smoke y servidor local tambien eliminados.
+
+Riesgos / fuera de alcance:
+
+- No se hizo deploy Railway todavia.
+- No hay `AGENTS.md` ni `changelog.mdx` en este checkout; continuidad registrada en `status.md`.
+
 ## Iteracion 2026-06-06 - Ticket enlaces accionables
 
 Implementado en rama `codex/ticket-link-boxes`:

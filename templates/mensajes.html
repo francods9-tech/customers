@@ -11,13 +11,11 @@
     </div>
   </div>
 
+  {% include "_admin_tabs.html" %}
+
   <section class="message-toolbar panel v5-toolbar">
     <div class="panel-head">
       <h2>Buscar</h2>
-      <form method="post" action="{{ url_for('add_mensaje_categoria') }}" class="inline category-form">
-        <input type="text" name="label" placeholder="Nueva categoria">
-        <button type="submit">Agregar categoria</button>
-      </form>
     </div>
     <form method="get" class="periodo-custom wiki-filters">
       <input type="search" name="q" placeholder="Buscar por titulo, texto o tag" value="{{ q or '' }}">
@@ -29,13 +27,18 @@
       </select>
       <button type="submit">Buscar</button>
     </form>
+    <details class="message-category-details admin-collapsible">
+      <summary>Nueva categoria</summary>
+      <form method="post" action="{{ url_for('add_mensaje_categoria') }}" class="inline category-form">
+        <input type="text" name="label" placeholder="Nueva categoria">
+        <button type="submit">Agregar categoria</button>
+      </form>
+    </details>
   </section>
 
-  <section class="message-form-panel panel">
-    <div class="panel-head">
-      <h2>Nuevo mensaje</h2>
-      <span class="muted">Plantillas reutilizables para CS</span>
-    </div>
+  <details class="message-form-panel panel admin-collapsible">
+    <summary>Nuevo mensaje</summary>
+    <p class="muted">Plantillas reutilizables para CS</p>
     <form method="post" action="{{ url_for('add_mensaje') }}" class="message-form admin-message-form">
       <input type="text" name="titulo" placeholder="Titulo">
       <select name="categoria_key">
@@ -47,7 +50,7 @@
       <textarea name="cuerpo" rows="6" placeholder="Texto del mensaje"></textarea>
       <button type="submit">Guardar mensaje</button>
     </form>
-  </section>
+  </details>
 
   <section class="message-list redesigned-message-list">
     {% if mensajes %}

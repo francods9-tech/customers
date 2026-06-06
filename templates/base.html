@@ -33,9 +33,7 @@
       <a class="nav-item {{ 'active' if active == 'bandeja' }}" href="{{ url_for('bandeja') }}">Bandeja</a>
       <a class="nav-item {{ 'active' if active in ('quejas_list', 'ticket_detail') }}" href="{{ url_for('quejas_list') }}">Solicitudes</a>
       <div class="sidebar-section">Administracion</div>
-      <a class="nav-item {{ 'active' if active == 'colabs_list' }}" href="{{ url_for('colabs_list') }}">Colabs</a>
-      <a class="nav-item {{ 'active' if active == 'bajas_list' }}" href="{{ url_for('bajas_list') }}">Bajas</a>
-      <a class="nav-item {{ 'active' if active == 'mensajes_list' }}" href="{{ url_for('mensajes_list') }}">Mensajes</a>
+      <a href="{{ url_for('bajas_list') }}" class="nav-item {{ 'active' if active in ('bajas_list', 'colabs_list', 'mensajes_list') }}">Administración</a>
     </nav>
     <div class="sidebar-footer">
       <div class="sidebar-user">

@@ -12,6 +12,8 @@
     <a class="btn-sync" href="{{ url_for('clientes_list', tipo='colab_descuento') }}">Ver clientes colab</a>
   </div>
 
+  {% include "_admin_tabs.html" %}
+
   <div class="collabs-kpi-strip mini-kpis">
     <div><strong>{{ creator_stats.total }}</strong><span>Creadores en pipeline</span></div>
     <div><strong>{{ creator_stats.negociando }}</strong><span>Negociando</span></div>
@@ -19,11 +21,9 @@
     <div><strong>{{ creator_stats.proximas }}</strong><span>Con proxima accion</span></div>
   </div>
 
-  <section class="collab-form-panel panel v5-form-panel">
-    <div class="panel-head">
-      <h2>Agregar creador</h2>
-      <span class="muted">Prospectos, acuerdos y proximas acciones</span>
-    </div>
+  <details class="collab-form-panel panel v5-form-panel admin-collapsible">
+    <summary>Agregar creador</summary>
+    <p class="muted">Prospectos, acuerdos y proximas acciones</p>
     <form method="post" action="{{ url_for('add_colab_creator') }}" class="creator-form admin-creator-form">
       <input type="text" name="nombre" placeholder="Nombre / cuenta">
       <input type="text" name="contacto" placeholder="Contacto">
@@ -47,7 +47,7 @@
       <input type="text" name="responsable" placeholder="Responsable">
       <button type="submit">Agregar</button>
     </form>
-  </section>
+  </details>
 
   <section class="panel">
     <div class="panel-head">
