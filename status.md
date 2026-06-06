@@ -131,7 +131,8 @@ Resultado:
 
 Riesgos / pendiente:
 
-- Requiere configurar `CUSTOMERS_API_TOKEN` compartido en produccion antes de que CEO pueda consumir la API.
+- `CUSTOMERS_API_TOKEN` compartido configurado en produccion via Railway variables el 2026-06-06, sin exponer el secreto.
+- Redeploy Railway por variable: `a2241536-7006-4980-8ccf-3502c1293d5f` -> Online; `/healthz` 200.
 - Sin token o con token incorrecto, el endpoint responde 401.
 
 ## Iteracion 2026-06-06 - Hotfix filtros mobile
