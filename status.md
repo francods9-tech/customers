@@ -2,6 +2,50 @@
 
 Fecha: 2026-06-06.
 
+## Iteracion 2026-06-06 - Bandeja mobile date overflow
+
+Implementado en rama `codex/bandeja-mobile-churn-period-end`:
+
+- Bandeja operativa mobile refuerza el form de filtros con `min-width: 0`.
+- Inputs/selects de filtros de Bandeja mobile ahora tienen `max-width: 100%` ademas de `width: 100%`.
+- El `input[type="date"]` de Bandeja mobile queda cubierto explicitamente con `min-width: 0` y `max-width: 100%` para evitar que su ancho intrinseco empuje el panel/boton fuera de la caja.
+- No se cambiaron rutas, endpoints, modelos, auth, schema ni logica de negocio.
+
+Investigacion churn:
+
+- La regla automatica ya existe y esta cubierta por tests: cancelaciones programadas con `cancel_at_period_end/current_period_end` futuro se guardan en snapshot como `cancelacion_programada=True` y `/bandeja` las muestra en `Riesgo de churn`.
+- No se pudo auditar los dos clientes reales de produccion desde esta sesion:
+  - `railway run` inyecta `DATABASE_URL` con host privado `postgres.railway.internal`, que no resuelve fuera de Railway.
+  - `railway connect Postgres` requiere `psql` local y no esta instalado.
+  - `railway ssh --service customers ...` no devolvio respuesta antes del timeout.
+- Si siguen faltando personas en produccion, el caso probable es snapshot desactualizado o datos Stripe no visibles para la regla actual; requiere consulta directa a Postgres/Stripe o ejecutar sync desde un entorno con acceso.
+
+Verificacion local:
+
+```powershell
+python -m unittest discover -s tests -p test_app_routes.py -k "bandeja_mobile" -v
+python -m unittest discover -s tests -p test_jobs.py -k "future_period_end" -v
+python -m unittest discover -s tests -p test_customer_rules.py -k "churn" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "bandeja" -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Test RED focal fallo inicialmente por ausencia de `min-width: 0` en `.task-filters.client-filters`.
+- Focal mobile Bandeja OK.
+- Test snapshot cancelacion con periodo futuro OK.
+- Tests churn rules OK.
+- Tests Bandeja: 12 OK.
+- Suite completa: 122 OK.
+- `git diff --check`: codigo 0; solo avisos CRLF esperados de Git en Windows.
+
+Riesgos / pendiente:
+
+- Smoke visual con Browser no ejecutado: el plugin Browser no expuso `node_repl/js`; fallback con Playwright local quedo bloqueado por autenticacion/servidor temporal y no se uso como evidencia final.
+- Pendiente auditar datos reales de los dos churn faltantes con `psql` local, un tunel DB operativo o SSH Railway funcional.
+
 Carpeta de trabajo aislada:
 
 ```text
