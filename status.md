@@ -1849,3 +1849,14 @@ Riesgos / fuera de alcance:
 
 - No se cambian rutas, auth, endpoints, schema ni logica de negocio.
 - No se hizo QA autenticada en produccion todavia.
+
+PR/deploy:
+
+- PR #98 mergeado a `main` con squash commit `6ac498d`.
+- Deploy manual ejecutado desde `main` con `railway deployment up -m "Deploy shell navigation cleanup"`.
+- Deployment Railway `c0eb5215-ce5b-46cb-91bf-ba48e4117e59` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard` y `Traqeer` en la pantalla publica de login.
+  - `/` sin sesion -> 302 a `/login?next=/`.
+- QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
