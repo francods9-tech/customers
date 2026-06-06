@@ -14,6 +14,45 @@ No tocar como fuente de verdad de Claude:
 C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 ```
 
+## Iteracion 2026-06-06 - Inicio mobile minimalista
+
+Implementado en rama `codex/dashboard-mobile-minimal`:
+
+- Inicio en mobile compacta el bloque de filtros de periodo/canal con menos padding, chips mas chicos y controles en grilla densa.
+- Las tarjetas KPI de Inicio se mantienen en 2 columnas tambien en pantallas `<=520px`.
+- Se redujo peso visual mobile de las tarjetas KPI: menor padding, tipografia mas chica en label/delta y valor ajustado.
+- Desktop queda sin cambios; no se modifican rutas, endpoints, modelos ni logica de negocio.
+
+Archivos tocados:
+
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion:
+
+```powershell
+python -m unittest discover -s tests -p test_app_routes.py -k "dashboard_mobile_inicio" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "dashboard" -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Test RED focal fallo inicialmente porque `.dashboard-period-compact` no tenia `padding: .6rem` ni reglas compactas.
+- Focal mobile Inicio OK.
+- Tests dashboard: 11 tests OK.
+- Suite completa: 120 tests OK.
+- `git diff --check`: codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local con Flask en `127.0.0.1:5071` y Playwright headless mobile 390px para `/`: sin overflow horizontal, primeras 2 tarjetas KPI en la misma fila y filtros por debajo de 180px de alto. Se uso snapshot temporal `dashboard_mobile_smoke`, eliminado al cierre; artefactos de smoke y servidor local tambien eliminados.
+
+Riesgos / fuera de alcance:
+
+- No se hizo deploy Railway todavia.
+- QA autenticada de produccion no ejecutada.
+- No hay `AGENTS.md` ni `changelog.mdx` en este checkout; continuidad registrada en `status.md`.
+
 ## Iteracion 2026-06-06 - Administracion unificada
 
 Implementado en rama `codex/admin-nav-unified`:
