@@ -25,7 +25,7 @@
         <h1>Inicio</h1>
         <p class="muted">Periodo: {{ label }}{% if canal %} · canal: {{ origenes|selectattr('0','equalto',canal)|map(attribute=1)|first }}{% endif %} · comparado con el periodo anterior</p>
       </div>
-      <form method="get" class="periodo-bar dashboard-period dashboard-period-compact">
+      <form method="get" class="periodo-bar dashboard-period dashboard-period-compact dashboard-period-desktop">
         <div class="presets">
           {% for key, plabel in presets %}
             <a class="chip {{ 'chip-on' if label == plabel }}" href="{{ url_for('index', preset=key, canal=canal) }}">{{ plabel }}</a>
@@ -43,6 +43,27 @@
           <button type="submit">Aplicar</button>
         </div>
       </form>
+      <details class="dashboard-period-mobile-details">
+        <summary>Filtros</summary>
+        <form method="get" class="periodo-bar dashboard-period dashboard-period-compact dashboard-period-mobile">
+          <div class="presets">
+            {% for key, plabel in presets %}
+              <a class="chip {{ 'chip-on' if label == plabel }}" href="{{ url_for('index', preset=key, canal=canal) }}">{{ plabel }}</a>
+            {% endfor %}
+          </div>
+          <div class="periodo-custom">
+            <input type="date" name="desde" value="{{ desde }}">
+            <input type="date" name="hasta" value="{{ hasta }}">
+            <select name="canal">
+              <option value="">Todos los canales</option>
+              {% for k, plabel in origenes %}
+                <option value="{{ k }}" {{ "selected" if canal == k }}>{{ plabel }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit">Aplicar</button>
+          </div>
+        </form>
+      </details>
     </div>
 
     <div class="dashboard-kpi-strip dashboard-kpi-grid">
