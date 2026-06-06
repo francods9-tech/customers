@@ -1809,3 +1809,43 @@ Deploy Railway posterior:
   - `/login` -> 200, contiene `Customers Dashboard`.
   - `/clientes` sin sesion -> 302 a `/login?next=/clientes`.
 - QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
+
+## Iteracion 2026-06-06 - Navegacion shell limpia
+
+Implementado en rama `codex/shell-navigation-cleanup`:
+
+- El shell autenticado elimina el texto `Customers Dashboard` del brand y deja solo el logo Traqeer enlazado a Inicio.
+- Se elimina la topbar con buscador global; la busqueda queda en la pantalla Clientes.
+- `Actualizar datos` y `Salir` pasan al pie de la sidebar.
+- Mobile agrega header con logo + hamburger y drawer vertical CSS-only; se elimina la navegacion horizontal con scroll.
+
+Archivos tocados:
+
+- `templates/base.html`
+- `static/style.css`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion local:
+
+```powershell
+python -m unittest discover -s tests -p test_app_routes.py -k "base" -v
+python -m unittest discover -s tests -p test_app_routes.py -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests `base`: 5 tests OK.
+- `test_app_routes.py`: 76 tests OK.
+- Suite completa: 117 tests OK.
+- `git diff --check`: codigo 0; solo avisos esperados de normalizacion CRLF en Windows.
+- Smoke local headless autenticado en `http://127.0.0.1:5037/bandeja`:
+  - Desktop 1280px sin overflow horizontal; sin `.topbar` ni `.global-search`; header mobile oculto.
+  - Mobile 390px sin overflow horizontal; header mobile visible; sidebar cerrada sin nav horizontal; hamburger abre drawer y muestra `Actualizar datos` + `Salir`.
+
+Riesgos / fuera de alcance:
+
+- No se cambian rutas, auth, endpoints, schema ni logica de negocio.
+- No se hizo QA autenticada en produccion todavia.

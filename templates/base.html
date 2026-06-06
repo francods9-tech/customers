@@ -10,10 +10,21 @@
 {% if session.auth %}
 {% set active = request.endpoint %}
 <div class="app-shell">
-  <aside class="sidebar">
+  <input class="mobile-menu-state" id="mobile-menu-toggle" type="checkbox" aria-hidden="true">
+  <header class="mobile-shell-header">
+    <a class="mobile-shell-brand" href="{{ url_for('index') }}">
+      <img src="{{ url_for('static', filename='traqeer-logo.png') }}" alt="Traqeer">
+    </a>
+    <label class="mobile-menu-toggle" for="mobile-menu-toggle" aria-label="Abrir menu" aria-controls="mobile-menu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </label>
+  </header>
+  <label class="mobile-drawer-backdrop" for="mobile-menu-toggle" aria-hidden="true"></label>
+  <aside class="sidebar" id="mobile-menu">
     <a class="sidebar-brand" href="{{ url_for('index') }}">
       <img src="{{ url_for('static', filename='traqeer-logo.png') }}" alt="Traqeer">
-      <span>Customers Dashboard</span>
     </a>
     <nav class="sidebar-nav" aria-label="Navegacion principal">
       <div class="sidebar-section">Operacion</div>
@@ -26,27 +37,21 @@
       <a class="nav-item {{ 'active' if active == 'bajas_list' }}" href="{{ url_for('bajas_list') }}">Bajas</a>
       <a class="nav-item {{ 'active' if active == 'mensajes_list' }}" href="{{ url_for('mensajes_list') }}">Mensajes</a>
     </nav>
-    <div class="sidebar-user">
-      <span class="avatar">CS</span>
-      <div>
-        <strong>Equipo</strong>
-        <span>Customer Success</span>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <span class="avatar">CS</span>
+        <div>
+          <strong>Equipo</strong>
+          <span>Customer Success</span>
+        </div>
       </div>
+      <form method="post" action="{{ url_for('sync') }}" class="sidebar-action">
+        <button class="btn-sync" type="submit">Actualizar datos</button>
+      </form>
+      <a class="logout sidebar-logout" href="{{ url_for('logout') }}">Salir</a>
     </div>
   </aside>
   <div class="app-main">
-    <header class="topbar">
-      <form method="get" action="{{ url_for('clientes_list') }}" class="global-search">
-        <input type="search" name="q" placeholder="Buscar cliente, email, usuario o WhatsApp" value="{{ request.args.get('q', '') if active == 'clientes_list' else '' }}">
-        <button class="btn-sync" type="submit">Buscar</button>
-      </form>
-      <div class="topbar-actions">
-        <form method="post" action="{{ url_for('sync') }}" class="inline">
-          <button class="btn-sync" type="submit">Actualizar datos</button>
-        </form>
-        <a class="logout" href="{{ url_for('logout') }}">Salir</a>
-      </div>
-    </header>
     <main class="content">
 {% else %}
 <main class="content login-content">

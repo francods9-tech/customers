@@ -330,7 +330,7 @@ class AppRoutesTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('class="app-shell"', body)
         self.assertIn('class="sidebar"', body)
-        self.assertIn('action="/clientes"', body)
+        self.assertIn('class="client-filters"', body)
         self.assertIn('name="q"', body)
         self.assertIn('placeholder="Buscar cliente"', body)
         self.assertIn('onclick="document.getElementById(\'create-client-dialog\').showModal()"', body)
@@ -1493,6 +1493,47 @@ class AppRoutesTest(unittest.TestCase):
         body = response.get_data(as_text=True)
         self.assertIn('href="/bandeja">Bandeja', body)
         self.assertNotIn('href="/tareas">Tareas', body)
+
+    def test_base_shell_autenticado_usa_logo_sin_topbar_ni_buscador_global(self):
+        self.login()
+
+        response = self.client.get("/bandeja")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn('class="sidebar-brand"', body)
+        self.assertIn('alt="Traqeer"', body)
+        self.assertNotIn("<span>Customers Dashboard</span>", body)
+        self.assertNotIn('class="topbar"', body)
+        self.assertNotIn('class="global-search"', body)
+        self.assertNotIn('placeholder="Buscar cliente, email, usuario o WhatsApp"', body)
+        sidebar = body[body.index('class="sidebar"'):body.index('</aside>')]
+        self.assertIn('action="/sync"', sidebar)
+        self.assertIn("Actualizar datos", sidebar)
+        self.assertIn('href="/logout"', sidebar)
+        self.assertIn("Salir", sidebar)
+
+    def test_base_shell_mobile_expone_header_hamburger_y_drawer_vertical(self):
+        self.login()
+
+        response = self.client.get("/bandeja")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn('class="mobile-shell-header"', body)
+        self.assertIn('aria-label="Abrir menu"', body)
+        self.assertIn('class="mobile-menu-toggle"', body)
+        self.assertIn('class="mobile-drawer-backdrop"', body)
+        self.assertIn('id="mobile-menu"', body)
+        self.assertIn('aria-label="Navegacion principal"', body)
+
+        from pathlib import Path
+
+        css = Path("static/style.css").read_text(encoding="utf-8")
+        mobile_css = css[css.index("@media (max-width: 820px)"):]
+        self.assertIn(".mobile-shell-header", mobile_css)
+        self.assertIn("transform: translateX(-100%)", mobile_css)
+        self.assertNotIn("overflow-x: auto", mobile_css)
 
     def test_dashboard_agrupa_variantes_de_instagram(self):
         from db import db
