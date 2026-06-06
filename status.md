@@ -107,6 +107,17 @@ Riesgos / fuera de alcance:
 - No se cambian rutas, auth, endpoints, schema ni logica de negocio.
 - No se hizo QA autenticada en produccion todavia.
 
+PR/deploy:
+
+- PR #100 mergeado a `main` con squash commit `ee86d22`.
+- Deploy manual ejecutado desde `main` con `railway deployment up -m "Deploy inbox mobile filters polish"`.
+- Deployment Railway `9a782b56-a701-40ef-be07-4c9d8d313888` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard` y `Traqeer` en la pantalla publica de login.
+  - `/bandeja` sin sesion -> 302 a `/login?next=/bandeja`.
+- QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
+
 ## Iteracion 2026-06-05 - Solicitudes acciones compactas
 
 Implementado en rama `codex/solicitudes-actions-compact`:
