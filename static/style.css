@@ -2637,6 +2637,20 @@ table.grid.clientes-grid {
   .inbox-page .task-edit-form button {
     width: 100%;
   }
+  .inbox-ops-panel .task-filters {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+  }
+  .inbox-ops-panel .task-filters label {
+    min-width: 0;
+  }
+  .inbox-ops-panel .task-filters button {
+    width: auto;
+    min-width: 0;
+    grid-column: auto;
+    justify-self: stretch;
+  }
   .inbox-page .inbox-meta {
     display: grid;
     grid-template-columns: 1fr;
