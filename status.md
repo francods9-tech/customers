@@ -51,8 +51,15 @@ Resultado:
 
 Riesgos / fuera de alcance:
 
-- No se hizo deploy Railway todavia.
-- QA autenticada de produccion no ejecutada todavia.
+- PR #108 mergeado a `main` con squash commit `bb5d5ba`.
+- Deploy manual ejecutado desde `main` con `railway deployment up -m "Deploy mobile filter visual fix"`.
+- Deployment Railway `7619d6e4-c044-4d6b-8340-1530863a9fbe` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/login` -> 200, contiene `Customers Dashboard` y `Traqeer`.
+  - `/` sin sesion -> 302 a `/login?next=/`.
+  - `/bandeja` sin sesion -> 302 a `/login?next=/bandeja`.
+- QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
 - No hay `AGENTS.md` ni `changelog.mdx` en este checkout; continuidad registrada en `status.md`.
 
 ## Iteracion 2026-06-06 - Filtros mobile limpios
