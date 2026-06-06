@@ -643,6 +643,46 @@ def _complete_todo_altas_with_current_recurrentes_and_bajas(altas, clientes, baj
     return completadas
 
 
+def _period_bounds_from_query():
+    try:
+        start = dt.datetime.fromisoformat(request.args.get("start", "")).replace(tzinfo=dt.timezone.utc)
+        end_date = dt.datetime.fromisoformat(request.args.get("end", "")).replace(tzinfo=dt.timezone.utc)
+    except ValueError:
+        return None, None
+    return start, end_date + dt.timedelta(days=1)
+
+
+def _ceo_authorized():
+    token = app.config.get("CUSTOMERS_API_TOKEN") or ""
+    auth = request.headers.get("Authorization", "")
+    return bool(token) and auth == f"Bearer {token}"
+
+
+@app.route("/api/ceo/customer-metrics")
+def ceo_customer_metrics():
+    if not _ceo_authorized():
+        return {"error": "unauthorized"}, 401
+    start, end_exclusive = _period_bounds_from_query()
+    if not start or not end_exclusive or end_exclusive <= start:
+        return {"error": "invalid period"}, 400
+    snap, metas = _clientes_enriquecidos()
+    if not snap:
+        return {"error": "snapshot missing"}, 503
+    clientes = _without_manually_inactive(snap["clientes"])
+    altas = metrics.enriquecer((snap.get("eventos") or {}).get("altas", []), metas or {})
+    trial_emails = _trial_emails(clientes)
+    altas = [e for e in altas if (e.get("email") or "").lower() not in trial_emails]
+    altas_p = metrics.filtrar(altas, start, end_exclusive)
+    end_inclusive = (end_exclusive - dt.timedelta(days=1)).date().isoformat()
+    return {
+        "source": "customers",
+        "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "period": {"start": start.date().isoformat(), "end": end_inclusive},
+        "active_customers": customer_rules.customer_summary(clientes)["activos_recurrentes"],
+        "new_customers": len(altas_p),
+    }
+
+
 @app.route("/")
 @login_required
 def index():
