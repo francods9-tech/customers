@@ -40,6 +40,11 @@ Resultado:
 - Tests Bandeja: 12 OK.
 - Suite completa: 122 OK.
 - `git diff --check`: codigo 0; solo avisos CRLF esperados de Git en Windows.
+- PR #111 mergeado a `main` con squash commit `cc11cf1`.
+- Deploy manual ejecutado desde `main` con `railway deployment up -m "Deploy Bandeja mobile overflow fix"`.
+- Deployment Railway `70e7fd89-5189-4d87-98ee-6be08566df4a` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
 
 Riesgos / pendiente:
 
