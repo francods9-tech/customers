@@ -14,6 +14,42 @@ No tocar como fuente de verdad de Claude:
 C:\Users\Franco Salemme\OneDrive\Escritorio\traqeer-am-dashboard
 ```
 
+## Iteracion 2026-06-06 - API metricas CEO
+
+Implementado en rama `codex/customer-metrics-api`:
+
+- Nuevo endpoint interno `GET /api/ceo/customer-metrics?start=YYYY-MM-DD&end=YYYY-MM-DD`.
+- Proteccion por `Authorization: Bearer <CUSTOMERS_API_TOKEN>`.
+- Respuesta JSON con `active_customers` desde `customer_rules.customer_summary(...).activos_recurrentes`.
+- `new_customers` cuenta altas pagas del periodo con la misma base del Inicio: eventos `altas` enriquecidos y trials actuales excluidos.
+
+Archivos tocados:
+
+- `app.py`
+- `config.py`
+- `tests/test_app_routes.py`
+- `status.md`
+
+Verificacion local:
+
+```powershell
+python -m unittest discover -s tests -p test_app_routes.py -k "ceo_customer_metrics" -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests RED focales fallaron inicialmente por endpoint 404.
+- Focal API CEO OK.
+- Suite completa: 122 tests OK.
+- `git diff --check`: codigo 0; solo avisos CRLF normales de Git en Windows.
+
+Riesgos / pendiente:
+
+- Requiere configurar `CUSTOMERS_API_TOKEN` compartido en produccion antes de que CEO pueda consumir la API.
+- Sin token o con token incorrecto, el endpoint responde 401.
+
 ## Iteracion 2026-06-06 - Hotfix filtros mobile
 
 Implementado en rama `codex/mobile-filter-visual-fix`:

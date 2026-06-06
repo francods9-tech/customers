@@ -30,3 +30,4 @@ class Config:
 
     MONGO_URI = os.environ.get("MONGO_URI", "")
     STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
+    CUSTOMERS_API_TOKEN = os.environ.get("CUSTOMERS_API_TOKEN", "")

@@ -65,6 +65,52 @@ class AppRoutesTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json["status"], "ok")
 
+    def test_ceo_customer_metrics_requires_bearer_token(self):
+        self.app.config["CUSTOMERS_API_TOKEN"] = "shared-test-token"
+
+        response = self.client.get("/api/ceo/customer-metrics?start=2026-05-01&end=2026-05-31")
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_ceo_customer_metrics_returns_recurrent_active_and_paid_signups(self):
+        from db import db
+        from db.models import Snapshot
+
+        self.app.config["CUSTOMERS_API_TOKEN"] = "shared-test-token"
+        paid = [
+            {**self.customer_row(nombre=f"Pago {i}", email=f"paid-{i}@example.test"), "fecha_alta_raw": f"2026-05-1{i}T00:00:00+00:00"}
+            for i in range(1, 4)
+        ]
+        trial = {**self.customer_row(nombre="Trial", email="trial-ceo@example.test"), "estado": "trial", "fecha_alta_raw": "2026-05-12T00:00:00+00:00"}
+        one_time = {**self.customer_row(nombre="Puntual", email="one-time@example.test"), "plan": "One time payment"}
+        with self.app.app_context():
+            db.session.add(Snapshot(payload={
+                "test_marker": "solicitudes_directas",
+                "clientes": paid + [trial, one_time],
+                "eventos": {
+                    "altas": [
+                        {"email": "paid-1@example.test", "fecha": "2026-05-11T00:00:00+00:00"},
+                        {"email": "paid-2@example.test", "fecha": "2026-05-12T00:00:00+00:00"},
+                        {"email": "paid-3@example.test", "fecha": "2026-06-01T00:00:00+00:00"},
+                        {"email": "trial-ceo@example.test", "fecha": "2026-05-12T00:00:00+00:00"},
+                    ],
+                    "bajas": [],
+                },
+                "resumen": {},
+            }))
+            db.session.commit()
+
+        response = self.client.get(
+            "/api/ceo/customer-metrics?start=2026-05-01&end=2026-05-31",
+            headers={"Authorization": "Bearer shared-test-token"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json["source"], "customers")
+        self.assertEqual(response.json["period"], {"start": "2026-05-01", "end": "2026-05-31"})
+        self.assertEqual(response.json["active_customers"], 3)
+        self.assertEqual(response.json["new_customers"], 2)
+
     def test_colabs_route_requires_login(self):
         response = self.client.get("/colabs")
 
