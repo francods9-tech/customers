@@ -32,6 +32,16 @@ Riesgos / pendiente:
 
 - Smoke de navegador local no ejecutado: el plugin Browser no expuso `node_repl/js` y Playwright no esta instalado en Node ni Python dentro de este repo.
 
+PR/deploy:
+
+- PR #119 mergeado a `main` con squash commit `68ab10e`.
+- Deploy manual ejecutado desde `main` con `railway deployment up -m "Deploy solicitudes search enter guard"`.
+- Deployment Railway `21ab917c-b20b-4bae-9100-8d66d5b3c861` -> Online.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+  - `/solicitudes` sin sesion -> 302 a `/login?next=/solicitudes`.
+- QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
+
 ## Cierre operativo 2026-06-06
 
 Estado final:
