@@ -47,7 +47,7 @@
   <summary class="btn-primary request-header-action">Crear solicitud</summary>
   {% if clientes %}
   <form method="post" action="{{ url_for('add_solicitud_directa') }}" class="new-request-form">
-    <input type="search" data-customer-search data-target="new-request-customer" placeholder="Buscar cliente, email o WhatsApp">
+    <input type="search" data-customer-search data-target="new-request-customer" data-prevent-enter-submit placeholder="Buscar cliente, email o WhatsApp" aria-label="Buscar cliente para la solicitud">
     <select id="new-request-customer" name="customer_email" required>
       {% for cliente in clientes %}
       <option value="{{ cliente.email }}" {% if selected_customer == cliente.email %}selected{% endif %}>{{ cliente.nombre }} · {{ cliente.email }}</option>
@@ -232,6 +232,12 @@
         if (matches && !firstVisible) firstVisible = option;
       });
       if (firstVisible) select.value = firstVisible.value;
+    });
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && input.hasAttribute("data-prevent-enter-submit")) {
+        event.preventDefault();
+        select.focus();
+      }
     });
   });
 </script>

@@ -2693,6 +2693,19 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("No hay clientes cargados", body)
         self.assertIn("disabled", body)
 
+    def test_solicitudes_buscador_cliente_no_crea_ticket_con_enter(self):
+        self.login()
+        self.add_snapshot([self.customer_row()])
+
+        response = self.client.get("/solicitudes")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn('data-customer-search data-target="new-request-customer" data-prevent-enter-submit', body)
+        self.assertIn('input.addEventListener("keydown"', body)
+        self.assertIn('event.key === "Enter"', body)
+        self.assertIn("event.preventDefault()", body)
+
 
 if __name__ == "__main__":
     unittest.main()
