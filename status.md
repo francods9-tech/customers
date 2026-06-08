@@ -2,6 +2,36 @@
 
 Fecha: 2026-06-06.
 
+## Iteracion 2026-06-08 - Solicitudes Enter en buscador cliente
+
+Implementado en rama `codex/solicitudes-search-enter-guard`:
+
+- El buscador de cliente dentro de `Crear solicitud` ya no envia el formulario al pulsar Enter.
+- Se agrego un guard `keydown` que hace `preventDefault()` para Enter y mueve el foco al selector de cliente.
+- Se agrego `aria-label` al buscador para mantener una etiqueta accesible sin cambiar el layout.
+- No se cambiaron rutas, endpoints, modelos, schema ni logica de creacion de tickets.
+
+Verificacion local:
+
+```powershell
+python -m unittest discover -s tests -p test_app_routes.py -k "buscador_cliente_no_crea" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "solicitudes" -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Test RED focal fallo inicialmente porque el buscador no tenia guard de Enter.
+- Focal buscador OK.
+- Tests `/solicitudes`: 5 OK.
+- Suite completa: 124 tests OK.
+- `git diff --check`: codigo 0; solo avisos CRLF esperados de Git en Windows.
+
+Riesgos / pendiente:
+
+- Smoke de navegador local no ejecutado: el plugin Browser no expuso `node_repl/js` y Playwright no esta instalado en Node ni Python dentro de este repo.
+
 ## Cierre operativo 2026-06-06
 
 Estado final:
