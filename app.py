@@ -61,6 +61,9 @@ TASK_ASSIGNEE_VALUES = {key for key, _ in TASK_ASSIGNEE_OPTIONS}
 ONBOARDING_TASK_SOURCE = "onboarding"
 ONBOARDING_TASK_ASSIGNEE = "Nicky"
 ONBOARDING_TASK_TEXT = "Bienvenida pendiente"
+TICKET_NOTIFY_TASK_SOURCE = "ticket_notify"
+TICKET_NOTIFY_TASK_ASSIGNEE = "Nicky"
+TICKET_NOTIFY_TASK_TEXT = "Notificar al cliente"
 WHATSAPP_STATUS_OPTIONS = [
     ("sin_dato", "Sin dato"),
     ("activo", "Activo"),
@@ -474,6 +477,38 @@ def _ticket_context(ticket):
             getattr(ticket, "importancia", "") or "Media",
         ),
     }
+
+
+def _ticket_notify_task_text(ticket_id):
+    return f"Ticket #{ticket_id} · {TICKET_NOTIFY_TASK_TEXT}"
+
+
+def _active_ticket_notify_task(ticket):
+    return (CustomerReminder.query
+            .filter(CustomerReminder.customer_email == ticket.customer_email,
+                    CustomerReminder.source == TICKET_NOTIFY_TASK_SOURCE,
+                    CustomerReminder.completed_at.is_(None),
+                    CustomerReminder.texto == _ticket_notify_task_text(ticket.id))
+            .order_by(CustomerReminder.created_at.asc())
+            .first())
+
+
+def _ticket_notification_pending(ticket):
+    return _active_ticket_notify_task(ticket) is not None
+
+
+def _close_ticket(ticket, notify_customer=False):
+    ticket.resuelta = True
+    ticket.estado_gestion = "resuelta"
+    ticket.resolved_at = dt.datetime.now(dt.timezone.utc)
+    if notify_customer and not _active_ticket_notify_task(ticket):
+        db.session.add(CustomerReminder(
+            customer_email=ticket.customer_email,
+            texto=_ticket_notify_task_text(ticket.id),
+            due_date=dt.datetime.now(MADRID_TZ).date().isoformat(),
+            assignee=TICKET_NOTIFY_TASK_ASSIGNEE,
+            source=TICKET_NOTIFY_TASK_SOURCE,
+        ))
 
 
 def _ticket_rich_text(text):
@@ -1109,9 +1144,7 @@ def add_solicitud_directa():
 def resolver_queja(qid):
     q = db.session.get(Interaccion, qid)
     if q and complaint_rules.is_customer_request(q):
-        q.resuelta = True
-        q.estado_gestion = "resuelta"
-        q.resolved_at = dt.datetime.now(dt.timezone.utc)
+        _close_ticket(q, notify_customer=request.form.get("notify_customer") == "yes")
         db.session.commit()
         flash("Solicitud marcada como resuelta", "ok")
     return redirect(request.referrer or url_for("quejas_list"))
@@ -1148,11 +1181,14 @@ def set_queja_gestion(qid):
     q = db.session.get(Interaccion, qid)
     if q and complaint_rules.is_customer_request(q):
         estado = complaint_rules.normalize_status(request.form.get("estado_gestion", "abierta"))
-        q.estado_gestion = estado
-        q.equipo = complaint_rules.team_for_status(estado)
         q.importancia = request.form.get("importancia") or q.importancia or "media"
-        q.resuelta = q.estado_gestion == "resuelta"
-        q.resolved_at = dt.datetime.now(dt.timezone.utc) if q.resuelta else None
+        if estado == "resuelta":
+            _close_ticket(q, notify_customer=request.form.get("notify_customer") == "yes")
+        else:
+            q.estado_gestion = estado
+            q.equipo = complaint_rules.team_for_status(estado)
+            q.resuelta = False
+            q.resolved_at = None
         db.session.commit()
         flash("Gestion actualizada", "ok")
     return redirect(request.referrer or url_for("quejas_list"))
@@ -1196,6 +1232,8 @@ def ticket_detail(qid):
         comment_authors=complaint_rules.COMMENT_AUTHOR_OPTIONS,
         task_assignees=TASK_ASSIGNEE_OPTIONS,
         task_default_due_date=dt.datetime.now(MADRID_TZ).date().isoformat(),
+        ticket_notification_pending=_ticket_notification_pending(ticket),
+        ticket_notify_assignee=TICKET_NOTIFY_TASK_ASSIGNEE,
         ctx=_ticket_context(ticket),
         team_labels=complaint_rules.TEAM_LABELS,
     )
