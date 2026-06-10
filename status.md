@@ -32,6 +32,15 @@ Resultado:
 - Suite completa: 131 tests OK.
 - `git diff --check`: codigo 0; solo avisos CRLF esperados de Git en Windows.
 
+PR/deploy:
+
+- PR #121 mergeado a `main` con squash commit `682bf43`.
+- Deploy manual ejecutado desde `main` con `railway deployment up -m "Deploy ticket close notification task"`.
+- Deployment Railway `f338de7f-7d3b-4d86-b342-4224b118bf9e` -> SUCCESS.
+- Produccion publica verificada:
+  - `https://customers-production-8190.up.railway.app/healthz` -> 200 `{"status":"ok"}`.
+- QA autenticada de produccion no ejecutada: no se uso ni pidio clave en esta iteracion.
+
 Riesgos / pendiente:
 
 - Smoke visual autenticado no ejecutado: el plugin Browser no expuso `node_repl/js` y Playwright no esta instalado en Node ni Python dentro de este repo.
