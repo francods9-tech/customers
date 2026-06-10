@@ -2143,6 +2143,18 @@ table.grid.clientes-grid {
   gap: .5rem;
   padding-top: .25rem;
 }
+.ticket-notify-dialog {
+  max-width: 460px;
+}
+.ticket-notify-form {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+.ticket-notify-status {
+  display: grid;
+  gap: .35rem;
+}
 .icon-button {
   width: 32px;
   height: 32px;

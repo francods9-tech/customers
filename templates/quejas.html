@@ -137,9 +137,24 @@
           </select>
           <button class="btn-sync" type="submit">Actualizar</button>
         </form>
-        <form method="post" action="{{ url_for('resolver_queja', qid=q.id) }}" class="inline">
-          <button type="submit">Marcar resuelta</button>
-        </form>
+        <div class="inline">
+          <button type="button" onclick="document.getElementById('ticket-notify-dialog-{{ q.id }}').showModal()">Marcar resuelta</button>
+        </div>
+        <dialog id="ticket-notify-dialog-{{ q.id }}" class="client-create-dialog ticket-notify-dialog">
+          <form method="post" action="{{ url_for('resolver_queja', qid=q.id) }}" class="ticket-notify-form">
+            <div class="dialog-head">
+              <div>
+                <h2>¿Notificar al cliente?</h2>
+                <p class="muted">Si elegis notificar, se crea una tarea para Nicky vinculada a este ticket.</p>
+              </div>
+              <button type="button" class="icon-button" aria-label="Cerrar" onclick="document.getElementById('ticket-notify-dialog-{{ q.id }}').close()">&times;</button>
+            </div>
+            <div class="dialog-actions">
+              <button type="submit" class="btn-secondary" name="notify_customer" value="no">Cerrar sin notificar</button>
+              <button type="submit" name="notify_customer" value="yes">Cerrar y notificar</button>
+            </div>
+          </form>
+        </dialog>
         <form method="post" action="{{ url_for('eliminar_ticket', qid=q.id) }}" class="inline">
           <button class="btn-danger" type="submit">Eliminar</button>
         </form>

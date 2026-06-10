@@ -34,6 +34,9 @@
     {% if ticket.resuelta %}
       <span class="tag status-pill {{ ctx.status_class }}">Resuelta</span>
       <span class="tag {{ ctx.duration.class }}">{{ ctx.duration.dias }} dias abierto</span>
+      {% if ticket_notification_pending %}
+      <span class="tag tag-warn">Notificar al cliente</span>
+      {% endif %}
     {% else %}
       <span class="tag team-pill team-{{ ctx.team_key }}">{{ ctx.team_label|upper }}</span>
       <span class="tag status-pill {{ ctx.status_class }}">{{ status_labels.get(ticket.estado_gestion, ticket.estado_gestion) }}</span>
@@ -115,6 +118,12 @@
           <span>Este ticket estuvo abierto {{ ctx.duration.dias }} dias.</span>
           <button type="submit">Reabrir ticket</button>
         </form>
+        {% if ticket_notification_pending %}
+        <div class="ticket-notify-status">
+          <span class="tag tag-warn">Notificar al cliente</span>
+          <p class="muted">Tarea activa asignada a {{ ticket_notify_assignee }}.</p>
+        </div>
+        {% endif %}
       {% else %}
         <form method="post" action="{{ url_for('set_queja_gestion', qid=ticket.id) }}" class="ticket-form">
         <label>Estado</label>
@@ -132,10 +141,25 @@
         <button type="submit">Actualizar ticket</button>
         </form>
 
-        <form method="post" action="{{ url_for('resolver_queja', qid=ticket.id) }}" class="ticket-action-row">
+        <div class="ticket-action-row">
           <span>Cuando ya no quede accion pendiente, pasalo a resueltas.</span>
-          <button type="submit">Marcar resuelto</button>
-        </form>
+          <button type="button" onclick="document.getElementById('ticket-notify-dialog-{{ ticket.id }}').showModal()">Marcar resuelto</button>
+        </div>
+        <dialog id="ticket-notify-dialog-{{ ticket.id }}" class="client-create-dialog ticket-notify-dialog">
+          <form method="post" action="{{ url_for('resolver_queja', qid=ticket.id) }}" class="ticket-notify-form">
+            <div class="dialog-head">
+              <div>
+                <h2>¿Notificar al cliente?</h2>
+                <p class="muted">Si elegis notificar, se crea una tarea para {{ ticket_notify_assignee }} vinculada a este ticket.</p>
+              </div>
+              <button type="button" class="icon-button" aria-label="Cerrar" onclick="document.getElementById('ticket-notify-dialog-{{ ticket.id }}').close()">&times;</button>
+            </div>
+            <div class="dialog-actions">
+              <button type="submit" class="btn-secondary" name="notify_customer" value="no">Cerrar sin notificar</button>
+              <button type="submit" name="notify_customer" value="yes">Cerrar y notificar</button>
+            </div>
+          </form>
+        </dialog>
       {% endif %}
       </div>
 

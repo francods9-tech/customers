@@ -2605,6 +2605,262 @@ class AppRoutesTest(unittest.TestCase):
         self.assertIn("Cliente Z", body)
         self.assertIn("Dalila", body)
 
+    def test_resolver_ticket_con_notificacion_crea_tarea_para_nicky(self):
+        import datetime as dt
+
+        from app import MADRID_TZ
+        from db import db
+        from db.models import CustomerReminder, Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="solicitud",
+                texto="Cerrar y avisar",
+                estado_gestion="abierta",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            )
+            db.session.add(ticket)
+            db.session.commit()
+            ticket_id = ticket.id
+
+        response = self.client.post(
+            f"/queja/{ticket_id}/resolver",
+            data={"notify_customer": "yes"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            ticket = db.session.get(Interaccion, ticket_id)
+            self.assertTrue(ticket.resuelta)
+            self.assertEqual(ticket.estado_gestion, "resuelta")
+            task = CustomerReminder.query.filter_by(
+                customer_email="cliente-z@example.test",
+                source="ticket_notify",
+            ).one()
+            self.assertEqual(task.texto, f"Ticket #{ticket_id} · Notificar al cliente")
+            self.assertEqual(task.assignee, "Nicky")
+            self.assertEqual(task.due_date, dt.datetime.now(MADRID_TZ).date().isoformat())
+            self.assertIsNone(task.completed_at)
+
+    def test_ticket_abierto_muestra_cartel_para_decidir_notificacion_al_cerrar(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="solicitud",
+                texto="Abrir modal",
+                estado_gestion="abierta",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            )
+            db.session.add(ticket)
+            db.session.commit()
+            ticket_id = ticket.id
+
+        response = self.client.get(f"/solicitudes/{ticket_id}")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn(f'id="ticket-notify-dialog-{ticket_id}"', body)
+        self.assertIn("¿Notificar al cliente?", body)
+        self.assertIn('name="notify_customer" value="yes"', body)
+        self.assertIn('name="notify_customer" value="no"', body)
+
+    def test_resolver_ticket_sin_notificacion_no_crea_tarea(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import CustomerReminder, Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="solicitud",
+                texto="Cerrar sin aviso",
+                estado_gestion="abierta",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            )
+            db.session.add(ticket)
+            db.session.commit()
+            ticket_id = ticket.id
+
+        response = self.client.post(
+            f"/queja/{ticket_id}/resolver",
+            data={"notify_customer": "no"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            ticket = db.session.get(Interaccion, ticket_id)
+            self.assertTrue(ticket.resuelta)
+            self.assertEqual(CustomerReminder.query.filter_by(
+                customer_email="cliente-z@example.test",
+                source="ticket_notify",
+            ).count(), 0)
+
+    def test_gestion_resuelta_con_notificacion_crea_tarea_para_nicky(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import CustomerReminder, Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="queja",
+                texto="Cerrar desde gestion",
+                estado_gestion="en_gestion",
+                importancia="alta",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            )
+            db.session.add(ticket)
+            db.session.commit()
+            ticket_id = ticket.id
+
+        response = self.client.post(
+            f"/queja/{ticket_id}/gestion",
+            data={
+                "estado_gestion": "resuelta",
+                "importancia": "alta",
+                "notify_customer": "yes",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            ticket = db.session.get(Interaccion, ticket_id)
+            self.assertTrue(ticket.resuelta)
+            self.assertEqual(ticket.estado_gestion, "resuelta")
+            task = CustomerReminder.query.filter_by(
+                customer_email="cliente-z@example.test",
+                source="ticket_notify",
+            ).one()
+            self.assertEqual(task.texto, f"Ticket #{ticket_id} · Notificar al cliente")
+            self.assertEqual(task.assignee, "Nicky")
+
+    def test_ticket_resuelto_muestra_marca_de_notificacion_pendiente(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import CustomerReminder, Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="solicitud",
+                texto="Ticket con aviso pendiente",
+                estado_gestion="resuelta",
+                resuelta=True,
+                resolved_at=dt.datetime.now(dt.timezone.utc),
+                created_at=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=1),
+            )
+            db.session.add(ticket)
+            db.session.flush()
+            db.session.add(CustomerReminder(
+                customer_email="cliente-z@example.test",
+                texto=f"Ticket #{ticket.id} · Notificar al cliente",
+                due_date="2026-06-10",
+                assignee="Nicky",
+                source="ticket_notify",
+            ))
+            db.session.commit()
+            ticket_id = ticket.id
+
+        response = self.client.get(f"/solicitudes/{ticket_id}")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn("Notificar al cliente", body)
+        self.assertIn("Nicky", body)
+
+    def test_resolver_ticket_con_notificacion_no_duplica_tarea_activa(self):
+        import datetime as dt
+
+        from db import db
+        from db.models import CustomerReminder, Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="solicitud",
+                texto="Reabrir y cerrar",
+                estado_gestion="abierta",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            )
+            db.session.add(ticket)
+            db.session.flush()
+            db.session.add(CustomerReminder(
+                customer_email="cliente-z@example.test",
+                texto=f"Ticket #{ticket.id} · Notificar al cliente",
+                due_date="2026-06-10",
+                assignee="Nicky",
+                source="ticket_notify",
+            ))
+            db.session.commit()
+            ticket_id = ticket.id
+
+        response = self.client.post(
+            f"/queja/{ticket_id}/resolver",
+            data={"notify_customer": "yes"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            self.assertEqual(CustomerReminder.query.filter_by(
+                customer_email="cliente-z@example.test",
+                source="ticket_notify",
+            ).count(), 1)
+
+    def test_notificacion_de_ticket_aparece_en_bandeja_de_nicky(self):
+        import datetime as dt
+
+        from app import MADRID_TZ
+        from db import db
+        from db.models import Interaccion
+
+        self.login()
+        self.add_snapshot([self.customer_row()])
+        with self.app.app_context():
+            ticket = Interaccion(
+                customer_email="cliente-z@example.test",
+                tipo="solicitud",
+                texto="Bandeja Nicky",
+                estado_gestion="abierta",
+                created_at=dt.datetime.now(dt.timezone.utc),
+            )
+            db.session.add(ticket)
+            db.session.commit()
+            ticket_id = ticket.id
+
+        today = dt.datetime.now(MADRID_TZ).date().isoformat()
+        self.client.post(
+            f"/queja/{ticket_id}/resolver",
+            data={"notify_customer": "yes"},
+        )
+
+        response = self.client.get(f"/bandeja?assignee=Nicky&date={today}")
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn(f"Ticket #{ticket_id} · Notificar al cliente", body)
+        self.assertIn("Cliente Z", body)
+        self.assertIn("Nicky", body)
+
     def test_ticket_resuelto_muestra_dias_abierto_y_permite_reabrir(self):
         import datetime as dt
 

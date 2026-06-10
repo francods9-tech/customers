@@ -2,6 +2,41 @@
 
 Fecha: 2026-06-06.
 
+## Iteracion 2026-06-10 - Notificacion al cerrar tickets
+
+Implementado en rama `codex/ticket-close-notification-task`:
+
+- Al marcar un ticket como resuelto desde la ficha o desde `/solicitudes`, ahora aparece un dialogo para elegir si se notifica al cliente.
+- Si se elige notificar, se cierra el ticket y se crea una tarea activa para `Nicky` con vencimiento del dia, asociada al cliente y al ticket mediante `source="ticket_notify"` y texto `Ticket #ID · Notificar al cliente`.
+- Si se elige no notificar, se cierra el ticket sin crear tarea ni marca adicional.
+- Los tickets cerrados con notificacion pendiente muestran la marca `Notificar al cliente` y la ficha indica que la tarea activa esta asignada a Nicky.
+- El cierre via endpoint de gestion tambien respeta `notify_customer=yes` y evita duplicar tareas activas de notificacion para el mismo ticket.
+- No se cambiaron modelos ni schema; se reutiliza `CustomerReminder`.
+
+Verificacion local:
+
+```powershell
+python -m unittest discover -s tests -p test_app_routes.py -k "notificacion" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "ticket" -v
+python -m unittest discover -s tests -p test_app_routes.py -k "solicitudes" -v
+python -m unittest discover -s tests -v
+git diff --check
+```
+
+Resultado:
+
+- Tests RED focales fallaron inicialmente por ausencia de tarea `ticket_notify`, marca visible y dialogo.
+- Focal notificacion OK.
+- Focal tickets OK.
+- Focal solicitudes OK.
+- Suite completa: 131 tests OK.
+- `git diff --check`: codigo 0; solo avisos CRLF esperados de Git en Windows.
+
+Riesgos / pendiente:
+
+- Smoke visual autenticado no ejecutado: el plugin Browser no expuso `node_repl/js` y Playwright no esta instalado en Node ni Python dentro de este repo.
+- El registro visible de notificacion pendiente depende de que la tarea `ticket_notify` siga activa; al completarla deja de mostrarse como pendiente.
+
 ## Iteracion 2026-06-08 - Solicitudes Enter en buscador cliente
 
 Implementado en rama `codex/solicitudes-search-enter-guard`:
