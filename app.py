@@ -735,12 +735,13 @@ def ceo_customer_snapshots():
     }
 
 
-def record_current_counts(payload):
-    """Store the day's counts of a fresh payload with the same rules the
-    dashboard uses (enriched, without manually inactive customers)."""
+def record_current_counts():
+    """Store the day's counts of the latest snapshot with the same rules the
+    dashboard uses (enriched, without manually inactive customers). Counts and
+    timestamp come from that one snapshot, even if refreshes overlap."""
     snap, _ = _clientes_enriquecidos()
     clientes = _without_manually_inactive(snap["clientes"])
-    captured_at = customer_rules.parse_dt(payload.get("generado")) or dt.datetime.now(dt.timezone.utc)
+    captured_at = customer_rules.parse_dt(snap.get("generado")) or dt.datetime.now(dt.timezone.utc)
     count_snapshots.record_daily_counts(clientes, captured_at)
 
 
@@ -748,7 +749,7 @@ def refresh_and_record_counts():
     """Refresh the product snapshot, then store the day's counts. Any failure
     raises; a failed refresh records nothing."""
     payload = refrescar_snapshot()
-    record_current_counts(payload)
+    record_current_counts()
     return payload
 
 
@@ -1612,12 +1613,12 @@ def marcar_bienvenidos():
 @login_required
 def sync():
     try:
-        payload = refrescar_snapshot()
+        refrescar_snapshot()
     except Exception as e:
         flash(f"No se pudo actualizar: {e}", "error")
         return redirect(request.referrer or url_for("index"))
     try:
-        record_current_counts(payload)
+        record_current_counts()
         flash("Datos actualizados", "ok")
     except Exception:
         db.session.rollback()
