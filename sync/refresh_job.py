@@ -1,12 +1,17 @@
-from app import app
+import logging
+
+from app import app, refresh_and_record_counts
 from db import db
-from sync import refrescar_snapshot
 
 
 def main():
     with app.app_context():
         try:
-            payload = refrescar_snapshot()
+            payload = refresh_and_record_counts()
+        except Exception:
+            # Non-zero exit makes the Railway cron run show as failed.
+            logging.exception("refresh failed")
+            return 1
         finally:
             db.session.remove()
             db.engine.dispose()

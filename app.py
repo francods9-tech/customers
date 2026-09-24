@@ -20,6 +20,7 @@ from db.models import (ChurnReason, ColabCreator, ComplaintCategory, CustomerMet
                        TicketComment,
                        ORIGEN_LABELS, origen_group_key)
 from sync import refrescar_snapshot, ultimo_snapshot
+from sync import count_snapshots
 from sync.health import salud_de_cuentas
 
 app = Flask(__name__)
@@ -716,6 +717,37 @@ def ceo_customer_metrics():
         "active_customers": customer_rules.customer_summary(clientes)["activos_recurrentes"],
         "new_customers": len(altas_p),
     }
+
+
+@app.route("/api/ceo/customer-snapshots")
+def ceo_customer_snapshots():
+    if not _ceo_authorized():
+        return {"error": "unauthorized"}, 401
+    start, end_exclusive = _period_bounds_from_query()
+    if not start or not end_exclusive or end_exclusive <= start:
+        return {"error": "invalid period"}, 400
+    end_date = (end_exclusive - dt.timedelta(days=1)).date()
+    return {
+        "source": "customers",
+        "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "period": {"start": start.date().isoformat(), "end": end_date.isoformat()},
+        "snapshots": count_snapshots.daily_counts_between(start.date(), end_date),
+    }
+
+
+def _payload_captured_at(payload):
+    raw = payload.get("generado")
+    return dt.datetime.fromisoformat(raw) if raw else dt.datetime.now(dt.timezone.utc)
+
+
+def refresh_and_record_counts():
+    """Refresh the product snapshot, then store today's counts with the same
+    rules the dashboard uses. A failed refresh raises and records nothing."""
+    payload = refrescar_snapshot()
+    snap, _ = _clientes_enriquecidos()
+    clientes = _without_manually_inactive(snap["clientes"])
+    count_snapshots.record_daily_counts(clientes, _payload_captured_at(payload))
+    return payload
 
 
 @app.route("/")
@@ -1578,7 +1610,7 @@ def marcar_bienvenidos():
 @login_required
 def sync():
     try:
-        refrescar_snapshot()
+        refresh_and_record_counts()
         flash("Datos actualizados", "ok")
     except Exception as e:
         flash(f"No se pudo actualizar: {e}", "error")
