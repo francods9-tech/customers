@@ -31,6 +31,14 @@ Pendiente:
 
 - Deploy manual y servicio cron en Railway, con OK de Franco. El cron usa `railway.cron.json` (config-as-code propio: `python -m sync.refresh_job`, `cronSchedule 0 4 * * *`, `restartPolicyType NEVER`) porque `railway.json` le impondria `gunicorn` y reintentos a cualquier servicio del repo. En el servicio cron: Settings > Config-as-code path = `/railway.cron.json` (ruta absoluta en el repo, segun docs de Railway); variables `DATABASE_URL`, `MONGO_URI`, `STRIPE_SECRET_KEY` por referencia al servicio `customers`.
 
+### Deploy 2026-09-24 (TRA-518)
+
+- PR #123 mergeado a `main` con squash `8863906`. Deploy manual `railway up -s customers` -> deployment `bbe582f1-0d60-433e-8f8d-b3bec8c3f934` SUCCESS.
+- `/healthz` 200. `GET /api/ceo/customer-snapshots` responde 200 con serie vacia (tabla creada).
+- **Bloqueo encontrado**: el primer refresh en prod (`python -m sync.refresh_job` via `railway ssh`) fallo con `ServerSelectionTimeoutError` contra `turntable.proxy.rlwy.net:24445`. El proxy TCP publico de Mongo fue eliminado a proposito en el proyecto `traqeer` (brain: OBSERVABILITY_AND_INFRASTRUCTURE.md, Production Data Access) y la unica via es la red privada de ese proyecto. Por eso la ultima foto de `snapshots` es del 20-jul-2026: desde entonces ningun refresh pudo leer Mongo, y el panel y `/api/ceo/customer-metrics` sirven datos del 20-jul.
+- El job hizo lo correcto: exit 1 y 0 filas grabadas.
+- **Servicio cron NO creado**: fallaria todos los dias hasta que `customers` viva dentro del proyecto `traqeer` (la red privada de Railway no cruza proyectos). Ver card de migracion.
+
 ## Iteracion 2026-06-10 - Notificacion al cerrar tickets
 
 Implementado en rama `codex/ticket-close-notification-task`:
