@@ -29,7 +29,7 @@ Resultado:
 
 Pendiente:
 
-- Deploy manual y servicio cron en Railway, con OK de Franco. El cron usa `railway.cron.json` (config-as-code propio: `python -m sync.refresh_job`, `cronSchedule 0 4 * * *`, `restartPolicyType NEVER`) porque `railway.json` le impondria `gunicorn` y reintentos a cualquier servicio del repo. En el servicio cron: Settings > Config-as-code path = `railway.cron.json`; variables `DATABASE_URL`, `MONGO_URI`, `STRIPE_SECRET_KEY` por referencia al servicio `customers`.
+- Deploy manual y servicio cron en Railway, con OK de Franco. El cron usa `railway.cron.json` (config-as-code propio: `python -m sync.refresh_job`, `cronSchedule 0 4 * * *`, `restartPolicyType NEVER`) porque `railway.json` le impondria `gunicorn` y reintentos a cualquier servicio del repo. En el servicio cron: Settings > Config-as-code path = `/railway.cron.json` (ruta absoluta en el repo, segun docs de Railway); variables `DATABASE_URL`, `MONGO_URI`, `STRIPE_SECRET_KEY` por referencia al servicio `customers`.
 
 ## Iteracion 2026-06-10 - Notificacion al cerrar tickets
 
