@@ -204,3 +204,18 @@ class Snapshot(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     generado = db.Column(db.DateTime(timezone=True), default=_now)
     payload = db.Column(db.JSON, nullable=False)
+
+
+class CustomerCountSnapshot(db.Model):
+    """Daily count-only photo of the customer base. Mongo overwrites plan/status
+    in place, so these rows are the only way to compare past periods."""
+    __tablename__ = "customer_count_snapshots"
+
+    id = db.Column(db.Integer, primary_key=True)
+    snapshot_date = db.Column(db.Date, nullable=False, unique=True)
+    captured_at = db.Column(db.DateTime(timezone=True), nullable=False)
+    active_recurring = db.Column(db.Integer, nullable=False)
+    trial = db.Column(db.Integer, nullable=False)
+    unpaid = db.Column(db.Integer, nullable=False)
+    active_by_plan = db.Column(db.JSON, nullable=False)
+    summary = db.Column(db.JSON, nullable=False)

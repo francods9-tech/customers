@@ -20,6 +20,7 @@ from db.models import (ChurnReason, ColabCreator, ComplaintCategory, CustomerMet
                        TicketComment,
                        ORIGEN_LABELS, origen_group_key)
 from sync import refrescar_snapshot, ultimo_snapshot
+from sync import count_snapshots
 from sync.health import salud_de_cuentas
 
 app = Flask(__name__)
@@ -716,6 +717,40 @@ def ceo_customer_metrics():
         "active_customers": customer_rules.customer_summary(clientes)["activos_recurrentes"],
         "new_customers": len(altas_p),
     }
+
+
+@app.route("/api/ceo/customer-snapshots")
+def ceo_customer_snapshots():
+    if not _ceo_authorized():
+        return {"error": "unauthorized"}, 401
+    start, end_exclusive = _period_bounds_from_query()
+    if not start or not end_exclusive or end_exclusive <= start:
+        return {"error": "invalid period"}, 400
+    end_date = (end_exclusive - dt.timedelta(days=1)).date()
+    return {
+        "source": "customers",
+        "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "period": {"start": start.date().isoformat(), "end": end_date.isoformat()},
+        "snapshots": count_snapshots.daily_counts_between(start.date(), end_date),
+    }
+
+
+def record_current_counts():
+    """Store the day's counts of the latest snapshot with the same rules the
+    dashboard uses (enriched, without manually inactive customers). Counts and
+    timestamp come from that one snapshot, even if refreshes overlap."""
+    snap, _ = _clientes_enriquecidos()
+    clientes = _without_manually_inactive(snap["clientes"])
+    captured_at = customer_rules.parse_dt(snap.get("generado")) or dt.datetime.now(dt.timezone.utc)
+    count_snapshots.record_daily_counts(clientes, captured_at)
+
+
+def refresh_and_record_counts():
+    """Refresh the product snapshot, then store the day's counts. Any failure
+    raises; a failed refresh records nothing."""
+    payload = refrescar_snapshot()
+    record_current_counts()
+    return payload
 
 
 @app.route("/")
@@ -1579,9 +1614,16 @@ def marcar_bienvenidos():
 def sync():
     try:
         refrescar_snapshot()
-        flash("Datos actualizados", "ok")
     except Exception as e:
         flash(f"No se pudo actualizar: {e}", "error")
+        return redirect(request.referrer or url_for("index"))
+    try:
+        record_current_counts()
+        flash("Datos actualizados", "ok")
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("count snapshot failed")
+        flash("Datos actualizados, pero no se guardo la foto diaria de conteos", "error")
     return redirect(request.referrer or url_for("index"))
 
 
@@ -1831,7 +1873,8 @@ def estadisticas():
         "meses": sorted(por_mes.keys()),
         "por_mes": por_mes,
     }
-    return render_template("estadisticas.html", snap=snap, stats=stats, origenes=ORIGENES)
+    return render_template("estadisticas.html", snap=snap, stats=stats, origenes=ORIGENES,
+                           weekly_counts=count_snapshots.recent_weekly_counts())
 
 
 if __name__ == "__main__":

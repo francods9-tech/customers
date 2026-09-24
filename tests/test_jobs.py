@@ -15,7 +15,7 @@ class JobsTest(unittest.TestCase):
         }
         out = io.StringIO()
 
-        with patch.object(refresh_job, "refrescar_snapshot", return_value=payload) as refresh:
+        with patch.object(refresh_job, "refresh_and_record_counts", return_value=payload) as refresh:
             with redirect_stdout(out):
                 code = refresh_job.main()
 
@@ -23,6 +23,16 @@ class JobsTest(unittest.TestCase):
         self.assertEqual(refresh.call_count, 1)
         self.assertIn("refresh ok", out.getvalue())
         self.assertIn("activos=1", out.getvalue())
+
+    def test_refresh_job_exits_non_zero_when_refresh_fails(self):
+        from sync import refresh_job
+
+        with patch.object(refresh_job, "refresh_and_record_counts", side_effect=RuntimeError("stripe down")):
+            with self.assertLogs(level="ERROR") as logs:
+                code = refresh_job.main()
+
+        self.assertEqual(code, 1)
+        self.assertTrue(any("stripe down" in line for line in logs.output))
 
     def test_refrescar_snapshot_marks_active_customer_with_rejected_invoice_as_unpaid(self):
         import sync
