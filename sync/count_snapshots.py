@@ -7,6 +7,7 @@ from db import db
 from db.models import CustomerCountSnapshot
 
 UNKNOWN_PLAN = "?"
+WEEKS_SHOWN = 12
 
 
 def summarize_counts(customers):
@@ -65,3 +66,22 @@ def _serialize(row):
         "active_by_plan": row.active_by_plan,
         "summary": row.summary,
     }
+
+
+def recent_weekly_counts(weeks=WEEKS_SHOWN):
+    """Latest daily row of each of the last `weeks` weeks with data, newest first."""
+    rows = (CustomerCountSnapshot.query
+            .order_by(CustomerCountSnapshot.snapshot_date.desc())
+            .limit(weeks * 7)
+            .all())
+    return latest_per_week([_serialize(row) for row in rows])[:weeks]
+
+
+def latest_per_week(daily_rows):
+    """Keep the latest row of each ISO week (weeks start on Monday), newest first."""
+    by_week = {}
+    for row in sorted(daily_rows, key=lambda daily_row: daily_row["date"]):
+        day = dt.date.fromisoformat(row["date"])
+        week_start = day - dt.timedelta(days=day.weekday())
+        by_week[week_start] = {**row, "week_start": week_start.isoformat()}
+    return [by_week[week_start] for week_start in sorted(by_week, reverse=True)]

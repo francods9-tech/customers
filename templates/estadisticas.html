@@ -47,4 +47,30 @@
     {% endif %}
   </section>
 {% endif %}
+
+<section class="panel">
+  <h2>Evolucion semanal de la base</h2>
+  {% if weekly_counts %}
+  <table class="grid">
+    <thead>
+      <tr><th>Semana</th><th>Foto del</th><th>Activos recurrentes</th><th>Trial</th><th>Impago</th><th>Activos por plan</th></tr>
+    </thead>
+    <tbody>
+      {% for week in weekly_counts %}
+      <tr>
+        <td>{{ week.week_start }}</td>
+        <td>{{ week.date }}</td>
+        <td>{{ week.active_recurring }}</td>
+        <td>{{ week.trial }}</td>
+        <td>{{ week.unpaid }}</td>
+        <td>{% for plan, count in week.active_by_plan.items() %}{{ plan }} {{ count }}{% if not loop.last %} · {% endif %}{% else %}—{% endfor %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted">Una foto por dia al actualizar datos; se muestra la ultima de cada semana.</p>
+  {% else %}
+    <p class="muted">Todavia no hay fotos diarias. La serie empieza con la proxima actualizacion de datos.</p>
+  {% endif %}
+</section>
 {% endblock %}

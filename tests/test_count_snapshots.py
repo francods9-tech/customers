@@ -54,6 +54,30 @@ class CountSummaryTest(unittest.TestCase):
         self.assertEqual(counts["active_by_plan"], {})
 
 
+class WeeklyCountsTest(unittest.TestCase):
+    def test_latest_per_week_keeps_the_last_day_of_each_iso_week_newest_first(self):
+        from sync.count_snapshots import latest_per_week
+
+        daily = [
+            {"date": "2000-01-03", "active_recurring": 10},
+            {"date": "2000-01-09", "active_recurring": 12},
+            {"date": "2000-01-05", "active_recurring": 11},
+            {"date": "2000-01-10", "active_recurring": 13},
+        ]
+
+        weekly = latest_per_week(daily)
+
+        self.assertEqual(
+            [(row["week_start"], row["date"], row["active_recurring"]) for row in weekly],
+            [("2000-01-10", "2000-01-10", 13), ("2000-01-03", "2000-01-09", 12)],
+        )
+
+    def test_latest_per_week_of_no_rows_is_empty(self):
+        from sync.count_snapshots import latest_per_week
+
+        self.assertEqual(latest_per_week([]), [])
+
+
 class CountSnapshotStorageTest(unittest.TestCase):
     def setUp(self):
         from app import app
@@ -170,6 +194,22 @@ class CountSnapshotStorageTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.stored_rows()[0][1], response.json["active_customers"])
+
+    def test_stats_page_shows_weekly_counts_series(self):
+        self.run_refresh(
+            [customer_row("a@count-snapshots.test", plan="VIP"), customer_row("b@count-snapshots.test", estado="trial")],
+            f"{FIRST_DAY}T04:00:00+00:00",
+        )
+        with self.client.session_transaction() as session:
+            session["auth"] = True
+
+        response = self.client.get("/estadisticas")
+
+        html = response.get_data(as_text=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Evolucion semanal de la base", html)
+        self.assertIn(FIRST_DAY, html)
+        self.assertIn("VIP 1", html)
 
     def test_snapshot_series_endpoint_requires_bearer_token(self):
         response = self.client.get(f"/api/ceo/customer-snapshots?start={FIRST_DAY}&end={SECOND_DAY}")

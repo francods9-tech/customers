@@ -2,6 +2,34 @@
 
 Fecha: 2026-06-06.
 
+## Iteracion 2026-09-24 - Snapshot diario de conteos (TRA-518)
+
+Implementado en rama `francosalemme01/tra-518-customer-count-snapshots`:
+
+- Tabla nueva `customer_count_snapshots` (se crea sola con `db.create_all()`): una fila por dia UTC con activos recurrentes, trial, impago, activos por plan y el `customer_summary` completo. Solo conteos, sin emails ni montos.
+- Se graba despues de cada refresh exitoso (`POST /sync` y `python -m sync.refresh_job`) con el mismo pipeline que `/api/ceo/customer-metrics` (enriquecido, sin inactivos manuales, `customer_summary`). Re-ejecutar el mismo dia pisa la fila de ese dia.
+- Si el refresh falla no se graba nada; el job ahora sale con codigo 1 para que el cron de Railway lo marque en rojo.
+- `GET /api/ceo/customer-snapshots?start=YYYY-MM-DD&end=YYYY-MM-DD` con Bearer `CUSTOMERS_API_TOKEN` devuelve la serie diaria.
+- `/estadisticas` muestra la evolucion semanal (ultima foto de cada semana, 12 semanas).
+- Fuera de alcance: backfill desde `snapshots` (los overrides manuales son estado actual, daria numeros que nunca existieron) y backlog DMCA (vive en traqeer-back).
+
+Verificacion local:
+
+```powershell
+py -m unittest discover -s tests -p test_count_snapshots.py -v
+py -m unittest discover -s tests -p test_jobs.py -v
+py -m unittest discover -s tests -v
+```
+
+Resultado:
+
+- Tests RED fallaron primero por ausencia de modelo, endpoint y `refresh_and_record_counts`.
+- Suite completa: 145 tests, 144 OK y 1 fallo preexistente en `main` (`test_unpaid_recurrent_customer_counts_as_recurrent_active`: fecha fija 2026-06-01 que ya envejecio a `inactivo_impago`; no relacionado).
+
+Pendiente:
+
+- Deploy manual y servicio cron en Railway (`python -m sync.refresh_job`, `0 4 * * *`), con OK de Franco.
+
 ## Iteracion 2026-06-10 - Notificacion al cerrar tickets
 
 Implementado en rama `codex/ticket-close-notification-task`:

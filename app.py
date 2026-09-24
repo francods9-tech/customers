@@ -1863,7 +1863,8 @@ def estadisticas():
         "meses": sorted(por_mes.keys()),
         "por_mes": por_mes,
     }
-    return render_template("estadisticas.html", snap=snap, stats=stats, origenes=ORIGENES)
+    return render_template("estadisticas.html", snap=snap, stats=stats, origenes=ORIGENES,
+                           weekly_counts=count_snapshots.recent_weekly_counts())
 
 
 if __name__ == "__main__":
