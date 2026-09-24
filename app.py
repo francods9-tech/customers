@@ -735,18 +735,20 @@ def ceo_customer_snapshots():
     }
 
 
-def _payload_captured_at(payload):
-    raw = payload.get("generado")
-    return dt.datetime.fromisoformat(raw) if raw else dt.datetime.now(dt.timezone.utc)
+def record_current_counts(payload):
+    """Store the day's counts of a fresh payload with the same rules the
+    dashboard uses (enriched, without manually inactive customers)."""
+    snap, _ = _clientes_enriquecidos()
+    clientes = _without_manually_inactive(snap["clientes"])
+    captured_at = customer_rules.parse_dt(payload.get("generado")) or dt.datetime.now(dt.timezone.utc)
+    count_snapshots.record_daily_counts(clientes, captured_at)
 
 
 def refresh_and_record_counts():
-    """Refresh the product snapshot, then store today's counts with the same
-    rules the dashboard uses. A failed refresh raises and records nothing."""
+    """Refresh the product snapshot, then store the day's counts. Any failure
+    raises; a failed refresh records nothing."""
     payload = refrescar_snapshot()
-    snap, _ = _clientes_enriquecidos()
-    clientes = _without_manually_inactive(snap["clientes"])
-    count_snapshots.record_daily_counts(clientes, _payload_captured_at(payload))
+    record_current_counts(payload)
     return payload
 
 
@@ -1610,10 +1612,17 @@ def marcar_bienvenidos():
 @login_required
 def sync():
     try:
-        refresh_and_record_counts()
-        flash("Datos actualizados", "ok")
+        payload = refrescar_snapshot()
     except Exception as e:
         flash(f"No se pudo actualizar: {e}", "error")
+        return redirect(request.referrer or url_for("index"))
+    try:
+        record_current_counts(payload)
+        flash("Datos actualizados", "ok")
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("count snapshot failed")
+        flash("Datos actualizados, pero no se guardo la foto diaria de conteos", "error")
     return redirect(request.referrer or url_for("index"))
 
 

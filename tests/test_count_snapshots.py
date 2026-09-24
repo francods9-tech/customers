@@ -1,7 +1,11 @@
 import datetime as dt
 import unittest
+from contextlib import contextmanager
 from unittest.mock import patch
 
+from sync import count_snapshots
+
+TEST_DOMAIN = "@count-snapshots.test"
 TEST_MARKER = "count_snapshots_test"
 TEST_TOKEN = "count-snapshots-token"
 FIRST_DAY = "2000-01-03"
@@ -43,6 +47,17 @@ class CountSummaryTest(unittest.TestCase):
         self.assertEqual(counts["active_by_plan"], {"?": 1, "Premium": 2, "VIP": 1})
         self.assertEqual(counts["summary"]["total"], 5)
 
+    def test_summary_only_keeps_allowlisted_integer_counts(self):
+        from sync.count_snapshots import SUMMARY_KEYS, summarize_counts
+
+        with patch("customer_rules.customer_summary", return_value={
+            **{key: 0 for key in SUMMARY_KEYS}, "mrr_usd": 1234,
+        }):
+            counts = summarize_counts([])
+
+        self.assertEqual(set(counts["summary"]), set(SUMMARY_KEYS))
+        self.assertTrue(all(isinstance(value, int) for value in counts["summary"].values()))
+
     def test_summarize_counts_of_empty_base_is_all_zero(self):
         from sync.count_snapshots import summarize_counts
 
@@ -83,7 +98,9 @@ class CountSnapshotStorageTest(unittest.TestCase):
         from app import app
 
         self.app = app
-        self.app.config["CUSTOMERS_API_TOKEN"] = TEST_TOKEN
+        previous_token = app.config.get("CUSTOMERS_API_TOKEN")
+        self.addCleanup(app.config.__setitem__, "CUSTOMERS_API_TOKEN", previous_token)
+        app.config["CUSTOMERS_API_TOKEN"] = TEST_TOKEN
         self.client = app.test_client()
 
     def tearDown(self):
@@ -98,7 +115,7 @@ class CountSnapshotStorageTest(unittest.TestCase):
                 Snapshot.payload["test_marker"].as_string() == TEST_MARKER
             ).delete(synchronize_session=False)
             CustomerMeta.query.filter(
-                CustomerMeta.email.like("%@count-snapshots.test")
+                CustomerMeta.email.like(f"%{TEST_DOMAIN}")
             ).delete(synchronize_session=False)
             db.session.commit()
 
@@ -132,16 +149,33 @@ class CountSnapshotStorageTest(unittest.TestCase):
                 .order_by(CustomerCountSnapshot.snapshot_date)
             ]
 
+    @contextmanager
+    def only_test_metas(self):
+        """The suite runs on the real local DB: hide its manual customers."""
+        import app as app_module
+
+        real_meta_map = app_module._meta_map
+
+        def test_meta_map():
+            return {email: meta for email, meta in real_meta_map().items() if email.endswith(TEST_DOMAIN)}
+
+        with patch.object(app_module, "_meta_map", test_meta_map):
+            yield
+
     def run_refresh(self, customers, generated_at):
         import app as app_module
 
         with patch.object(app_module, "refrescar_snapshot", self.refresh_returning(customers, generated_at)):
-            with self.app.app_context():
+            with self.only_test_metas(), self.app.app_context():
                 return app_module.refresh_and_record_counts()
 
+    def login(self):
+        with self.client.session_transaction() as session:
+            session["auth"] = True
+
     def test_refresh_records_one_row_per_utc_day_and_reruns_overwrite_it(self):
-        first = [customer_row("a@count-snapshots.test")]
-        second = first + [customer_row("b@count-snapshots.test")]
+        first = [customer_row(f"a{TEST_DOMAIN}")]
+        second = first + [customer_row(f"b{TEST_DOMAIN}")]
 
         self.run_refresh(first, f"{FIRST_DAY}T04:00:00+00:00")
         self.run_refresh(second, f"{FIRST_DAY}T18:30:00+00:00")
@@ -149,7 +183,7 @@ class CountSnapshotStorageTest(unittest.TestCase):
         self.assertEqual(self.stored_rows(), [(FIRST_DAY, 2, 0, 0)])
 
     def test_refresh_keys_the_row_by_the_payload_timestamp_in_utc(self):
-        self.run_refresh([customer_row("a@count-snapshots.test")], "2000-01-03T23:30:00-03:00")
+        self.run_refresh([customer_row(f"a{TEST_DOMAIN}")], "2000-01-03T23:30:00-03:00")
 
         self.assertEqual(self.stored_rows(), [(SECOND_DAY, 1, 0, 0)])
 
@@ -171,9 +205,9 @@ class CountSnapshotStorageTest(unittest.TestCase):
         from db.models import CustomerMeta
 
         with self.app.app_context():
-            db.session.add(CustomerMeta(email="gone@count-snapshots.test", manual_estado="inactivo"))
+            db.session.add(CustomerMeta(email=f"gone{TEST_DOMAIN}", manual_estado="inactivo"))
             db.session.commit()
-        customers = [customer_row("a@count-snapshots.test"), customer_row("gone@count-snapshots.test")]
+        customers = [customer_row(f"a{TEST_DOMAIN}"), customer_row(f"gone{TEST_DOMAIN}")]
 
         self.run_refresh(customers, f"{FIRST_DAY}T04:00:00+00:00")
 
@@ -181,29 +215,59 @@ class CountSnapshotStorageTest(unittest.TestCase):
 
     def test_recorded_actives_match_the_ceo_metrics_endpoint(self):
         customers = [
-            customer_row("a@count-snapshots.test"),
-            customer_row("b@count-snapshots.test", plan="One time payment"),
-            customer_row("c@count-snapshots.test", estado="trial"),
+            customer_row(f"a{TEST_DOMAIN}"),
+            customer_row(f"b{TEST_DOMAIN}", plan="One time payment"),
+            customer_row(f"c{TEST_DOMAIN}", estado="trial"),
         ]
 
         self.run_refresh(customers, f"{FIRST_DAY}T04:00:00+00:00")
-        response = self.client.get(
-            f"/api/ceo/customer-metrics?start={FIRST_DAY}&end={FIRST_DAY}",
-            headers={"Authorization": f"Bearer {TEST_TOKEN}"},
-        )
+        with self.only_test_metas():
+            response = self.client.get(
+                f"/api/ceo/customer-metrics?start={FIRST_DAY}&end={FIRST_DAY}",
+                headers={"Authorization": f"Bearer {TEST_TOKEN}"},
+            )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.stored_rows()[0][1], response.json["active_customers"])
 
+    def test_sync_keeps_fresh_data_and_says_so_when_recording_counts_fails(self):
+        import app as app_module
+
+        self.login()
+        refresh = self.refresh_returning([customer_row(f"a{TEST_DOMAIN}")], f"{FIRST_DAY}T04:00:00+00:00")
+        with patch.object(app_module, "refrescar_snapshot", refresh):
+            with patch.object(count_snapshots, "record_daily_counts", side_effect=RuntimeError("db down")):
+                with self.assertLogs(self.app.logger, level="ERROR"):
+                    response = self.client.post("/sync", follow_redirects=True)
+
+        html = response.get_data(as_text=True)
+        self.assertIn("Datos actualizados, pero no se guardo la foto diaria de conteos", html)
+        self.assertNotIn("No se pudo actualizar", html)
+        self.assertEqual(self.stored_rows(), [])
+
+    def test_sync_reports_failed_refresh_and_records_nothing(self):
+        import app as app_module
+
+        self.login()
+        with patch.object(app_module, "refrescar_snapshot", side_effect=RuntimeError("stripe down")):
+            response = self.client.post("/sync", follow_redirects=True)
+
+        self.assertIn("No se pudo actualizar: stripe down", response.get_data(as_text=True))
+        self.assertEqual(self.stored_rows(), [])
+
     def test_stats_page_shows_weekly_counts_series(self):
         self.run_refresh(
-            [customer_row("a@count-snapshots.test", plan="VIP"), customer_row("b@count-snapshots.test", estado="trial")],
+            [customer_row(f"a{TEST_DOMAIN}", plan="VIP"), customer_row(f"b{TEST_DOMAIN}", estado="trial")],
             f"{FIRST_DAY}T04:00:00+00:00",
         )
-        with self.client.session_transaction() as session:
-            session["auth"] = True
+        self.login()
+        with self.app.app_context():
+            test_weeks = count_snapshots.latest_per_week(
+                count_snapshots.daily_counts_between(dt.date(2000, 1, 1), dt.date(2000, 12, 31))
+            )
 
-        response = self.client.get("/estadisticas")
+        with patch.object(count_snapshots, "recent_weekly_counts", return_value=test_weeks):
+            response = self.client.get("/estadisticas")
 
         html = response.get_data(as_text=True)
         self.assertEqual(response.status_code, 200)
@@ -225,9 +289,9 @@ class CountSnapshotStorageTest(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_snapshot_series_endpoint_returns_counts_in_range_without_customer_data(self):
-        self.run_refresh([customer_row("a@count-snapshots.test", plan="VIP")], f"{FIRST_DAY}T04:00:00+00:00")
+        self.run_refresh([customer_row(f"a{TEST_DOMAIN}", plan="VIP")], f"{FIRST_DAY}T04:00:00+00:00")
         self.run_refresh(
-            [customer_row("a@count-snapshots.test", plan="VIP"), customer_row("b@count-snapshots.test", estado="trial")],
+            [customer_row(f"a{TEST_DOMAIN}", plan="VIP"), customer_row(f"b{TEST_DOMAIN}", estado="trial")],
             f"{SECOND_DAY}T04:00:00+00:00",
         )
 
@@ -243,7 +307,7 @@ class CountSnapshotStorageTest(unittest.TestCase):
         self.assertEqual(snapshot["active_recurring"], 1)
         self.assertEqual(snapshot["trial"], 1)
         self.assertEqual(snapshot["active_by_plan"], {"VIP": 1})
-        self.assertNotIn("count-snapshots.test", response.get_data(as_text=True))
+        self.assertNotIn(TEST_DOMAIN, response.get_data(as_text=True))
 
 
 if __name__ == "__main__":

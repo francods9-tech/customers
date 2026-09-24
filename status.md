@@ -24,11 +24,12 @@ py -m unittest discover -s tests -v
 Resultado:
 
 - Tests RED fallaron primero por ausencia de modelo, endpoint y `refresh_and_record_counts`.
-- Suite completa: 145 tests, 144 OK y 1 fallo preexistente en `main` (`test_unpaid_recurrent_customer_counts_as_recurrent_active`: fecha fija 2026-06-01 que ya envejecio a `inactivo_impago`; no relacionado).
+- Code review (agente code-reviewer): 0 CRITICAL, 0 HIGH. Corregidos los 2 MEDIUM: tests aislados de los clientes manuales del DB local (verificado con una copia del DB con un cliente manual: antes 4 fallos, ahora OK) y `/sync` ya no dice "No se pudo actualizar" si el refresh anduvo y solo fallo guardar la foto. LOW corregidos: allowlist explicita de claves en `summary`, `customer_rules.parse_dt` publico para el timestamp y `captured_at` con offset UTC en SQLite. LOW aceptado: carrera de milisegundos si `/sync` y el cron graban el mismo dia a la vez (IntegrityError; el cron sale 1 y la fila igual existe).
+- Suite completa: 148 tests, 147 OK y 1 fallo preexistente en `main` (`test_unpaid_recurrent_customer_counts_as_recurrent_active`: fecha fija 2026-06-01 que ya envejecio a `inactivo_impago`; no relacionado).
 
 Pendiente:
 
-- Deploy manual y servicio cron en Railway (`python -m sync.refresh_job`, `0 4 * * *`), con OK de Franco.
+- Deploy manual y servicio cron en Railway, con OK de Franco. El cron usa `railway.cron.json` (config-as-code propio: `python -m sync.refresh_job`, `cronSchedule 0 4 * * *`, `restartPolicyType NEVER`) porque `railway.json` le impondria `gunicorn` y reintentos a cualquier servicio del repo. En el servicio cron: Settings > Config-as-code path = `railway.cron.json`; variables `DATABASE_URL`, `MONGO_URI`, `STRIPE_SECRET_KEY` por referencia al servicio `customers`.
 
 ## Iteracion 2026-06-10 - Notificacion al cerrar tickets
 

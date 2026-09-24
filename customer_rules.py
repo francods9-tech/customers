@@ -50,12 +50,12 @@ def _infer_type(plan):
 
 
 def _parse_date(value):
-    parsed = _parse_dt(value)
+    parsed = parse_dt(value)
     return parsed.date() if parsed else None
 
 
 def _fmt_date_es(value):
-    parsed = _parse_dt(value)
+    parsed = parse_dt(value)
     return parsed.strftime("%d/%m/%Y") if parsed else ""
 
 
@@ -85,9 +85,9 @@ def colab_summary(meta=None, today=None):
 
 def trial_summary(customer, today=None, warning_days=7):
     today = today or dt.datetime.now(dt.timezone.utc).date()
-    end_dt = _parse_dt(customer.get("trial_fin_raw") or customer.get("trial_fin"))
+    end_dt = parse_dt(customer.get("trial_fin_raw") or customer.get("trial_fin"))
     if not end_dt:
-        start_dt = _parse_dt(customer.get("fecha_alta_raw"))
+        start_dt = parse_dt(customer.get("fecha_alta_raw"))
         end_dt = start_dt + dt.timedelta(days=7) if start_dt else None
     if not end_dt:
         return {"fecha": "", "fecha_raw": "", "dias": None, "por_vencer": False, "vencido": False}
@@ -106,10 +106,10 @@ def reactivation_summary(customer, bajas):
     email = (customer.get("email_key") or customer.get("email") or "").lower()
     if customer.get("estado") != "activo" or not email:
         return {"reactivado": False, "ultima_baja": "", "ultima_baja_raw": ""}
-    matches = [b for b in bajas if (b.get("email") or "").lower() == email and _parse_dt(b.get("fecha"))]
+    matches = [b for b in bajas if (b.get("email") or "").lower() == email and parse_dt(b.get("fecha"))]
     if not matches:
         return {"reactivado": False, "ultima_baja": "", "ultima_baja_raw": ""}
-    last = max(matches, key=lambda b: _parse_dt(b.get("fecha")))
+    last = max(matches, key=lambda b: parse_dt(b.get("fecha")))
     return {
         "reactivado": True,
         "ultima_baja": _fmt_date_es(last.get("fecha")),
@@ -130,7 +130,7 @@ def churn_risk_summary(customer, today=None):
     today = today or dt.datetime.now(dt.timezone.utc)
     if isinstance(today, dt.date) and not isinstance(today, dt.datetime):
         today = dt.datetime.combine(today, dt.time.min, tzinfo=dt.timezone.utc)
-    cancel_dt = _parse_dt(customer.get("cancelacion_fecha_raw") or customer.get("cancelacion_fecha"))
+    cancel_dt = parse_dt(customer.get("cancelacion_fecha_raw") or customer.get("cancelacion_fecha"))
     if not customer.get("cancelacion_programada") or not cancel_dt:
         return {"activo": False, "tipo": "", "fecha": "", "fecha_raw": "", "dias": None, "label": ""}
     days = (cancel_dt.date() - today.date()).days
@@ -269,7 +269,7 @@ def customer_summary(customers):
     }
 
 
-def _parse_dt(value):
+def parse_dt(value):
     if not value:
         return None
     if isinstance(value, dt.datetime):
@@ -284,7 +284,7 @@ def _parse_dt(value):
 def unpaid_summary(customer, today=None):
     today = today or dt.datetime.now(dt.timezone.utc)
     invoices = _pending_invoices(customer)
-    invoice_date = _parse_dt(invoices[0].get("fecha_raw")) if invoices else _parse_dt(
+    invoice_date = parse_dt(invoices[0].get("fecha_raw")) if invoices else parse_dt(
         customer.get("ultima_factura_fecha_raw") or customer.get("impago_desde_raw")
     )
     days = None
@@ -314,7 +314,7 @@ def _pending_invoices(customer):
         invoices.append(copied)
     return sorted(
         invoices,
-        key=lambda invoice: _parse_dt(invoice.get("fecha_raw")) or dt.datetime.max.replace(tzinfo=dt.timezone.utc),
+        key=lambda invoice: parse_dt(invoice.get("fecha_raw")) or dt.datetime.max.replace(tzinfo=dt.timezone.utc),
     )
 
 
@@ -348,7 +348,7 @@ def sort_churn_risk_priority(customers):
         if risk.get("tipo") == "cancelacion_programada":
             days = risk.get("dias")
             return (0, days if days is not None else 99999, (customer.get("nombre") or "").lower())
-        created = _parse_dt(risk.get("created_at_raw"))
+        created = parse_dt(risk.get("created_at_raw"))
         created_ts = -created.timestamp() if created else 0
         return (1, created_ts, (customer.get("nombre") or "").lower())
 
@@ -358,7 +358,7 @@ def sort_churn_risk_priority(customers):
 def sort_oldest_first(items):
     def key(item):
         created = getattr(item, "created_at", None)
-        parsed = _parse_dt(created)
+        parsed = parse_dt(created)
         return parsed or dt.datetime.max.replace(tzinfo=dt.timezone.utc)
 
     return sorted(items, key=key)

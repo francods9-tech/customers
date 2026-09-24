@@ -8,6 +8,12 @@ from db.models import CustomerCountSnapshot
 
 UNKNOWN_PLAN = "?"
 WEEKS_SHOWN = 12
+# Explicit allowlist: rows and the CEO API must only ever carry counts.
+SUMMARY_KEYS = (
+    "total", "activos_recurrentes", "trial", "impago", "pausado_impago",
+    "inactivo_impago", "inactivo", "agencias", "one_time", "free_colab",
+    "colab_descuento", "colabs_total", "colabs_revision_pendiente",
+)
 
 
 def summarize_counts(customers):
@@ -23,7 +29,7 @@ def summarize_counts(customers):
         "trial": summary["trial"],
         "unpaid": summary["impago"],
         "active_by_plan": dict(sorted(active_by_plan.items())),
-        "summary": summary,
+        "summary": {key: summary[key] for key in SUMMARY_KEYS},
     }
 
 
@@ -59,7 +65,7 @@ def daily_counts_between(start_date, end_date):
 def _serialize(row):
     return {
         "date": row.snapshot_date.isoformat(),
-        "captured_at": row.captured_at.isoformat(),
+        "captured_at": _as_utc(row.captured_at).isoformat(),
         "active_recurring": row.active_recurring,
         "trial": row.trial,
         "unpaid": row.unpaid,
@@ -85,3 +91,8 @@ def latest_per_week(daily_rows):
         week_start = day - dt.timedelta(days=day.weekday())
         by_week[week_start] = {**row, "week_start": week_start.isoformat()}
     return [by_week[week_start] for week_start in sorted(by_week, reverse=True)]
+
+
+def _as_utc(moment):
+    # SQLite drops the offset of timezone-aware columns; values are stored in UTC.
+    return moment if moment.tzinfo else moment.replace(tzinfo=dt.timezone.utc)
